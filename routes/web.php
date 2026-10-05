@@ -6,7 +6,7 @@ use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\ResetPassword;
 use App\Livewire\Dashboard;
-use App\Livewire\Roles\MenuEditor;
+use App\Livewire\Menu\MenuManager;
 use App\Livewire\Roles\RoleEditor;
 use App\Livewire\Roles\RoleIndex;
 use App\Livewire\Schools\SchoolEditor;
@@ -33,8 +33,9 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
 
     Route::livewire('/roles', RoleIndex::class)->name('roles.index');
     Route::livewire('/roles/nuevo', RoleEditor::class)->name('roles.create');
-    Route::livewire('/roles/menu', MenuEditor::class)->name('roles.menu');
     Route::livewire('/roles/{role}/editar', RoleEditor::class)->name('roles.edit');
+
+    Route::livewire('/menu', MenuManager::class)->name('menu.index');
 
     Route::livewire('/usuarios', UserIndex::class)->name('users.index');
     Route::livewire('/usuarios/nuevo', UserEditor::class)->name('users.create');

@@ -13,16 +13,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['parent_id', 'slug', 'label', 'icon', 'route_name', 'status', 'sort_order'])]
+/**
+ * Opción del menú: módulo (sin padre) o submódulo.
+ * - status (código): activo si su pantalla está programada, o "Próximamente".
+ * - is_enabled (Super Admin): desactivada = oculta para todos y rutas bloqueadas.
+ * - is_system: definida en MenuSeeder; no se elimina desde la pantalla.
+ */
+#[Fillable(['parent_id', 'slug', 'label', 'icon', 'route_name', 'status', 'is_system', 'is_enabled', 'sort_order'])]
 class MenuItem extends Model
 {
     /** @use HasFactory<MenuItemFactory> */
     use HasFactory;
 
+    /** Nunca se desactivan ni eliminan: sin ellas el Super Admin perdería el acceso. */
+    public const PROTECTED_SLUGS = ['dashboard', 'platform', 'platform-menu'];
+
     protected function casts(): array
     {
         return [
             'status' => MenuItemStatus::class,
+            'is_system' => 'boolean',
+            'is_enabled' => 'boolean',
         ];
     }
 
@@ -50,9 +61,20 @@ class MenuItem extends Model
         $query->whereHas('roles', fn (Builder $roles) => $roles->whereKey($roleId));
     }
 
+    /** @param Builder<MenuItem> $query */
+    public function scopeEnabled(Builder $query): void
+    {
+        $query->where('is_enabled', true);
+    }
+
     public function isComingSoon(): bool
     {
         return $this->status === MenuItemStatus::ComingSoon;
+    }
+
+    public function isProtected(): bool
+    {
+        return in_array($this->slug, self::PROTECTED_SLUGS, true);
     }
 
     public function isActiveRoute(): bool

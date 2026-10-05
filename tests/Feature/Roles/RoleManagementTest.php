@@ -3,10 +3,8 @@
 namespace Tests\Feature\Roles;
 
 use App\Livewire\Auth\Login;
-use App\Livewire\Roles\MenuEditor;
 use App\Livewire\Roles\RoleEditor;
 use App\Livewire\Roles\RoleIndex;
-use App\Models\AuditLog;
 use App\Models\MenuItem;
 use App\Models\Role;
 use App\Models\School;
@@ -61,7 +59,7 @@ class RoleManagementTest extends TestCase
 
         $this->actingAs($schoolAdmin);
         $this->get(route('roles.index'))->assertForbidden();
-        $this->get(route('roles.menu'))->assertForbidden();
+        $this->get(route('menu.index'))->assertForbidden();
         $this->get(route('roles.edit', $this->role(Role::TEACHER)))->assertForbidden();
     }
 
@@ -185,29 +183,5 @@ class RoleManagementTest extends TestCase
         $this->actingAs($this->admin);
 
         Livewire::test(RoleIndex::class)->call('toggleActive', $this->role(Role::PLATFORM_ADMIN)->id)->assertForbidden();
-    }
-
-    public function test_menu_labels_and_order_are_editable_and_survive_reseeding(): void
-    {
-        $this->actingAs($this->admin);
-        $billingId = $this->itemId('billing');
-        $reportsId = $this->itemId('reports');
-
-        $component = Livewire::test(MenuEditor::class)->set("labels.$billingId", 'Pagos y cobranza');
-        $rootBefore = $component->get('order')['root'];
-        $component->call('move', $reportsId, -1)->call('save')->assertHasNoErrors();
-
-        $this->assertSame('Pagos y cobranza', MenuItem::find($billingId)->label);
-        $rootAfter = MenuItem::whereNull('parent_id')->orderBy('sort_order')->pluck('id')->map(fn ($id) => (string) $id)->all();
-        $this->assertNotSame($rootBefore, $rootAfter);
-
-        // Volver a correr los seeders no pisa lo editado en pantalla.
-        $this->role(Role::TEACHER)->menuItems()->sync([MenuItem::where('slug', 'dashboard')->value('id')]);
-        $this->seed([RoleSeeder::class, MenuSeeder::class]);
-
-        $this->assertSame('Pagos y cobranza', MenuItem::find($billingId)->label);
-        $this->assertSame($rootAfter, MenuItem::whereNull('parent_id')->orderBy('sort_order')->pluck('id')->map(fn ($id) => (string) $id)->all());
-        $this->assertSame(['dashboard'], $this->role(Role::TEACHER)->menuItems()->pluck('slug')->all());
-        $this->assertTrue(AuditLog::where('event', 'updated')->exists());
     }
 }

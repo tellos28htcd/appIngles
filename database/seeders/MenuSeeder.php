@@ -55,6 +55,7 @@ class MenuSeeder extends Seeder
         'platform' => ['Plataforma', 'building', null, MenuItemStatus::Active, [
             'platform-schools' => ['Escuelas', null, 'schools.index', MenuItemStatus::Active],
             'platform-roles' => ['Roles y permisos', null, 'roles.index', MenuItemStatus::Active],
+            'platform-menu' => ['Menú', null, 'menu.index', MenuItemStatus::Active],
         ]],
     ];
 
@@ -106,7 +107,8 @@ class MenuSeeder extends Seeder
         $slugs = collect(self::TREE)
             ->flatMap(fn (array $definition, string $slug) => [$slug, ...array_keys($definition[4] ?? [])]);
 
-        MenuItem::whereNotIn('slug', $slugs)->delete();
+        // Solo las que vinieron del código: las creadas en pantalla (is_system = false) se respetan.
+        MenuItem::where('is_system', true)->whereNotIn('slug', $slugs)->delete();
     }
 
     /** @return array<string, MenuItem> Opciones de último nivel con su padre (si tiene). */
@@ -146,7 +148,7 @@ class MenuSeeder extends Seeder
         [$label, $icon, $routeName, $status] = $definition;
 
         $item = MenuItem::firstOrNew(['slug' => $slug], ['label' => $label, 'sort_order' => $order]);
-        $item->fill(['parent_id' => $parentId, 'icon' => $icon, 'route_name' => $routeName, 'status' => $status])->save();
+        $item->fill(['parent_id' => $parentId, 'icon' => $icon, 'route_name' => $routeName, 'status' => $status, 'is_system' => true])->save();
 
         return $item;
     }

@@ -23,7 +23,7 @@ Verifica las versiones reales en composer.json y package.json.
   laravel-livewire-fullstack (references/convenciones-codigo.md).
 
 ## Estado
-Módulos terminados: acceso (login, menú dinámico), escuelas (tenants), usuarios, roles y permisos.
+Módulos terminados: acceso (login, menú dinámico), escuelas (tenants), usuarios, roles y permisos, menú (Plataforma).
 Seguridad: ver docs/seguridad.md (controles y pasos obligatorios de producción).
 Siguiente: catálogos (turnos, libros, lecciones, actividades, clubes; pestaña 3 del Excel).
 

@@ -15,11 +15,6 @@ return [
     'select_none' => 'Quitar todo',
     'selected_count' => ':count de :total opciones asignadas',
 
-    'tabs' => [
-        'roles' => 'Roles',
-        'menu' => 'Menú',
-    ],
-
     'scope' => [
         'platform' => 'Plataforma',
         'school' => 'Escuela',
@@ -62,7 +57,6 @@ return [
         'activated' => 'Rol activado.',
         'deactivated' => 'Rol desactivado. Sus usuarios ya no pueden iniciar sesión.',
         'deleted' => 'Rol eliminado.',
-        'menu_saved' => 'Menú actualizado.',
     ],
 
     'confirm_delete' => [
@@ -71,12 +65,4 @@ return [
         'confirm' => 'Eliminar rol',
     ],
 
-    'menu' => [
-        'title' => 'Menú',
-        'subtitle' => 'Nombre y orden de los módulos y submódulos del menú',
-        'label' => 'Nombre en el menú',
-        'up' => 'Subir :name',
-        'down' => 'Bajar :name',
-        'save' => 'Guardar menú',
-    ],
 ];

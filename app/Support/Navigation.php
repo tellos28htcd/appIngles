@@ -12,7 +12,8 @@ use Illuminate\Support\Str;
 /**
  * Menú dinámico: módulos (nivel 1) y submódulos (nivel 2) que el rol del
  * usuario tiene asignados en menu_item_role. El Super Administrador ve y
- * entra a todo, incluidos los módulos que se agreguen después.
+ * entra a todo, incluidos los módulos que se agreguen después. Nadie, ni el
+ * Super Administrador, ve ni abre una opción desactivada.
  */
 final class Navigation
 {
@@ -24,7 +25,9 @@ final class Navigation
         }
 
         $seesEverything = $user->isPlatformAdmin();
-        $restrict = fn (Builder|HasMany $query) => $seesEverything ? $query : $query->visibleTo($user->role_id);
+        $restrict = fn (Builder|HasMany $query) => $seesEverything
+            ? $query->enabled()
+            : $query->enabled()->visibleTo($user->role_id);
 
         return $restrict(MenuItem::query()->whereNull('parent_id'))
             ->with(['children' => fn (HasMany $children) => $restrict($children)])
@@ -44,15 +47,30 @@ final class Navigation
     {
         $module = Str::contains($routeName, '.') ? Str::beforeLast($routeName, '.') : $routeName;
 
-        $registered = MenuItem::query()->where(fn (Builder $query) => $query
-            ->where('route_name', $routeName)
-            ->orWhere('route_name', 'like', $module.'.%'));
+        $registered = MenuItem::query()
+            ->with('parent:id,is_enabled')
+            ->where(fn (Builder $query) => $query
+                ->where('route_name', $routeName)
+                ->orWhere('route_name', 'like', $module.'.%'))
+            ->get();
 
-        if ($user->isPlatformAdmin() || ! $registered->exists()) {
+        if ($registered->isEmpty()) {
             return true;
         }
 
-        return $registered
+        // Desactivada (ella o su módulo): bloqueada para todos.
+        $available = $registered->filter(fn (MenuItem $item) => $item->is_enabled && ($item->parent?->is_enabled ?? true));
+
+        if ($available->isEmpty()) {
+            return false;
+        }
+
+        if ($user->isPlatformAdmin()) {
+            return true;
+        }
+
+        return MenuItem::query()
+            ->whereKey($available->modelKeys())
             ->where('status', 'active')
             ->whereHas('roles', fn (Builder $roles) => $roles->whereKey($user->role_id))
             ->exists();

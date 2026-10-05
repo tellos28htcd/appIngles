@@ -1,8 +1,6 @@
 <div class="flex flex-col gap-6">
     <x-ui.page-header :title="__($editing ? 'roles.edit_title' : 'roles.create_title')" :subtitle="__('roles.editor_subtitle')" />
 
-    @include('livewire.roles.partials.tabs')
-
     <form wire:submit="save" class="flex flex-col gap-4 md:gap-6" novalidate>
         <div class="grid gap-4 md:gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
             <x-ui.card :title="__('roles.sections.data')" class="self-start">
@@ -64,7 +62,9 @@
                                         <label wire:key="item-{{ $child->id }}" class="flex min-h-11 cursor-pointer items-center gap-3 py-1.5 pl-12 pr-4 hover:bg-surface">
                                             <input type="checkbox" value="{{ $child->id }}" wire:model.live="selected" class="size-[18px] flex-none rounded accent-primary-600">
                                             <span class="flex-1 text-[15px]">{{ $child->label }}</span>
-                                            @if ($child->isComingSoon())
+                                            @if (! $child->is_enabled)
+                                                <span class="rounded-full bg-danger-50 px-1.5 py-0.5 text-[10px] font-bold text-danger-700">{{ __('menu.status.disabled') }}</span>
+                                            @elseif ($child->isComingSoon())
                                                 <span class="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-ink-500">{{ __('layout.coming_soon') }}</span>
                                             @endif
                                         </label>

@@ -8,8 +8,6 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    @include('livewire.roles.partials.tabs')
-
     <ul class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         @foreach ($this->roles as $role)
             <li wire:key="role-{{ $role->id }}" @class([
