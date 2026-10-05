@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>AppIngles · Tipografía</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3A4152}a:hover{color:#141826}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 1500px; box-sizing: border-box; padding: 72px 80px 96px; background: #FFFFFF; font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: #141826; display: flex; flex-direction: column; gap: 56px">
+
+  <header style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{c.p700}}">Tipografía</span>
+    <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; letter-spacing: -0.025em">Dos familias, una jerarquía clara.</h1>
+    <p style="margin: 0; font-size: 18px; color: #3A4152; max-width: 780px; line-height: 1.55">Títulos geométricos y amables; texto humanista muy legible en pantallas pequeñas. Ambas son Google Fonts gratuitas y no cambian por escuela.</p>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+    <div style="padding: 32px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 14px">
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 96px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">Aa</span>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 700">Plus Jakarta Sans</span>
+      <span style="font-size: 14px; color: #3A4152; line-height: 1.5">Títulos, cifras de KPI, botones grandes. Pesos 600 · 700 · 800.</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">font-display</span>
+    </div>
+    <div style="padding: 32px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 14px">
+      <span style="font-family: 'Figtree', sans-serif; font-size: 96px; font-weight: 500; line-height: 1; letter-spacing: -0.02em">Aa</span>
+      <span style="font-family: 'Figtree', sans-serif; font-size: 22px; font-weight: 700">Figtree</span>
+      <span style="font-size: 14px; color: #3A4152; line-height: 1.5">Texto, formularios, tablas, etiquetas. Pesos 400 · 500 · 600 · 700.</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">font-sans (default)</span>
+    </div>
+    <div style="padding: 32px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 14px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 96px; font-weight: 500; line-height: 1">0O</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500">JetBrains Mono</span>
+      <span style="font-size: 14px; color: #3A4152; line-height: 1.5">Folios, matrículas, referencias de pago. Solo 400 · 500.</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">font-mono</span>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column">
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 0 0 12px; border-bottom: 1px solid #E3E6EE; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5F6778">
+      <span>Token</span><span>Muestra</span><span>Escritorio</span><span>Móvil</span><span>Clase Tailwind</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">display</span>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; line-height: 56px; font-weight: 800; letter-spacing: -0.025em">Welcome back!</span>
+      <span style="font-size: 14px; color: #3A4152">48 / 56 · 800</span>
+      <span style="font-size: 14px; color: #3A4152">36 / 44</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-display font-display</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">h1</span>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 36px; line-height: 44px; font-weight: 800; letter-spacing: -0.02em">Panel de la academia</span>
+      <span style="font-size: 14px; color: #3A4152">36 / 44 · 800</span>
+      <span style="font-size: 14px; color: #3A4152">28 / 36</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-h1 font-display</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">h2</span>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; line-height: 36px; font-weight: 700; letter-spacing: -0.015em">Grupos de esta semana</span>
+      <span style="font-size: 14px; color: #3A4152">28 / 36 · 700</span>
+      <span style="font-size: 14px; color: #3A4152">22 / 30</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-h2 font-display</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">h3</span>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; line-height: 30px; font-weight: 700">B1 Conversation · Aula 3</span>
+      <span style="font-size: 14px; color: #3A4152">22 / 30 · 700</span>
+      <span style="font-size: 14px; color: #3A4152">20 / 28</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-h3 font-display</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">h4</span>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; line-height: 26px; font-weight: 600">Datos del tutor</span>
+      <span style="font-size: 14px; color: #3A4152">18 / 26 · 600</span>
+      <span style="font-size: 14px; color: #3A4152">18 / 26</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-h4 font-display</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">body-lg</span>
+      <span style="font-size: 18px; line-height: 28px">Tu próxima clase es hoy a las 18:00 con tu teacher.</span>
+      <span style="font-size: 14px; color: #3A4152">18 / 28 · 400</span>
+      <span style="font-size: 14px; color: #3A4152">17 / 26</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-lg</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">body</span>
+      <span style="font-size: 16px; line-height: 24px">Registra pagos, asistencias y avances de cada alumno desde un mismo lugar.</span>
+      <span style="font-size: 14px; color: #3A4152">16 / 24 · 400</span>
+      <span style="font-size: 14px; color: #3A4152">16 / 24</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-base</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">body-sm</span>
+      <span style="font-size: 14px; line-height: 20px; color: #3A4152">Texto de tablas, ayudas de formulario y metadatos.</span>
+      <span style="font-size: 14px; color: #3A4152">14 / 20 · 400–500</span>
+      <span style="font-size: 14px; color: #3A4152">14 / 20</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-sm</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">caption</span>
+      <span style="font-size: 12px; line-height: 16px; font-weight: 600; color: #5F6778">Actualizado hace 5 min</span>
+      <span style="font-size: 14px; color: #3A4152">12 / 16 · 600</span>
+      <span style="font-size: 14px; color: #3A4152">12 / 16</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-xs</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #E3E6EE; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">overline</span>
+      <span style="font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{c.p700}}">Nivel intermedio</span>
+      <span style="font-size: 14px; color: #3A4152">12 / 16 · 700 · +8 %</span>
+      <span style="font-size: 14px; color: #3A4152">12 / 16</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-xs uppercase tracking-wider</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 160px minmax(0, 1fr) 200px 140px 200px; gap: 24px; padding: 22px 0; align-items: center">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">kpi</span>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; line-height: 44px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">1,248</span>
+      <span style="font-size: 14px; color: #3A4152">40 / 44 · 800 · tabular</span>
+      <span style="font-size: 14px; color: #3A4152">32 / 36</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{c.p700}}">text-kpi font-display tabular-nums</span>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+    <div style="padding: 24px; border-radius: 16px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 8px">
+      <h4 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 700">Medida de línea</h4>
+      <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #3A4152">Párrafos a 60–72 caracteres (max-w-prose). En móvil, el texto ocupa el ancho con 20 px de margen.</p>
+    </div>
+    <div style="padding: 24px; border-radius: 16px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 8px">
+      <h4 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 700">Números</h4>
+      <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #3A4152">Montos, horas y porcentajes en tablas siempre con tabular-nums y alineados a la derecha.</p>
+    </div>
+    <div style="padding: 24px; border-radius: 16px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 8px">
+      <h4 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 700">Tono</h4>
+      <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #3A4152">Español claro y cercano (tú). Términos del aula en inglés cuando la escuela los usa: teacher, unit, speaking.</p>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"primary":{"editor":"color","default":"#4361EE","section":"White-label","options":["#4361EE","#0F8B7E","#C2185B","#7C3AED"]},"accent":{"editor":"color","default":"#FFC23D","section":"White-label","options":["#FFC23D","#FF6B4A","#2EC4B6","#F472B6"]},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  palette(p, a) {
+    function hx(h){h=String(h||'#000000').replace('#','');if(h.length===3){h=h.split('').map(function(x){return x+x;}).join('');}var n=parseInt(h,16);if(isNaN(n)){n=0;}return [(n>>16)&255,(n>>8)&255,n&255];}
+    function toHex(r){return '#'+r.map(function(v){v=Math.round(Math.max(0,Math.min(255,v)));return (v<16?'0':'')+v.toString(16);}).join('').toUpperCase();}
+    function mix(x,y,t){var A=hx(x),B=hx(y);return toHex(A.map(function(v,i){return v+(B[i]-v)*t;}));}
+    function lum(h){var q=hx(h).map(function(v){v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*q[0]+0.7152*q[1]+0.0722*q[2];}
+    function on(bg){return (1.05/(lum(bg)+0.05))>=4.5?'#FFFFFF':'#141826';}
+    var steps=[['50','#FFFFFF',0.92],['100','#FFFFFF',0.84],['200','#FFFFFF',0.68],['300','#FFFFFF',0.46],['400','#FFFFFF',0.22],['500',null,0],['600','#000000',0.14],['700','#000000',0.30],['800','#000000',0.45],['900','#000000',0.60]];
+    var c={};
+    function sc(b,k){steps.forEach(function(s){c[k+s[0]]=s[1]?mix(b,s[1],s[2]):toHex(hx(b));});}
+    sc(p,'p'); sc(a,'a');
+    c.onP=on(c.p600); c.onA=on(c.a500);
+    return c;
+  }
+  renderVals() {
+    return { c: this.palette(this.props.primary ?? '#4361EE', this.props.accent ?? '#FFC23D') };
+  }
+}
+</script>
+</body>
+</html>

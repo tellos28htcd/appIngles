@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>AppIngles · KPIs y tabla con filtros</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3A4152}a:hover{color:#141826}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 1420px; box-sizing: border-box; padding: 72px 80px 96px; background: #F7F8FB; font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: #141826; display: flex; flex-direction: column; gap: 40px">
+
+  <header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{c.p700}}">Datos</span>
+      <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; letter-spacing: -0.025em">Tarjetas KPI y tabla con filtros</h1>
+    </div>
+    <span style="font-size: 13px; color: #5F6778">Datos de ejemplo · los filtros de estado funcionan en Play</span>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px">
+    <div style="padding: 24px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-size: 14px; font-weight: 600; color: #3A4152">Alumnos activos</span>
+        <span style="width: 36px; height: 36px; border-radius: 10px; background: {{c.p50}}; color: {{c.p700}}; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"></path><path d="M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.7.8 2.8 2.6 3.2 5.2"></path></svg></span>
+      </div>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; line-height: 44px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">186</span>
+      <div style="display: flex; justify-content: space-between; align-items: flex-end">
+        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: #087443"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg>+12 vs. septiembre</span>
+        <svg width="84" height="32" viewBox="0 0 84 32"><rect x="0" y="18" width="8" height="14" rx="2" fill="{{c.p200}}"></rect><rect x="12" y="14" width="8" height="18" rx="2" fill="{{c.p200}}"></rect><rect x="24" y="16" width="8" height="16" rx="2" fill="{{c.p200}}"></rect><rect x="36" y="10" width="8" height="22" rx="2" fill="{{c.p200}}"></rect><rect x="48" y="12" width="8" height="20" rx="2" fill="{{c.p200}}"></rect><rect x="60" y="6" width="8" height="26" rx="2" fill="{{c.p200}}"></rect><rect x="72" y="2" width="8" height="30" rx="2" fill="{{c.p600}}"></rect></svg>
+      </div>
+    </div>
+    <div style="padding: 24px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-size: 14px; font-weight: 600; color: #3A4152">Asistencia promedio</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: #FFF4ED; color: #B93815; font-size: 12px; font-weight: 700"><span style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #F97316"></span>Atención</span>
+      </div>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; line-height: 44px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">87 %</span>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="height: 8px; border-radius: 999px; background: #F1F3F8; position: relative"><div style="width: 87%; height: 8px; border-radius: 999px; background: #F97316"></div><div style="position: absolute; left: 90%; top: -4px; width: 2px; height: 16px; background: #141826"></div></div>
+        <span style="font-size: 12px; color: #5F6778">Meta 90 % · últimas 4 semanas</span>
+      </div>
+    </div>
+    <div style="padding: 24px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-size: 14px; font-weight: 600; color: #3A4152">Cobranza de octubre</span>
+        <span style="width: 36px; height: 36px; border-radius: 10px; background: {{c.p50}}; color: {{c.p700}}; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"></rect><path d="M3 10h18M7 15h3"></path></svg></span>
+      </div>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; line-height: 44px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">74 %</span>
+      <span style="font-size: 13px; color: #3A4152"><b style="color: #141826">[MONTO COBRADO]</b> de [MONTO ESPERADO] · 23 pendientes</span>
+    </div>
+    <div style="padding: 24px; border-radius: 20px; background: {{c.p600}}; color: {{c.onP}}; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-size: 14px; font-weight: 600">Clases de hoy</span>
+        <span style="height: 26px; padding: 0 10px; border-radius: 999px; background: {{c.a500}}; color: {{c.onA}}; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center">Lunes 5</span>
+      </div>
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; line-height: 44px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">14</span>
+      <span style="font-size: 13px; font-weight: 600">2 sin teacher confirmado · Ver calendario</span>
+    </div>
+  </section>
+
+  <section style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; overflow: hidden">
+    <div style="padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #E3E6EE">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 700">Alumnos</h2>
+        <span style="height: 24px; padding: 0 9px; border-radius: 999px; background: #F1F3F8; color: #3A4152; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center">214</span>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center">
+        <button type="button" style="height: 40px; padding: 0 16px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Exportar</button>
+        <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Nuevo alumno</button>
+      </div>
+    </div>
+
+    <div style="padding: 16px 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #FFFFFF">
+      <div style="position: relative; display: flex; align-items: center; flex: 1 1 280px; max-width: 360px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6778" stroke-width="2.2" stroke-linecap="round" style="position: absolute; left: 14px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input type="search" aria-label="Buscar alumno" placeholder="Buscar alumno o matrícula" style="width: 100%; height: 40px; box-sizing: border-box; padding: 0 14px 0 42px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 14px; background: #F7F8FB">
+      </div>
+      <div role="group" aria-label="Filtrar por estado" style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: #F1F3F8">
+        <sc-for list="{{chips}}" as="ch" hint-placeholder-count="5">
+          <button type="button" onClick="{{ch.pick}}" aria-pressed="{{ch.pressed}}" style="height: 32px; padding: 0 12px; border: 0; border-radius: 9px; background: {{ch.bg}}; color: {{ch.fg}}; box-shadow: {{ch.shadow}}; font-family: 'Figtree', sans-serif; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer">{{ch.label}}<span style="font-size: 12px; font-weight: 600; color: #5F6778">{{ch.count}}</span></button>
+        </sc-for>
+      </div>
+      <div style="position: relative; display: flex; align-items: center">
+        <select aria-label="Nivel" style="height: 40px; box-sizing: border-box; padding: 0 36px 0 12px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 14px; background: #FFFFFF; appearance: none"><option>Nivel: todos</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option></select>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5F6778" stroke-width="2.2" stroke-linecap="round" style="position: absolute; right: 12px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+      <div style="position: relative; display: flex; align-items: center">
+        <select aria-label="Pago" style="height: 40px; box-sizing: border-box; padding: 0 36px 0 12px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 14px; background: #FFFFFF; appearance: none"><option>Pago: todos</option><option>Al corriente</option><option>Por vencer</option><option>Vencido</option></select>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5F6778" stroke-width="2.2" stroke-linecap="round" style="position: absolute; right: 12px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+      <button type="button" style="height: 40px; padding: 0 12px; border: 0; border-radius: 12px; background: transparent; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700">Limpiar filtros</button>
+    </div>
+
+    <div style="overflow-x: auto">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+        <thead>
+          <tr style="background: #F7F8FB; text-align: left; color: #5F6778; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase">
+            <th style="padding: 12px 24px; font-weight: 700; border-top: 1px solid #E3E6EE; border-bottom: 1px solid #E3E6EE">Alumno</th>
+            <th style="padding: 12px 16px; font-weight: 700; border-top: 1px solid #E3E6EE; border-bottom: 1px solid #E3E6EE">Grupo</th>
+            <th style="padding: 12px 16px; font-weight: 700; border-top: 1px solid #E3E6EE; border-bottom: 1px solid #E3E6EE">Teacher</th>
+            <th style="padding: 12px 16px; font-weight: 700; border-top: 1px solid #E3E6EE; border-bottom: 1px solid #E3E6EE; text-align: right">Asistencia</th>
+            <th style="padding: 12px 16px; font-weight: 700; border-top: 1px solid #E3E6EE; border-bottom: 1px solid #E3E6EE">Pago</th>
+            <th style="padding: 12px 16px; font-weight: 700; border-top: 1px solid #E3E6EE; border-bottom: 1px solid #E3E6EE">Estado</th>
+            <th style="padding: 12px 24px; font-weight: 700; border-top: 1px solid #E3E6EE; border-bottom: 1px solid #E3E6EE; text-align: right"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+            <tr style="border-bottom: 1px solid #E3E6EE">
+              <td style="padding: 12px 24px; border-bottom: 1px solid #E3E6EE">
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <span style="width: 36px; height: 36px; border-radius: 999px; background: {{c.p100}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0">{{r.ini}}</span>
+                  <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; color: #141826">{{r.name}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">{{r.id}}</span></div>
+                </div>
+              </td>
+              <td style="padding: 12px 16px; border-bottom: 1px solid #E3E6EE"><div style="display: flex; align-items: center; gap: 8px"><span style="height: 24px; padding: 0 8px; border-radius: 7px; background: #F1F3F8; color: #3A4152; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center">{{r.level}}</span><span style="color: #3A4152">{{r.group}}</span></div></td>
+              <td style="padding: 12px 16px; border-bottom: 1px solid #E3E6EE; color: #3A4152">{{r.teacher}}</td>
+              <td style="padding: 12px 16px; border-bottom: 1px solid #E3E6EE; text-align: right">
+                <span style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{r.att.fg}}">
+                  <sc-if value="{{r.att.g}}" hint-placeholder-val="{{ true }}"><span style="width: 11px; height: 11px; border-radius: 999px; background: #099250"></span></sc-if>
+                  <sc-if value="{{r.att.o}}" hint-placeholder-val="{{ false }}"><span style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 11px solid #F97316"></span></sc-if>
+                  <sc-if value="{{r.att.r}}" hint-placeholder-val="{{ false }}"><span style="width: 10px; height: 10px; border-radius: 2px; background: #B42318"></span></sc-if>
+                  {{r.att.label}}
+                </span>
+              </td>
+              <td style="padding: 12px 16px; border-bottom: 1px solid #E3E6EE">
+                <span style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: {{r.pay.fg}}">
+                  <sc-if value="{{r.pay.g}}" hint-placeholder-val="{{ true }}"><span style="width: 11px; height: 11px; border-radius: 999px; background: #099250"></span></sc-if>
+                  <sc-if value="{{r.pay.o}}" hint-placeholder-val="{{ false }}"><span style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 11px solid #F97316"></span></sc-if>
+                  <sc-if value="{{r.pay.r}}" hint-placeholder-val="{{ false }}"><span style="width: 10px; height: 10px; border-radius: 2px; background: #B42318"></span></sc-if>
+                  {{r.pay.label}}
+                </span>
+              </td>
+              <td style="padding: 12px 16px; border-bottom: 1px solid #E3E6EE"><span style="display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border-radius: 999px; background: {{r.st.bg}}; color: {{r.st.fg}}; box-shadow: inset 0 0 0 1px {{r.st.ring}}; font-size: 12px; font-weight: 700"><span style="width: 7px; height: 7px; border-radius: 999px; background: {{r.st.dot}}"></span>{{r.st.label}}</span></td>
+              <td style="padding: 12px 24px; border-bottom: 1px solid #E3E6EE; text-align: right"><button type="button" aria-label="Acciones del alumno" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #5F6778; display: inline-flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+
+    <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+        <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700">Sin resultados con estos filtros</span>
+        <span style="font-size: 14px; color: #5F6778">Prueba con otro estado o limpia los filtros.</span>
+      </div>
+    </sc-if>
+
+    <div style="padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #3A4152">
+      <span>Mostrando <b style="color: #141826">{{shown}}</b> de 214</span>
+      <div style="display: flex; gap: 6px; align-items: center">
+        <button type="button" aria-label="Página anterior" style="width: 36px; height: 36px; border: 1.5px solid #E3E6EE; border-radius: 10px; background: #FFFFFF; color: #8C93A3; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <button type="button" aria-current="page" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: {{c.p50}}; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-weight: 800; font-size: 14px">1</button>
+        <button type="button" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #3A4152; font-family: 'Figtree', sans-serif; font-weight: 600; font-size: 14px">2</button>
+        <button type="button" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #3A4152; font-family: 'Figtree', sans-serif; font-weight: 600; font-size: 14px">3</button>
+        <span style="padding: 0 4px; color: #8C93A3">…</span>
+        <button type="button" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #3A4152; font-family: 'Figtree', sans-serif; font-weight: 600; font-size: 14px">27</button>
+        <button type="button" aria-label="Página siguiente" style="width: 36px; height: 36px; border: 1.5px solid #CBD0DB; border-radius: 10px; background: #FFFFFF; color: #141826; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+      </div>
+    </div>
+  </section>
+  <span style="font-size: 13px; color: #5F6778">En móvil (menos de 768 px) la tabla se convierte en lista de tarjetas: nombre + estado arriba, semáforos abajo; filtros en hoja inferior (bottom sheet).</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"primary":{"editor":"color","default":"#4361EE","section":"White-label","options":["#4361EE","#0F8B7E","#C2185B","#7C3AED"]},"accent":{"editor":"color","default":"#FFC23D","section":"White-label","options":["#FFC23D","#FF6B4A","#2EC4B6","#F472B6"]},"$preview":{"width":1440,"height":1420}}'>
+class Component extends DCLogic {
+  palette(p, a) {
+    function hx(h){h=String(h||'#000000').replace('#','');if(h.length===3){h=h.split('').map(function(x){return x+x;}).join('');}var n=parseInt(h,16);if(isNaN(n)){n=0;}return [(n>>16)&255,(n>>8)&255,n&255];}
+    function toHex(r){return '#'+r.map(function(v){v=Math.round(Math.max(0,Math.min(255,v)));return (v<16?'0':'')+v.toString(16);}).join('').toUpperCase();}
+    function mix(x,y,t){var A=hx(x),B=hx(y);return toHex(A.map(function(v,i){return v+(B[i]-v)*t;}));}
+    function lum(h){var q=hx(h).map(function(v){v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*q[0]+0.7152*q[1]+0.0722*q[2];}
+    function on(bg){return (1.05/(lum(bg)+0.05))>=4.5?'#FFFFFF':'#141826';}
+    var steps=[['50','#FFFFFF',0.92],['100','#FFFFFF',0.84],['200','#FFFFFF',0.68],['300','#FFFFFF',0.46],['400','#FFFFFF',0.22],['500',null,0],['600','#000000',0.14],['700','#000000',0.30],['800','#000000',0.45],['900','#000000',0.60]];
+    var c={};
+    function sc(b,k){steps.forEach(function(s){c[k+s[0]]=s[1]?mix(b,s[1],s[2]):toHex(hx(b));});}
+    sc(p,'p'); sc(a,'a');
+    c.onP=on(c.p600); c.onA=on(c.a500);
+    return c;
+  }
+  renderVals() {
+    var self = this;
+    var c = this.palette(this.props.primary ?? '#4361EE', this.props.accent ?? '#FFC23D');
+    var filter = (this.state && this.state.filter) || 'todos';
+    var ST = {
+      activo:{label:'Activo',bg:'#EDFCF2',fg:'#087443',ring:'#AAF0C4',dot:'#16B364'},
+      pausado:{label:'Pausado',bg:'#FFF4ED',fg:'#B93815',ring:'#FFD6AE',dot:'#F97316'},
+      baja:{label:'Baja',bg:'#FEF3F2',fg:'#B42318',ring:'#FECDCA',dot:'#D92D20'},
+      egresado:{label:'Egresado',bg:'#F4F3FF',fg:'#5925DC',ring:'#D9D6FE',dot:'#6938EF'}
+    };
+    function lvl(k,label){return {g:k==='g',o:k==='o',r:k==='r',label:label,fg:k==='g'?'#087443':(k==='o'?'#B93815':'#B42318')};}
+    function att(n){return lvl(n>=90?'g':(n>=75?'o':'r'), n+' %');}
+    var data = [
+      {ini:'AL',name:'Ana López',id:'AI-2026-0147',level:'B1',group:'Lun/Mié 18:00',teacher:'[Teacher 1]',att:96,pay:['g','Al corriente'],st:'activo'},
+      {ini:'DM',name:'Diego Méndez',id:'AI-2026-0152',level:'A2',group:'Mar/Jue 17:00',teacher:'[Teacher 2]',att:84,pay:['o','Vence 8 oct'],st:'activo'},
+      {ini:'SR',name:'Sofía Ramírez',id:'AI-2025-0988',level:'B2',group:'Sáb 10:00',teacher:'[Teacher 3]',att:0,pay:['g','Congelado'],st:'pausado'},
+      {ini:'MG',name:'Mateo García',id:'AI-2026-0201',level:'A1',group:'Kids · Lun/Mié 16:00',teacher:'[Teacher 2]',att:68,pay:['r','Vencido 12 días'],st:'activo'},
+      {ini:'VH',name:'Valeria Hernández',id:'AI-2024-0410',level:'C1',group:'Privada · Vie 19:00',teacher:'[Teacher 1]',att:98,pay:['g','Liquidado'],st:'egresado'},
+      {ini:'EC',name:'Emiliano Cruz',id:'AI-2026-0033',level:'A2',group:'Mar/Jue 17:00',teacher:'[Teacher 2]',att:52,pay:['r','Vencido 40 días'],st:'baja'},
+      {ini:'RT',name:'Regina Torres',id:'AI-2026-0175',level:'B1',group:'Lun/Mié 18:00',teacher:'[Teacher 1]',att:91,pay:['o','Vence 7 oct'],st:'activo'},
+      {ini:'JF',name:'Javier Flores',id:'AI-2025-0712',level:'B2',group:'Sáb 10:00',teacher:'[Teacher 3]',att:79,pay:['g','Al corriente'],st:'pausado'}
+    ];
+    var rows = data.filter(function(d){return filter==='todos'||d.st===filter;}).map(function(d){
+      return {ini:d.ini,name:d.name,id:d.id,level:d.level,group:d.group,teacher:d.teacher,
+        att: d.st==='pausado'&&d.att===0 ? {g:false,o:false,r:false,label:'—',fg:'#8C93A3'} : att(d.att),
+        pay: lvl(d.pay[0], d.pay[1]), st: ST[d.st]};
+    });
+    var counts = {todos:214, activo:186, pausado:9, baja:12, egresado:7};
+    var chips = [['todos','Todos'],['activo','Activo'],['pausado','Pausado'],['baja','Baja'],['egresado','Egresado']].map(function(x){
+      var on = filter===x[0];
+      return {label:x[1],count:counts[x[0]],pressed:on?'true':'false',bg:on?'#FFFFFF':'transparent',fg:on?'#141826':'#3A4152',shadow:on?'0 1px 2px rgba(20,24,38,0.12)':'none',pick:function(){self.setState({filter:x[0]});}};
+    });
+    return { c: c, rows: rows, chips: chips, empty: rows.length===0, shown: filter==='todos' ? '1–8' : (rows.length + ' (página 1)') };
+  }
+}
+</script>
+</body>
+</html>

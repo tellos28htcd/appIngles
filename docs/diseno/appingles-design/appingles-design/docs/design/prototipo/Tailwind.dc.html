@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>AppIngles · Implementación Tailwind</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3A4152}a:hover{color:#141826}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 2350px; box-sizing: border-box; padding: 72px 80px 96px; background: #FFFFFF; font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: #141826; display: flex; flex-direction: column; gap: 40px">
+  <header style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5F6778">Implementación</span>
+    <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; letter-spacing: -0.025em">Tailwind CSS v4 + Blade + Livewire</h1>
+    <p style="margin: 0; font-size: 18px; color: #3A4152; max-width: 900px; line-height: 1.55">Los tokens viven en resources/css/app.css con @theme. La escuela solo inyecta 2 variables (más su logo); las escalas se derivan con color-mix, así que clases como bg-primary-600 o ring-primary-200 funcionan para todas las escuelas sin recompilar.</p>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #3A4152">resources/css/app.css</span>
+      <pre style="margin: 0; padding: 24px; border-radius: 16px; background: #141826; color: #E3E6EE; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre; overflow: hidden">{{code.css}}</pre>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #3A4152">resources/views/layouts/app.blade.php (head)</span>
+        <pre style="margin: 0; padding: 24px; border-radius: 16px; background: #141826; color: #E3E6EE; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre; overflow: hidden">{{code.layout}}</pre>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #3A4152">app/Support/BrandColor.php</span>
+        <pre style="margin: 0; padding: 24px; border-radius: 16px; background: #141826; color: #E3E6EE; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre; overflow: hidden">{{code.php}}</pre>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #3A4152">resources/views/components/ui/button.blade.php</span>
+        <pre style="margin: 0; padding: 24px; border-radius: 16px; background: #141826; color: #E3E6EE; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre; overflow: hidden">{{code.button}}</pre>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #3A4152">resources/views/components/ui/status.blade.php · semaforo.blade.php</span>
+      <pre style="margin: 0; padding: 24px; border-radius: 16px; background: #141826; color: #E3E6EE; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre; overflow: hidden">{{code.status}}</pre>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700">Mapa de clases por componente</h2>
+      <div style="border-radius: 16px; border: 1px solid #E3E6EE; overflow: hidden">
+        <sc-for list="{{map}}" as="m" hint-placeholder-count="10">
+          <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; padding: 12px 16px; border-bottom: 1px solid #E3E6EE; font-size: 13px; align-items: baseline">
+            <span style="font-weight: 700">{{m.k}}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #3A4152; line-height: 1.6">{{m.v}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <h2 style="margin: 12px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700">Reglas white-label</h2>
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.55; color: #3A4152">
+        <span>1. Nunca uses hex en vistas: solo clases de token (bg-primary-600, text-ink-700…).</span>
+        <span>2. Primario y acento nunca comunican estado; success, warning, danger e info son fijos.</span>
+        <span>3. Texto sobre color de marca siempre con text-on-primary / text-on-accent.</span>
+        <span>4. Al guardar colores en Configuración, valida contraste de primary-700 sobre blanco ≥ 4.5:1 y avisa si no se cumple.</span>
+        <span>5. Logo: alto 32 px en barra, 56 px en login; si no hay logo, monograma con iniciales sobre primary-600.</span>
+        <span>6. color-mix tiene soporte en todos los navegadores actuales (Chrome 111+, Safari 16.2+, Firefox 113+).</span>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2350}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var O = '{' + '{', C = '}' + '}';
+    var css = [
+      '@import "tailwindcss";',
+      '',
+      '/* 1 · Marca de la escuela (el layout las sobreescribe) */',
+      ':root {',
+      '  --brand-primary: #4361EE;',
+      '  --brand-accent: #FFC23D;',
+      '  --brand-on-primary: #FFFFFF;   /* calculado en PHP */',
+      '  --brand-on-accent: #141826;',
+      '}',
+      '',
+      '/* 2 · Escalas derivadas: nadie las edita */',
+      '@theme inline {',
+      '  --color-primary-50:  color-mix(in oklab, var(--brand-primary) 8%, white);',
+      '  --color-primary-100: color-mix(in oklab, var(--brand-primary) 16%, white);',
+      '  --color-primary-200: color-mix(in oklab, var(--brand-primary) 32%, white);',
+      '  --color-primary-300: color-mix(in oklab, var(--brand-primary) 54%, white);',
+      '  --color-primary-400: color-mix(in oklab, var(--brand-primary) 78%, white);',
+      '  --color-primary-500: var(--brand-primary);',
+      '  --color-primary-600: color-mix(in oklab, var(--brand-primary) 86%, black);',
+      '  --color-primary-700: color-mix(in oklab, var(--brand-primary) 70%, black);',
+      '  --color-primary-800: color-mix(in oklab, var(--brand-primary) 55%, black);',
+      '  --color-primary-900: color-mix(in oklab, var(--brand-primary) 40%, black);',
+      '  /* accent-50 … accent-900: mismas fórmulas con --brand-accent */',
+      '  --color-on-primary: var(--brand-on-primary);',
+      '  --color-on-accent: var(--brand-on-accent);',
+      '}',
+      '',
+      '/* 3 · Tokens fijos */',
+      '@theme {',
+      '  --color-ink-900: #141826;  --color-ink-700: #3A4152;',
+      '  --color-ink-500: #5F6778;  --color-ink-400: #8C93A3;',
+      '  --color-line-strong: #CBD0DB;  --color-line: #E3E6EE;',
+      '  --color-surface-2: #F1F3F8;  --color-surface: #F7F8FB;',
+      '',
+      '  --color-success-50: #EDFCF2;  --color-success-200: #AAF0C4;',
+      '  --color-success-500: #16B364; --color-success-600: #099250;',
+      '  --color-success-700: #087443;',
+      '  --color-warning-50: #FFF4ED;  --color-warning-200: #FFD6AE;',
+      '  --color-warning-500: #F97316; --color-warning-600: #E2570B;',
+      '  --color-warning-700: #B93815;',
+      '  --color-danger-50: #FEF3F2;   --color-danger-200: #FECDCA;',
+      '  --color-danger-500: #F04438;  --color-danger-600: #D92D20;',
+      '  --color-danger-700: #B42318;',
+      '  --color-info-50: #F4F3FF;     --color-info-200: #D9D6FE;',
+      '  --color-info-500: #7A5AF8;    --color-info-600: #6938EF;',
+      '  --color-info-700: #5925DC;',
+      '',
+      '  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;',
+      '  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;',
+      '  --font-mono: "JetBrains Mono", ui-monospace, monospace;',
+      '',
+      '  --text-display: 3rem;    --text-display--line-height: 3.5rem;',
+      '  --text-h1: 2.25rem;      --text-h1--line-height: 2.75rem;',
+      '  --text-h2: 1.75rem;      --text-h2--line-height: 2.25rem;',
+      '  --text-h3: 1.375rem;     --text-h3--line-height: 1.875rem;',
+      '  --text-h4: 1.125rem;     --text-h4--line-height: 1.625rem;',
+      '  --text-kpi: 2.5rem;      --text-kpi--line-height: 2.75rem;',
+      '',
+      '  --radius-sm: 8px;  --radius-md: 12px;  --radius-lg: 16px;',
+      '  --radius-xl: 20px; --radius-2xl: 24px;',
+      '  --shadow-xs: 0 1px 2px rgb(20 24 38 / 0.06);',
+      '  --shadow-card: 0 4px 16px -4px rgb(20 24 38 / 0.10), 0 1px 2px rgb(20 24 38 / 0.05);',
+      '  --shadow-pop: 0 24px 48px -12px rgb(20 24 38 / 0.22);',
+      '}'
+    ].join('\n');
+    var layout = [
+      '@php($s = tenant()->branding)',
+      '<style>',
+      '  :root {',
+      '    --brand-primary: ' + O + ' $s->primary ?? \'#4361EE\' ' + C + ';',
+      '    --brand-accent: ' + O + ' $s->accent ?? \'#FFC23D\' ' + C + ';',
+      '    --brand-on-primary: ' + O + ' BrandColor::onPrimary($s->primary) ' + C + ';',
+      '    --brand-on-accent: ' + O + ' BrandColor::onColor($s->accent) ' + C + ';',
+      '  }',
+      '</style>',
+      '@vite([\'resources/css/app.css\', \'resources/js/app.js\'])',
+      '',
+      '<x-ui.school-logo :school="tenant()" class="h-8 w-auto" />'
+    ].join('\n');
+    var php = [
+      'final class BrandColor',
+      '{',
+      '    public static function onColor(string $hex): string',
+      '    {',
+      '        [$r, $g, $b] = sscanf(ltrim($hex, \'#\'), \'%02x%02x%02x\');',
+      '        $lin = fn ($c) => ($c /= 255) <= 0.03928',
+      '            ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;',
+      '        $L = 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b);',
+      '        return 1.05 / ($L + 0.05) >= 4.5 ? \'#FFFFFF\' : \'#141826\';',
+      '    }',
+      '',
+      '    // Los botones usan primary-600 (86 % marca + 14 % negro)',
+      '    public static function onPrimary(string $hex): string',
+      '    {',
+      '        [$r, $g, $b] = sscanf(ltrim($hex, \'#\'), \'%02x%02x%02x\');',
+      '        $d = fn ($c) => (int) round($c * 0.86);',
+      '        return self::onColor(sprintf(\'#%02x%02x%02x\', $d($r), $d($g), $d($b)));',
+      '    }',
+      '}'
+    ].join('\n');
+    var button = [
+      '@props([\'variant\' => \'primary\', \'size\' => \'md\'])',
+      '@php',
+      '$base = \'inline-flex items-center justify-center gap-2 rounded-md font-bold',
+      '  transition focus-visible:outline-none focus-visible:ring-4',
+      '  focus-visible:ring-primary-200 disabled:opacity-50 disabled:pointer-events-none\';',
+      '$variants = [',
+      '  \'primary\'   => \'bg-primary-600 text-on-primary hover:bg-primary-700\',',
+      '  \'secondary\' => \'bg-primary-50 text-primary-700 hover:bg-primary-100\',',
+      '  \'outline\'   => \'border-[1.5px] border-line-strong bg-white text-ink-900 hover:bg-surface\',',
+      '  \'ghost\'     => \'text-ink-700 hover:bg-surface-2\',',
+      '  \'accent\'    => \'bg-accent-500 text-on-accent hover:bg-accent-600\',',
+      '  \'danger\'    => \'bg-danger-600 text-white hover:bg-danger-700\',',
+      '];',
+      '$sizes = [\'sm\' => \'h-9 px-3.5 text-sm\', \'md\' => \'h-11 px-5 text-[15px]\', \'lg\' => \'h-13 px-7 text-base\'];',
+      '@endphp',
+      '<button ' + O + ' $attributes->merge([\'class\' => "$base {$variants[$variant]} {$sizes[$size]}"]) ' + C + '>',
+      '  <span wire:loading.remove ' + O + ' $attributes->wire(\'target\') ' + C + '>' + O + ' $slot ' + C + '</span>',
+      '  <span wire:loading ' + O + ' $attributes->wire(\'target\') ' + C + ' class="size-4 animate-spin rounded-full border-2 border-current border-r-transparent"></span>',
+      '</button>'
+    ].join('\n');
+    var status = [
+      '@props([\'status\'])',
+      '@php',
+      '$map = [',
+      '  \'activo\'   => [\'bg-success-50 text-success-700 ring-success-200\', \'bg-success-500\', \'Activo\'],',
+      '  \'pausado\'  => [\'bg-warning-50 text-warning-700 ring-warning-200\', \'bg-warning-500\', \'Pausado\'],',
+      '  \'baja\'     => [\'bg-danger-50 text-danger-700 ring-danger-200\', \'bg-danger-600\', \'Baja\'],',
+      '  \'egresado\' => [\'bg-info-50 text-info-700 ring-info-200\', \'bg-info-600\', \'Egresado\'],',
+      '][$status];',
+      '@endphp',
+      '<span class="inline-flex h-7 items-center gap-2 rounded-full px-3 text-[13px] font-bold ring-1 ring-inset ' + O + ' $map[0] ' + C + '">',
+      '  <span class="size-2 rounded-full ' + O + ' $map[1] ' + C + '"></span>' + O + ' $map[2] ' + C,
+      '</span>',
+      '',
+      '' + O + '-- semaforo: forma + color + texto --' + C,
+      '@props([\'level\' => \'verde\', \'label\'])',
+      '@php',
+      '$shape = [',
+      '  \'verde\'   => \'size-3 rounded-full bg-success-600\',',
+      '  \'naranja\' => \'size-3 bg-warning-500 [clip-path:polygon(50%_0,100%_100%,0_100%)]\',',
+      '  \'rojo\'    => \'size-2.5 rounded-[2px] bg-danger-700\',',
+      '][$level];',
+      '$text = [\'verde\' => \'text-success-700\', \'naranja\' => \'text-warning-700\', \'rojo\' => \'text-danger-700\'][$level];',
+      '@endphp',
+      '<span class="inline-flex items-center gap-2 text-sm font-semibold ' + O + ' $text ' + C + '">',
+      '  <span class="' + O + ' $shape ' + C + '" aria-hidden="true"></span>' + O + ' $label ' + C,
+      '</span>'
+    ].join('\n');
+    return {
+      code: { css: css, layout: layout, php: php, button: button, status: status },
+      map: [
+        {k:'Tarjeta', v:'rounded-xl border border-line bg-white p-6 shadow-xs'},
+        {k:'Tarjeta KPI', v:'font-display text-kpi font-extrabold tabular-nums tracking-tight'},
+        {k:'Input', v:'h-11 rounded-md border-[1.5px] border-line-strong px-3.5 placeholder:text-ink-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-100'},
+        {k:'Input error', v:'border-danger-600 ring-4 ring-danger-50 · mensaje text-danger-700 text-[13px]'},
+        {k:'Tabla', v:'thead bg-surface text-xs uppercase tracking-wide text-ink-500 · td py-3 border-b border-line'},
+        {k:'Chip filtro', v:'rounded-[9px] h-8 px-3 · activo: bg-white shadow-xs text-ink-900'},
+        {k:'Modal', v:'rounded-2xl bg-white p-7 shadow-pop · backdrop bg-ink-900/45'},
+        {k:'Toast', v:'rounded-lg border border-line bg-white p-4 shadow-pop'},
+        {k:'Sesión calendario', v:'rounded-md bg-primary-50 text-primary-800 · hoy: ring-2 ring-accent-500'},
+        {k:'Skeleton', v:'rounded-lg bg-surface-2 animate-pulse'}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

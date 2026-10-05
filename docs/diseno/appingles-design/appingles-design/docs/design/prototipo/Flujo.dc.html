@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>AppIngles · Flujo clicable</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: {{dim.w}}; height: {{dim.h}}; min-height: {{dim.minh}}; box-sizing: border-box; background: #F7F8FB; font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: #141826; position: relative; overflow: hidden; display: flex; flex-direction: column">
+
+<!-- ============ 1 · LOGIN ============ -->
+<sc-if value="{{show.login}}" hint-placeholder-val="{{ true }}">
+  <div style="flex: 1; display: flex; flex-direction: {{dim.loginDir}}; min-height: 0; background: #FFFFFF">
+    <div style="flex: {{dim.brandFlex}}; background: {{c.p600}}; color: {{c.onP}}; padding: {{dim.brandPad}}; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; position: relative; overflow: hidden; box-sizing: border-box">
+      <div style="position: absolute; right: -120px; bottom: -140px; width: 420px; height: 420px; border-radius: 999px; background: {{c.p500}}"></div>
+      <div style="position: absolute; right: 120px; bottom: 170px; width: 72px; height: 72px; border-radius: 999px; background: {{c.a500}}"></div>
+      <div style="position: absolute; left: -60px; top: -60px; width: 200px; height: 200px; border-radius: 48px; background: {{c.p700}}; transform: rotate(18deg)"></div>
+      <div style="position: relative; display: flex; align-items: center; gap: 14px">
+        <div style="width: {{dim.logo}}; height: {{dim.logo}}; border-radius: {{school.logoR}}; background: #FFFFFF; color: {{c.p600}}; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 26px; position: relative">{{school.mono}}<span style="position: absolute; right: 6px; top: 6px; width: 10px; height: 10px; border-radius: 999px; background: {{c.a500}}"></span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 20px">{{school.name}}</span><span style="font-size: 13px; opacity: 0.85">Logo y color de ejemplo</span></div>
+      </div>
+      <div style="position: relative; display: flex; flex-direction: column; gap: 12px; max-width: 420px">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: {{dim.brandTitle}}; line-height: 1.1; letter-spacing: -0.02em">{{school.tag}}</h2>
+        <sc-if value="{{isDesk}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; font-size: 17px; line-height: 1.55; opacity: 0.9">Clases, pagos y avances de tu escuela de inglés en un solo lugar.</p></sc-if>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; align-items: {{dim.formAlign}}; justify-content: center; padding: {{dim.formPad}}; box-sizing: border-box; overflow-y: auto">
+      <form style="width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: {{dim.h1}}; font-weight: 800; letter-spacing: -0.02em">Inicia sesión</h1>
+          <p style="margin: 0; font-size: 15px; color: #3A4152">Usa el correo que registraste en {{school.short}}.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <label for="lg-mail" style="font-size: 14px; font-weight: 600">Correo electrónico</label>
+          <input id="lg-mail" type="email" autocomplete="username" value="admin@escuela.mx" style="height: 48px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 16px; color: #141826">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <label for="lg-pass" style="font-size: 14px; font-weight: 600">Contraseña</label>
+          <div style="position: relative; display: flex; align-items: center">
+            <input id="lg-pass" type="password" autocomplete="current-password" value="contrasena" style="width: 100%; height: 48px; box-sizing: border-box; padding: 0 84px 0 14px; border: 1.5px solid {{c.p500}}; box-shadow: 0 0 0 4px {{c.p100}}; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 16px; color: #141826; outline: none">
+            <button type="button" style="position: absolute; right: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700">Mostrar</button>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+          <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; min-height: 44px"><input type="checkbox" checked="checked" style="width: 20px; height: 20px; accent-color: {{c.p600}}">Recordarme</label>
+          <a href="#" style="font-size: 14px; font-weight: 700; color: {{c.p700}}">¿Olvidaste tu contraseña?</a>
+        </div>
+        <button type="button" onClick="{{go.dash}}" style="height: 52px; border: 0; border-radius: 14px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer">Entrar</button>
+        <div style="display: flex; align-items: center; gap: 12px; color: #5F6778; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase"><span style="flex: 1; height: 1px; background: #E3E6EE"></span>Prototipo · entrar como<span style="flex: 1; height: 1px; background: #E3E6EE"></span></div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+          <button type="button" onClick="{{go.dash}}" style="height: 44px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer">Admin</button>
+          <button type="button" onClick="{{go.lista}}" style="height: 44px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer">Teacher</button>
+          <button type="button" onClick="{{go.cuenta}}" style="height: 44px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer">Alumno</button>
+        </div>
+        <span style="text-align: center; font-size: 12px; color: #5F6778">Con tecnología de <b>AppIngles</b></span>
+      </form>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ============ APP SHELL ============ -->
+<sc-if value="{{show.app}}" hint-placeholder-val="{{ false }}">
+  <div style="flex: 1; min-height: 0; display: flex; flex-direction: {{dim.appDir}}">
+
+    <!-- Sidebar (escritorio) -->
+    <sc-if value="{{isDesk}}" hint-placeholder-val="{{ true }}">
+      <aside style="width: 256px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E3E6EE; padding: 24px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 0 8px">
+          <div style="width: 40px; height: 40px; border-radius: {{school.logoR}}; background: {{c.p600}}; color: {{c.onP}}; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px; position: relative">{{school.mono}}<span style="position: absolute; right: 3px; top: 3px; width: 8px; height: 8px; border-radius: 999px; background: {{c.a500}}"></span></div>
+          <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 16px; line-height: 1.2">{{school.name}}</span>
+        </div>
+        <nav aria-label="Principal" style="display: flex; flex-direction: column; gap: 4px">
+          <sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+            <button type="button" onClick="{{n.go}}" aria-current="{{n.cur}}" style="height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: {{n.bg}}; color: {{n.fg}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: {{n.fw}}; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer">
+              <sc-if value="{{n.iDash}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"></rect><rect x="14" y="3" width="7" height="5" rx="2"></rect><rect x="14" y="12" width="7" height="9" rx="2"></rect><rect x="3" y="16" width="7" height="5" rx="2"></rect></svg></sc-if>
+              <sc-if value="{{n.iAgenda}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg></sc-if>
+              <sc-if value="{{n.iExp}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"></path></svg></sc-if>
+              <sc-if value="{{n.iLista}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"></rect><path d="M9 4V3h6v1M9 12.5l2 2 4-4"></path></svg></sc-if>
+              <sc-if value="{{n.iCuenta}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg></sc-if>
+              {{n.label}}
+            </button>
+          </sc-for>
+        </nav>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 12px">
+          <div style="padding: 12px; border-radius: 14px; background: #F7F8FB; display: flex; align-items: center; gap: 10px">
+            <span style="width: 36px; height: 36px; border-radius: 999px; background: {{c.p100}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700">{{meta.ini}}</span>
+            <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; font-weight: 700">{{meta.user}}</span><span style="font-size: 12px; color: #5F6778">{{meta.role}}</span></div>
+          </div>
+          <button type="button" onClick="{{go.login}}" style="height: 40px; border: 0; border-radius: 12px; background: transparent; color: #3A4152; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 10px; padding: 0 12px; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3"></path><path d="M10 16l-4-4 4-4M6 12h10"></path></svg>Cerrar sesión</button>
+          <span style="padding: 0 12px; font-size: 11px; color: #8C93A3">Con tecnología de AppIngles</span>
+        </div>
+      </aside>
+    </sc-if>
+
+    <!-- Barra superior (móvil) -->
+    <sc-if value="{{isMob}}" hint-placeholder-val="{{ false }}">
+      <div style="height: 60px; flex-shrink: 0; background: #FFFFFF; border-bottom: 1px solid #E3E6EE; padding: 0 12px 0 16px; display: flex; align-items: center; gap: 12px">
+        <div style="width: 34px; height: 34px; border-radius: {{school.logoR}}; background: {{c.p600}}; color: {{c.onP}}; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 15px; flex-shrink: 0">{{school.mono}}</div>
+        <div style="display: flex; flex-direction: column; min-width: 0; flex: 1"><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{meta.title}}</span><span style="font-size: 12px; color: #5F6778; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{school.name}}</span></div>
+        <button type="button" onClick="{{go.login}}" aria-label="Cerrar sesión" style="width: 44px; height: 44px; border: 0; border-radius: 999px; background: {{c.p100}}; color: {{c.p800}}; font-family: 'Figtree', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer">{{meta.ini}}</button>
+      </div>
+    </sc-if>
+
+    <main style="flex: 1; min-width: 0; min-height: 0; overflow-y: {{dim.mainOverflow}}; padding: {{dim.mainPad}}; box-sizing: border-box; display: flex; flex-direction: column; gap: {{dim.gap}}">
+
+      <!-- Encabezado de página (escritorio) -->
+      <sc-if value="{{isDesk}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.02em">{{meta.title}}</h1>
+            <span style="font-size: 15px; color: #5F6778">{{meta.sub}}</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <div style="position: relative; display: flex; align-items: center; width: 300px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6778" stroke-width="2.2" stroke-linecap="round" style="position: absolute; left: 14px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              <input type="search" aria-label="Buscar" placeholder="Buscar alumno, grupo o folio" style="width: 100%; height: 44px; box-sizing: border-box; padding: 0 14px 0 42px; border: 1.5px solid #E3E6EE; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 14px; background: #FFFFFF">
+            </div>
+            <button type="button" aria-label="Notificaciones" style="width: 44px; height: 44px; border: 1.5px solid #E3E6EE; border-radius: 12px; background: #FFFFFF; color: #3A4152; display: inline-flex; align-items: center; justify-content: center; position: relative"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg><span style="position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 999px; background: #D92D20; box-shadow: 0 0 0 2px #FFFFFF"></span></button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ 2 · DASHBOARD ============ -->
+      <sc-if value="{{show.dash}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: {{dim.gap}}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax({{dim.kpiMin}}, 1fr)); gap: {{dim.gapS}}">
+            <button type="button" onClick="{{go.exp}}" style="text-align: left; padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px; font-family: 'Figtree', sans-serif; color: #141826; cursor: pointer">
+              <span style="font-size: 14px; font-weight: 600; color: #3A4152">Alumnos activos</span>
+              <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: {{dim.kpi}}; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">186</span>
+              <span style="font-size: 13px; font-weight: 700; color: #087443">+12 este mes</span>
+            </button>
+            <div style="padding: {{dim.cardPad}}; border-radius: 20px; background: {{c.p600}}; color: {{c.onP}}; display: flex; flex-direction: column; gap: 10px">
+              <span style="font-size: 14px; font-weight: 600">Ingresos de octubre</span>
+              <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: {{dim.kpi}}; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">$148,600</span>
+              <div style="height: 6px; border-radius: 999px; background: {{c.p500}}"><div style="width: 74%; height: 6px; border-radius: 999px; background: {{c.a500}}"></div></div>
+              <span style="font-size: 13px; font-weight: 600">74 % de lo esperado</span>
+            </div>
+            <button type="button" onClick="{{go.cuenta}}" style="text-align: left; padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px; font-family: 'Figtree', sans-serif; color: #141826; cursor: pointer">
+              <span style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; color: #3A4152">Morosos<span style="width: 10px; height: 10px; border-radius: 2px; background: #B42318"></span></span>
+              <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: {{dim.kpi}}; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #B42318">23</span>
+              <span style="font-size: 13px; font-weight: 600; color: #3A4152">$41,200 por cobrar</span>
+            </button>
+            <button type="button" onClick="{{go.exp}}" style="text-align: left; padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px; font-family: 'Figtree', sans-serif; color: #141826; cursor: pointer">
+              <span style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; color: #3A4152">En riesgo<span style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 11px solid #F97316"></span></span>
+              <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: {{dim.kpi}}; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #B93815">11</span>
+              <span style="font-size: 13px; font-weight: 600; color: #3A4152">Asistencia, adeudo o calificación</span>
+            </button>
+            <button type="button" onClick="{{go.agenda}}" style="text-align: left; padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px; font-family: 'Figtree', sans-serif; color: #141826; cursor: pointer">
+              <span style="font-size: 14px; font-weight: 600; color: #3A4152">Ocupación de horarios</span>
+              <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: {{dim.kpi}}; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">{{occ.pct}}</span>
+              <span style="font-size: 13px; font-weight: 600; color: #3A4152">{{occ.txt}}</span>
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax({{dim.colMin}}, 1fr)); gap: {{dim.gapS}}; align-items: start">
+            <div style="padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px"><h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700">Ocupación por horario</h2><span style="font-size: 12px; color: #5F6778">Cupo máx. 5</span></div>
+              <div style="display: grid; grid-template-columns: 44px repeat(6, minmax(0, 1fr)); gap: 4px; font-size: 12px">
+                <span></span>
+                <sc-for list="{{days}}" as="d" hint-placeholder-count="6"><span style="text-align: center; font-weight: 700; color: #5F6778">{{d.k}}</span></sc-for>
+              </div>
+              <sc-for list="{{heat}}" as="h" hint-placeholder-count="6">
+                <div style="display: grid; grid-template-columns: 44px repeat(6, minmax(0, 1fr)); gap: 4px; font-size: 12px">
+                  <span style="display: flex; align-items: center; color: #5F6778; font-variant-numeric: tabular-nums">{{h.label}}</span>
+                  <sc-for list="{{h.cells}}" as="x" hint-placeholder-count="6"><span style="height: 32px; border-radius: 8px; background: {{x.bg}}; color: {{x.fg}}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-variant-numeric: tabular-nums">{{x.txt}}</span></sc-for>
+                </div>
+              </sc-for>
+              <div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #3A4152">
+                <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #099250"></span>Con lugares</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #F97316"></span>Último lugar</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 2px; background: #B42318"></span>Lleno</span>
+              </div>
+            </div>
+
+            <div style="padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px"><h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700">Alumnos en riesgo</h2><button type="button" onClick="{{go.exp}}" style="border: 0; background: transparent; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; padding: 8px 0">Ver todos</button></div>
+              <sc-for list="{{risk}}" as="r" hint-placeholder-count="4">
+                <button type="button" onClick="{{go.exp}}" style="min-height: 56px; padding: 8px 10px; margin: 0 -10px; border: 0; border-radius: 12px; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; font-family: 'Figtree', sans-serif; color: #141826; cursor: pointer">
+                  <span style="width: 36px; height: 36px; border-radius: 999px; background: {{c.p100}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0">{{r.ini}}</span>
+                  <span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-size: 15px; font-weight: 600">{{r.name}}</span><span style="font-size: 13px; color: #5F6778">{{r.group}}</span></span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: {{r.lv.bg}}; color: {{r.lv.fg}}; font-size: 12px; font-weight: 700; white-space: nowrap">
+                    <sc-if value="{{r.lv.o}}" hint-placeholder-val="{{ false }}"><span style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #F97316"></span></sc-if>
+                    <sc-if value="{{r.lv.r}}" hint-placeholder-val="{{ true }}"><span style="width: 8px; height: 8px; border-radius: 2px; background: #B42318"></span></sc-if>
+                    {{r.lv.label}}
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px"><h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700">Morosos</h2><span style="font-size: 13px; color: #5F6778">23 alumnos</span></div>
+              <sc-for list="{{debt}}" as="r" hint-placeholder-count="4">
+                <button type="button" onClick="{{go.cuenta}}" style="min-height: 56px; padding: 8px 10px; margin: 0 -10px; border: 0; border-radius: 12px; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; font-family: 'Figtree', sans-serif; color: #141826; cursor: pointer">
+                  <span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-size: 15px; font-weight: 600">{{r.name}}</span><span style="font-size: 13px; color: #5F6778">{{r.concept}}</span></span>
+                  <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums">{{r.amount}}</span><span style="font-size: 12px; font-weight: 700; color: {{r.lv.fg}}">{{r.lv.label}}</span></span>
+                </button>
+              </sc-for>
+              <button type="button" style="margin-top: 8px; height: 44px; border: 0; border-radius: 12px; background: {{c.p50}}; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-13.5 7.8L3 21l1.3-4.4A9 9 0 1121 12z"></path></svg>Enviar recordatorios por WhatsApp</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ 3 · AGENDA ============ -->
+      <sc-if value="{{show.agenda}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: {{dim.gapS}}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 6px; align-items: center">
+              <button type="button" aria-label="Semana anterior" style="width: 40px; height: 40px; border: 1.5px solid #E3E6EE; border-radius: 12px; background: #FFFFFF; color: #3A4152; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg></button>
+              <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; padding: 0 6px">5 – 10 oct 2026</span>
+              <button type="button" aria-label="Semana siguiente" style="width: 40px; height: 40px; border: 1.5px solid #E3E6EE; border-radius: 12px; background: #FFFFFF; color: #3A4152; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #3A4152; align-items: center">
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #099250"></span>0–3 · con lugares</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #F97316"></span>4/5 · último</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 2px; background: #B42318"></span>5/5 · lleno</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: {{dim.gapS}}; align-items: flex-start">
+            <!-- Calendario semanal (escritorio) -->
+            <sc-if value="{{isDesk}}" hint-placeholder-val="{{ true }}">
+              <div style="flex: 999 1 640px; min-width: 0; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; overflow: hidden">
+                <div style="display: grid; grid-template-columns: 56px repeat(6, minmax(0, 1fr)); border-bottom: 1px solid #E3E6EE">
+                  <span></span>
+                  <sc-for list="{{days}}" as="d" hint-placeholder-count="6">
+                    <div style="padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; border-left: 1px solid #E3E6EE">
+                      <span style="font-size: 12px; font-weight: 700; color: #5F6778; text-transform: uppercase; letter-spacing: 0.06em">{{d.k}}</span>
+                      <span style="width: 32px; height: 32px; border-radius: 999px; background: {{d.headBg}}; color: {{d.headFg}}; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 15px">{{d.n}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display: grid; grid-template-columns: 56px repeat(6, minmax(0, 1fr))">
+                  <div style="display: flex; flex-direction: column">
+                    <sc-for list="{{hours}}" as="hh" hint-placeholder-count="12"><span style="height: 52px; box-sizing: border-box; padding: 4px 8px 0 0; text-align: right; font-size: 11px; color: #5F6778; font-variant-numeric: tabular-nums">{{hh}}</span></sc-for>
+                  </div>
+                  <sc-for list="{{days}}" as="d" hint-placeholder-count="6">
+                    <div style="position: relative; height: 624px; border-left: 1px solid #E3E6EE; background: {{d.colBg}}; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 51px, #EEF0F5 51px, #EEF0F5 52px)">
+                      <sc-if value="{{d.today}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; left: 0; right: 0; top: 87px; height: 2px; background: {{c.a500}}; z-index: 2"><span style="position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 999px; background: {{c.a500}}"></span></div></sc-if>
+                      <sc-for list="{{d.sessions}}" as="s" hint-placeholder-count="3">
+                        <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="position: absolute; left: 4px; right: 4px; top: {{s.top}}; height: {{s.hgt}}; box-sizing: border-box; padding: 6px 8px; border-radius: 10px; border: 1.5px solid {{s.border}}; box-shadow: {{s.shadow}}; background: {{s.lv.bg}}; color: #141826; display: flex; flex-direction: column; gap: 2px; text-align: left; overflow: hidden; font-family: 'Figtree', sans-serif; cursor: pointer">
+                          <span style="display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 11px; font-weight: 700; color: {{s.lv.fg}}">
+                            <span style="display: inline-flex; align-items: center; gap: 4px">
+                              <sc-if value="{{s.lv.g}}" hint-placeholder-val="{{ true }}"><span style="width: 8px; height: 8px; border-radius: 999px; background: #099250"></span></sc-if>
+                              <sc-if value="{{s.lv.o}}" hint-placeholder-val="{{ false }}"><span style="width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 8px solid #F97316"></span></sc-if>
+                              <sc-if value="{{s.lv.r}}" hint-placeholder-val="{{ false }}"><span style="width: 7px; height: 7px; border-radius: 2px; background: #B42318"></span></sc-if>
+                              {{s.seat}}
+                            </span>
+                            <span style="color: #5F6778; font-weight: 600">{{s.start}}</span>
+                          </span>
+                          <span style="font-size: 12px; font-weight: 700; line-height: 1.25">{{s.title}}</span>
+                          <span style="font-size: 11px; color: #3A4152">{{s.room}}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- Vista por día (móvil) -->
+            <sc-if value="{{isMob}}" hint-placeholder-val="{{ false }}">
+              <div style="width: 100%; display: flex; flex-direction: column; gap: 12px">
+                <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px">
+                  <sc-for list="{{days}}" as="d" hint-placeholder-count="6">
+                    <button type="button" onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" style="height: 60px; border: 1.5px solid {{d.chipBorder}}; border-radius: 14px; background: {{d.chipBg}}; color: {{d.chipFg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: 'Figtree', sans-serif; cursor: pointer; position: relative">
+                      <span style="font-size: 11px; font-weight: 700; text-transform: uppercase">{{d.k}}</span>
+                      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 800">{{d.n}}</span>
+                      <sc-if value="{{d.today}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 999px; background: {{c.a500}}"></span></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+                <sc-for list="{{daySessions}}" as="s" hint-placeholder-count="4">
+                  <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="display: flex; gap: 12px; align-items: stretch; padding: 12px; border-radius: 16px; border: 1.5px solid {{s.border}}; box-shadow: {{s.shadow}}; background: #FFFFFF; text-align: left; font-family: 'Figtree', sans-serif; color: #141826; cursor: pointer">
+                    <span style="width: 52px; display: flex; flex-direction: column; gap: 2px; font-variant-numeric: tabular-nums"><span style="font-size: 15px; font-weight: 700">{{s.start}}</span><span style="font-size: 12px; color: #5F6778">{{s.end}}</span></span>
+                    <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; font-weight: 700">{{s.title}}</span><span style="font-size: 13px; color: #5F6778">{{s.teacher}} · {{s.room}}</span></span>
+                    <span style="align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: {{s.lv.bg}}; color: {{s.lv.fg}}; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums">
+                      <sc-if value="{{s.lv.g}}" hint-placeholder-val="{{ true }}"><span style="width: 9px; height: 9px; border-radius: 999px; background: #099250"></span></sc-if>
+                      <sc-if value="{{s.lv.o}}" hint-placeholder-val="{{ false }}"><span style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #F97316"></span></sc-if>
+                      <sc-if value="{{s.lv.r}}" hint-placeholder-val="{{ false }}"><span style="width: 8px; height: 8px; border-radius: 2px; background: #B42318"></span></sc-if>
+                      {{s.seat}}
+                    </span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Detalle de sesión -->
+            <div style="flex: 1 1 300px; min-width: 0; padding: 20px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+                <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5F6778">Sesión seleccionada</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: {{sel.lv.bg}}; color: {{sel.lv.fg}}; font-size: 12px; font-weight: 800">{{sel.lv.label}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800">{{sel.title}}</h2>
+                <span style="font-size: 14px; color: #3A4152">{{sel.dayName}} · {{sel.start}}–{{sel.end}} · {{sel.room}}</span>
+                <span style="font-size: 14px; color: #3A4152">{{sel.teacher}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span style="font-size: 13px; font-weight: 700">Cupo {{sel.seat}}</span>
+                <div style="display: flex; gap: 8px">
+                  <sc-for list="{{sel.seats}}" as="z" hint-placeholder-count="5"><span style="flex: 1; height: 10px; border-radius: 999px; background: {{z.bg}}"></span></sc-for>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <sc-for list="{{sel.roster}}" as="m" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: center; gap: 10px; min-height: 40px">
+                    <span style="width: 30px; height: 30px; border-radius: 999px; background: {{c.p100}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">{{m.ini}}</span>
+                    <span style="font-size: 14px; font-weight: 600">{{m.name}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                <button type="button" onClick="{{go.lista}}" style="flex: 1; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer">Pase de lista</button>
+                <button type="button" disabled="{{sel.full}}" style="flex: 1; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: {{sel.addBg}}; color: {{sel.addFg}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700">{{sel.addLabel}}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ 4 · EXPEDIENTE ============ -->
+      <sc-if value="{{show.exp}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: {{dim.gapS}}">
+          <div style="padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 18px">
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+              <span style="width: 64px; height: 64px; border-radius: 20px; background: {{c.p100}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800">AL</span>
+              <div style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+                  <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800">Ana López</h2>
+                  <span style="display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border-radius: 999px; background: #EDFCF2; color: #087443; box-shadow: inset 0 0 0 1px #AAF0C4; font-size: 12px; font-weight: 700"><span style="width: 7px; height: 7px; border-radius: 999px; background: #16B364"></span>Activo</span>
+                </div>
+                <span style="font-size: 14px; color: #3A4152"><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">AI-2026-0147</span> · B1 Conversation · Lun/Mié 18:00 · [Teacher 1]</span>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                <button type="button" style="height: 44px; padding: 0 16px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700">Editar</button>
+                <button type="button" onClick="{{go.cuenta}}" style="height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer">Registrar pago</button>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px">
+              <div style="padding: 14px; border-radius: 14px; background: #F7F8FB; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600; color: #5F6778">Nivel</span><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800">B1 · Unit 7/12</span><div style="height: 6px; border-radius: 999px; background: {{c.p100}}"><div style="width: 58%; height: 6px; border-radius: 999px; background: {{c.p600}}"></div></div></div>
+              <div style="padding: 14px; border-radius: 14px; background: #F7F8FB; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600; color: #5F6778">Asistencia</span><span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #087443"><span style="width: 11px; height: 11px; border-radius: 999px; background: #099250"></span>94 %</span></div>
+              <div style="padding: 14px; border-radius: 14px; background: #F7F8FB; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600; color: #5F6778">Pagos</span><span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #B93815"><span style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 11px solid #F97316"></span>Vence 8 oct</span></div>
+              <div style="padding: 14px; border-radius: 14px; background: #F7F8FB; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600; color: #5F6778">Promedio</span><span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #087443"><span style="width: 11px; height: 11px; border-radius: 999px; background: #099250"></span>8.4</span></div>
+            </div>
+          </div>
+
+          <div role="tablist" aria-label="Secciones del expediente" style="display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: #EEF0F5; overflow-x: auto">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
+              <button type="button" role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" style="flex: 1 0 auto; height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: {{t.bg}}; color: {{t.fg}}; box-shadow: {{t.shadow}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; white-space: nowrap; cursor: pointer">{{t.label}}</button>
+            </sc-for>
+          </div>
+
+          <div style="padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 16px">
+            <sc-if value="{{tab.datos}}" hint-placeholder-val="{{ false }}">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 24px">
+                <sc-for list="{{fields}}" as="f" hint-placeholder-count="9">
+                  <div style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid #EEF0F5"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5F6778">{{f.k}}</span><span style="font-size: 15px; font-weight: 500">{{f.v}}</span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tab.pagos}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column">
+                <sc-for list="{{expPays}}" as="p" hint-placeholder-count="5">
+                  <div style="display: flex; align-items: center; gap: 12px; min-height: 60px; border-bottom: 1px solid #EEF0F5; flex-wrap: wrap; padding: 8px 0">
+                    <span style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">{{p.c}}</span><span style="font-size: 13px; color: #5F6778">{{p.d}}</span></span>
+                    <span style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums">{{p.amt}}</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: {{p.lv.bg}}; color: {{p.lv.fg}}; font-size: 12px; font-weight: 700; min-width: 84px; justify-content: center">{{p.lv.label}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tab.asis}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 14px">
+                <span style="font-size: 15px; color: #3A4152"><b style="color: #141826">15 de 16 sesiones</b> desde el 10 de agosto · 1 festivo no cuenta</span>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px">
+                  <sc-for list="{{attend}}" as="a" hint-placeholder-count="17">
+                    <div style="height: 64px; border-radius: 12px; background: {{a.bg}}; color: {{a.fg}}; border: 1.5px {{a.border}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px"><span style="font-size: 15px; font-weight: 800">{{a.mark}}</span><span style="font-size: 11px; font-weight: 600">{{a.d}}</span></div>
+                  </sc-for>
+                </div>
+                <span style="font-size: 12px; color: #5F6778">P = presente · A = ausente · F = festivo · Hoy pendiente de pase de lista</span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tab.eval}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 14px">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap"><span style="font-size: 15px; font-weight: 700">Periodo agosto – diciembre 2026</span><span style="font-size: 13px; color: #5F6778">Códigos del catálogo de la escuela</span></div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px">
+                  <sc-for list="{{evals}}" as="e" hint-placeholder-count="7">
+                    <div style="padding: 14px; border-radius: 16px; border: 1.5px {{e.border}}; background: {{e.bg}}; display: flex; flex-direction: column; gap: 8px">
+                      <span style="align-self: flex-start; height: 28px; min-width: 40px; padding: 0 8px; box-sizing: border-box; border-radius: 8px; background: {{c.p50}}; color: {{c.p700}}; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center">{{e.code}}</span>
+                      <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: {{e.fg}}; font-variant-numeric: tabular-nums">{{e.score}}</span>
+                      <span style="font-size: 12px; color: #5F6778">{{e.date}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <span style="font-size: 12px; color: #5F6778">Semáforo de calificación: 8.0+ verde · 6.0–7.9 naranja · menor a 6.0 rojo (configurable).</span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tab.docs}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column">
+                <sc-for list="{{docs}}" as="d" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: center; gap: 12px; min-height: 60px; border-bottom: 1px solid #EEF0F5; padding: 8px 0">
+                    <span style="width: 40px; height: 40px; border-radius: 12px; background: #F1F3F8; color: #3A4152; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"></path><path d="M14 3v5h5"></path></svg></span>
+                    <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; font-weight: 600">{{d.name}}</span><span style="font-size: 12px; font-weight: 700; color: {{d.lv.fg}}">{{d.lv.label}}</span></span>
+                    <button type="button" style="height: 40px; padding: 0 14px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700">{{d.action}}</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{tab.hist}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column">
+                <sc-for list="{{hist}}" as="h" hint-placeholder-count="7">
+                  <div style="display: flex; gap: 14px">
+                    <div style="display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: {{h.dot}}; margin-top: 4px; flex-shrink: 0"></span><span style="flex: 1; width: 2px; background: #E3E6EE"></span></div>
+                    <div style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 18px"><span style="font-size: 12px; font-weight: 700; color: #5F6778">{{h.d}}</span><span style="font-size: 15px">{{h.t}}</span></div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ 5 · PASE DE LISTA ============ -->
+      <sc-if value="{{show.lista}}" hint-placeholder-val="{{ false }}">
+        <div style="width: 100%; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px">
+          <div style="padding: 18px; border-radius: 20px; background: {{c.p600}}; color: {{c.onP}}; display: flex; flex-direction: column; gap: 10px">
+            <span style="font-size: 13px; font-weight: 700; opacity: 0.9">Hoy · Lun 5 oct · 18:00–19:30 · Aula 3</span>
+            <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800">B1 Conversation</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <span style="padding: 5px 10px; border-radius: 999px; background: {{c.p700}}; font-size: 13px; font-weight: 700">{{roll.present}} presentes</span>
+              <span style="padding: 5px 10px; border-radius: 999px; background: {{c.p700}}; font-size: 13px; font-weight: 700">{{roll.absent}} ausentes</span>
+              <span style="padding: 5px 10px; border-radius: 999px; background: {{c.a500}}; color: {{c.onA}}; font-size: 13px; font-weight: 800">{{roll.pending}} sin marcar</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span id="code-lbl" style="font-size: 14px; font-weight: 700">Código de evaluación de esta sesión</span>
+            <div role="group" aria-labelledby="code-lbl" style="display: flex; gap: 6px; flex-wrap: wrap">
+              <sc-for list="{{codes}}" as="k" hint-placeholder-count="8">
+                <button type="button" onClick="{{k.pick}}" aria-pressed="{{k.pressed}}" style="height: 40px; min-width: 48px; padding: 0 12px; border: 1.5px solid {{k.border}}; border-radius: 10px; background: {{k.bg}}; color: {{k.fg}}; font-family: {{k.font}}; font-size: 14px; font-weight: 700; cursor: pointer">{{k.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 14px; font-weight: 700">Alumnos (5/5)</span>
+            <button type="button" onClick="{{allPresent}}" style="height: 40px; padding: 0 4px; border: 0; background: transparent; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer">Marcar todos presentes</button>
+          </div>
+
+          <sc-for list="{{students}}" as="s" hint-placeholder-count="5">
+            <div style="padding: 14px; border-radius: 18px; background: #FFFFFF; border: 1.5px solid {{s.border}}; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; align-items: center; gap: 12px">
+                <span style="width: 40px; height: 40px; border-radius: 999px; background: {{c.p100}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0">{{s.ini}}</span>
+                <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 16px; font-weight: 700">{{s.name}}</span><span style="font-size: 12px; font-weight: 600; color: {{s.attFg}}">Asistencia {{s.att}}</span></span>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                <div role="group" aria-label="Asistencia de {{s.name}}" style="display: flex; gap: 6px; flex: 1 1 200px">
+                  <button type="button" onClick="{{s.setP}}" aria-pressed="{{s.pP}}" style="flex: 1; height: 48px; border: 1.5px solid {{s.pBorder}}; border-radius: 12px; background: {{s.pBg}}; color: {{s.pFg}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>Presente</button>
+                  <button type="button" onClick="{{s.setA}}" aria-pressed="{{s.aP}}" style="flex: 1; height: 48px; border: 1.5px solid {{s.aBorder}}; border-radius: 12px; background: {{s.aBg}}; color: {{s.aFg}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg>Ausente</button>
+                </div>
+                <sc-if value="{{s.showScore}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <label for="sc-{{s.i}}" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: {{c.p700}}">{{code}}</label>
+                    <input id="sc-{{s.i}}" type="number" inputmode="decimal" min="0" max="10" step="0.1" placeholder="0–10" aria-label="Calificación {{code}} de {{s.name}}" style="width: 84px; height: 48px; box-sizing: border-box; padding: 0 10px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 16px; text-align: center">
+                  </div>
+                </sc-if>
+                <sc-if value="{{s.absentNote}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #5F6778">Sin calificación</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+
+          <button type="button" onClick="{{saveRoll}}" style="height: 52px; border: 0; border-radius: 14px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 4px">Guardar pase de lista ({{roll.marked}}/5)</button>
+        </div>
+      </sc-if>
+
+      <!-- ============ 6 · ESTADO DE CUENTA ============ -->
+      <sc-if value="{{show.cuenta}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: {{dim.gapS}}">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+            <span style="width: 44px; height: 44px; border-radius: 999px; background: {{c.p100}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800">DM</span>
+            <div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800">Diego Méndez</span><span style="font-size: 13px; color: #5F6778"><span style="font-family: 'JetBrains Mono', monospace">AI-2026-0152</span> · A2 Teens · Mar/Jue 17:00</span></div>
+          </div>
+
+          <div role="alert" style="padding: 16px; border-radius: 16px; background: #FEF3F2; border: 1px solid #FECDCA; display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap">
+            <span style="width: 32px; height: 32px; border-radius: 8px; background: #B42318; color: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span>
+            <div style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 800; color: #B42318">Pago vencido</span><span style="font-size: 14px; color: #141826">Colegiatura de septiembre · <b>$1,450</b> · venció el 10 de sep (hace 25 días).</span></div>
+            <button type="button" style="height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: #D92D20; color: #FFFFFF; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700">Pagar ahora</button>
+          </div>
+          <div role="status" style="padding: 16px; border-radius: 16px; background: #FFF4ED; border: 1px solid #FFD6AE; display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap">
+            <span style="width: 32px; height: 32px; border-radius: 999px; background: #F97316; color: #141826; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 7v6M12 17v.01"></path></svg></span>
+            <div style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 800; color: #B93815">Próximo vencimiento</span><span style="font-size: 14px; color: #141826">Colegiatura de octubre · <b>$1,450</b> · vence el 8 de oct (en 3 días).</span></div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax({{dim.kpiMin}}, 1fr)); gap: 10px">
+            <div style="padding: 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; font-weight: 600; color: #5F6778">Saldo pendiente</span><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; color: #B42318; font-variant-numeric: tabular-nums">$2,900</span></div>
+            <div style="padding: 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; font-weight: 600; color: #5F6778">Próximo pago</span><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800">8 oct</span></div>
+            <div style="padding: 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; font-weight: 600; color: #5F6778">Último pago</span><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums">6 ago</span></div>
+            <div style="padding: 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; font-weight: 600; color: #5F6778">Semáforo</span><span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: #B42318"><span style="width: 12px; height: 12px; border-radius: 2px; background: #B42318"></span>Moroso</span></div>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button type="button" style="flex: 1 1 160px; height: 48px; padding: 0 18px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Pagar en línea</button>
+            <button type="button" style="flex: 1 1 160px; height: 48px; padding: 0 18px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Subir comprobante</button>
+            <button type="button" style="flex: 0 1 auto; height: 48px; padding: 0 14px; border: 0; border-radius: 12px; background: transparent; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Descargar PDF</button>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: {{dim.gapS}}; align-items: flex-start">
+            <div style="flex: 999 1 520px; min-width: 0; padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 8px">
+              <h2 style="margin: 0 0 4px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700">Movimientos</h2>
+              <sc-if value="{{isDesk}}" hint-placeholder-val="{{ true }}">
+                <div style="display: grid; grid-template-columns: 70px minmax(0, 1fr) 90px 90px 90px 104px; gap: 12px; padding: 8px 0; border-bottom: 1px solid #E3E6EE; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5F6778"><span>Fecha</span><span>Concepto</span><span style="text-align: right">Cargo</span><span style="text-align: right">Abono</span><span style="text-align: right">Saldo</span><span>Estado</span></div>
+                <sc-for list="{{moves}}" as="m" hint-placeholder-count="6">
+                  <div style="display: grid; grid-template-columns: 70px minmax(0, 1fr) 90px 90px 90px 104px; gap: 12px; padding: 12px 0; border-bottom: 1px solid #EEF0F5; font-size: 14px; align-items: center; font-variant-numeric: tabular-nums">
+                    <span style="color: #5F6778">{{m.f}}</span><span style="font-weight: 600">{{m.c}}</span><span style="text-align: right">{{m.cargo}}</span><span style="text-align: right; color: #087443; font-weight: 600">{{m.abono}}</span><span style="text-align: right; font-weight: 700">{{m.saldo}}</span>
+                    <span style="justify-self: start; padding: 4px 10px; border-radius: 999px; background: {{m.lv.bg}}; color: {{m.lv.fg}}; font-size: 12px; font-weight: 700">{{m.lv.label}}</span>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{isMob}}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{moves}}" as="m" hint-placeholder-count="6">
+                  <div style="display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #EEF0F5; align-items: center">
+                    <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; font-weight: 600">{{m.c}}</span><span style="font-size: 12px; color: #5F6778">{{m.f}} · saldo {{m.saldo}}</span></span>
+                    <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px"><span style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{m.amtFg}}">{{m.amt}}</span><span style="padding: 2px 8px; border-radius: 999px; background: {{m.lv.bg}}; color: {{m.lv.fg}}; font-size: 11px; font-weight: 700">{{m.lv.label}}</span></span>
+                  </div>
+                </sc-for>
+              </sc-if>
+            </div>
+
+            <div style="flex: 1 1 300px; min-width: 0; padding: {{dim.cardPad}}; border-radius: 20px; background: #FFFFFF; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+                <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700">Alertas de cobranza</h2>
+                <span style="width: 44px; height: 26px; border-radius: 999px; background: {{c.p600}}; position: relative; display: block; flex-shrink: 0" aria-label="Recordatorios automáticos activos"><span style="position: absolute; top: 3px; left: 21px; width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF"></span></span>
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <sc-for list="{{dun}}" as="h" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 12px">
+                    <div style="display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: {{h.dot}}; box-shadow: inset 0 0 0 2px {{h.ring}}; margin-top: 4px; flex-shrink: 0"></span><span style="flex: 1; width: 2px; background: #E3E6EE"></span></div>
+                    <div style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 16px"><span style="font-size: 12px; font-weight: 700; color: #5F6778">{{h.d}}</span><span style="font-size: 14px; font-weight: 600">{{h.t}}</span><span style="font-size: 12px; color: #5F6778">{{h.s}}</span></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+
+    <!-- Navegación inferior (móvil) -->
+    <sc-if value="{{isMob}}" hint-placeholder-val="{{ false }}">
+      <nav aria-label="Principal" style="height: 72px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E3E6EE; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 0 4px">
+        <sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+          <button type="button" onClick="{{n.go}}" aria-current="{{n.cur}}" style="border: 0; background: transparent; color: {{n.mFg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: 'Figtree', sans-serif; font-size: 11px; font-weight: {{n.fw}}; cursor: pointer">
+            <span style="width: 52px; height: 30px; border-radius: 999px; background: {{n.mBg}}; display: flex; align-items: center; justify-content: center">
+              <sc-if value="{{n.iDash}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"></rect><rect x="14" y="3" width="7" height="5" rx="2"></rect><rect x="14" y="12" width="7" height="9" rx="2"></rect><rect x="3" y="16" width="7" height="5" rx="2"></rect></svg></sc-if>
+              <sc-if value="{{n.iAgenda}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg></sc-if>
+              <sc-if value="{{n.iExp}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"></path></svg></sc-if>
+              <sc-if value="{{n.iLista}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"></rect><path d="M9 4V3h6v1M9 12.5l2 2 4-4"></path></svg></sc-if>
+              <sc-if value="{{n.iCuenta}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg></sc-if>
+            </span>
+            {{n.short}}
+          </button>
+        </sc-for>
+      </nav>
+    </sc-if>
+  </div>
+</sc-if>
+
+<!-- Toast -->
+<sc-if value="{{toast.show}}" hint-placeholder-val="{{ false }}">
+  <div style="position: absolute; left: 16px; right: 16px; bottom: {{dim.toastBottom}}; display: flex; justify-content: {{dim.toastJustify}}; pointer-events: none; z-index: 10">
+    <div role="status" style="pointer-events: auto; width: 100%; max-width: 380px; padding: 14px 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid {{toast.ring}}; box-shadow: 0 24px 48px -12px rgba(20,24,38,0.28); display: flex; gap: 12px; align-items: center">
+      <span style="width: 28px; height: 28px; border-radius: 999px; background: {{toast.bg}}; color: {{toast.fg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; font-size: 15px">{{toast.icon}}</span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 700">{{toast.title}}</span><span style="font-size: 13px; color: #3A4152">{{toast.body}}</span></span>
+      <button type="button" onClick="{{closeToast}}" aria-label="Cerrar aviso" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #5F6778; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"school":{"editor":"enum","default":"a","options":["a","b"],"section":"Prototipo"},"device":{"editor":"enum","default":"desktop","options":["desktop","mobile"],"section":"Prototipo"},"start":{"editor":"enum","default":"login","options":["login","dash","agenda","exp","lista","cuenta"],"section":"Prototipo"},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  palette(p, a) {
+    function hx(h){h=String(h||'#000000').replace('#','');if(h.length===3){h=h.split('').map(function(x){return x+x;}).join('');}var n=parseInt(h,16);if(isNaN(n)){n=0;}return [(n>>16)&255,(n>>8)&255,n&255];}
+    function toHex(r){return '#'+r.map(function(v){v=Math.round(Math.max(0,Math.min(255,v)));return (v<16?'0':'')+v.toString(16);}).join('').toUpperCase();}
+    function mix(x,y,t){var A=hx(x),B=hx(y);return toHex(A.map(function(v,i){return v+(B[i]-v)*t;}));}
+    function lum(h){var q=hx(h).map(function(v){v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*q[0]+0.7152*q[1]+0.0722*q[2];}
+    function on(bg){return (1.05/(lum(bg)+0.05))>=4.5?'#FFFFFF':'#141826';}
+    var steps=[['50','#FFFFFF',0.92],['100','#FFFFFF',0.84],['200','#FFFFFF',0.68],['300','#FFFFFF',0.46],['400','#FFFFFF',0.22],['500',null,0],['600','#000000',0.14],['700','#000000',0.30],['800','#000000',0.45],['900','#000000',0.60]];
+    var c={};
+    function sc(b,k){steps.forEach(function(s){c[k+s[0]]=s[1]?mix(b,s[1],s[2]):toHex(hx(b));});}
+    sc(p,'p'); sc(a,'a');
+    c.onP=on(c.p600); c.onA=on(c.a500);
+    return c;
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var isB = this.props.school === 'b';
+    var mob = this.props.device === 'mobile';
+    var school = isB
+      ? {name:'Maple English School',short:'Maple English',mono:'M',tag:'Speak with confidence.',logoR:'999px',p:'#8E2A5C',a:'#2EC4B6'}
+      : {name:'Academia Horizonte',short:'Academia Horizonte',mono:'H',tag:'Inglés para la vida, desde la primera clase.',logoR:'14px',p:'#4361EE',a:'#FFC23D'};
+    var c = this.palette(school.p, school.a);
+    var screen = st.screen || this.props.start || 'login';
+
+    var dim = mob
+      ? {w:'390px',h:'844px',minh:'844px',loginDir:'column',brandFlex:'0 0 auto',brandPad:'28px 24px 36px',brandTitle:'24px',logo:'52px',formAlign:'flex-start',formPad:'28px 20px 32px',h1:'26px',appDir:'column',mainOverflow:'auto',mainPad:'16px 16px 24px',gap:'16px',gapS:'12px',kpiMin:'150px',colMin:'300px',cardPad:'16px',kpi:'28px',toastBottom:'88px',toastJustify:'center'}
+      : {w:'1440px',h:'auto',minh:'1300px',loginDir:'row',brandFlex:'0 0 560px',brandPad:'56px',brandTitle:'44px',logo:'64px',formAlign:'center',formPad:'48px',h1:'34px',appDir:'row',mainOverflow:'visible',mainPad:'32px 40px 48px',gap:'24px',gapS:'16px',kpiMin:'190px',colMin:'320px',cardPad:'22px',kpi:'34px',toastBottom:'32px',toastJustify:'flex-end'};
+
+    function go(s){ return function(){ self.setState({screen:s, toast:null}); }; }
+    var goMap = {login:go('login'),dash:go('dash'),agenda:go('agenda'),exp:go('exp'),lista:go('lista'),cuenta:go('cuenta')};
+
+    var LV = {g:{bg:'#EDFCF2',fg:'#087443',ring:'#AAF0C4'},o:{bg:'#FFF4ED',fg:'#B93815',ring:'#FFD6AE'},r:{bg:'#FEF3F2',fg:'#B42318',ring:'#FECDCA'},n:{bg:'#F1F3F8',fg:'#5F6778',ring:'#E3E6EE'}};
+    function lv(k,label){var L=LV[k];return {bg:L.bg,fg:L.fg,ring:L.ring,g:k==='g',o:k==='o',r:k==='r',label:label};}
+    function ini(n){return n.split(' ').map(function(w){return w[0];}).slice(0,2).join('');}
+
+    var metaMap = {
+      dash:{title:'Dashboard',sub:'Lunes 5 de octubre · resumen de la academia',role:'Administración',user:'[Tu nombre]',ini:'AD'},
+      agenda:{title:'Agenda',sub:'Sesiones de la semana · cupo máximo 5 alumnos por grupo',role:'Administración',user:'[Tu nombre]',ini:'AD'},
+      exp:{title:'Expediente del alumno',sub:'Alumnos › Ana López',role:'Administración',user:'[Tu nombre]',ini:'AD'},
+      lista:{title:'Pase de lista',sub:'Vista del teacher · pensada para celular',role:'Teacher',user:'[Teacher 1]',ini:'T1'},
+      cuenta:{title:'Estado de cuenta',sub:'Vista del alumno o tutor',role:'Alumno',user:'Diego Méndez',ini:'DM'},
+      login:{title:'',sub:'',role:'',user:'',ini:''}
+    };
+    var meta = metaMap[screen];
+
+    var navDef = [['dash','Dashboard','Inicio'],['agenda','Agenda','Agenda'],['exp','Expediente','Alumno'],['lista','Pase de lista','Lista'],['cuenta','Estado de cuenta','Cuenta']];
+    var nav = navDef.map(function(n){
+      var on = screen === n[0];
+      return {label:n[1],short:n[2],go:goMap[n[0]],cur:on?'page':'false',bg:on?c.p50:'transparent',fg:on?c.p700:'#3A4152',fw:on?'800':'600',mBg:on?c.p100:'transparent',mFg:on?c.p800:'#5F6778',
+        iDash:n[0]==='dash',iAgenda:n[0]==='agenda',iExp:n[0]==='exp',iLista:n[0]==='lista',iCuenta:n[0]==='cuenta'};
+    });
+
+    /* ---------- Agenda ---------- */
+    var T1='[Teacher 1]',T2='[Teacher 2]',T3='[Teacher 3]';
+    var raw = [
+      [0,9,10.5,'A2 Adultos',T1,'Aula 1',3],[0,16,17,'Kids A1',T2,'Aula 2',4],[0,17,18,'A2 Teens',T2,'Aula 2',3],[0,18,19.5,'B1 Conversation',T1,'Aula 3',5],
+      [1,9,10.5,'B2 Business',T3,'Aula 1',2],[1,16,17,'Kids A2',T2,'Aula 2',3],[1,17,18.5,'A2 Teens',T2,'Aula 2',5],[1,19,20.5,'B2 Adultos',T3,'Aula 3',4],
+      [2,9,10.5,'A2 Adultos',T1,'Aula 1',3],[2,16,17,'Kids A1',T2,'Aula 2',4],[2,18,19.5,'B1 Conversation',T1,'Aula 3',5],
+      [3,16,17,'Kids A2',T2,'Aula 2',3],[3,17,18.5,'A2 Teens',T2,'Aula 2',5],[3,19,20.5,'B2 Adultos',T3,'Aula 3',2],
+      [4,17,18,'Speaking Club',T1,'Aula 3',1],[4,18,20,'TOEFL Prep',T3,'Aula 1',4],
+      [5,9,11,'Sabatino A1',T1,'Aula 1',5],[5,11,13,'Sabatino B1',T3,'Aula 3',3]
+    ];
+    function tm(h){var H=Math.floor(h),m=Math.round((h-H)*60);return H+':'+(m<10?'0':'')+m;}
+    function cupo(n){return n>=5?lv('r','Lleno'):(n===4?lv('o','Último lugar'):lv('g','Con lugares'));}
+    var selId = st.sel == null ? 3 : st.sel;
+    var dayIdx = st.day == null ? 0 : st.day;
+    var dayNames = ['Lunes 5','Martes 6','Miércoles 7','Jueves 8','Viernes 9','Sábado 10'];
+    var pool = ['Sofía Ramírez','Diego Méndez','Mateo García','Camila Vega','Iker Salazar','Paola Jiménez','Javier Flores'];
+    var b1 = ['Ana López','Regina Torres','Carlos Ruiz','Fernanda Ortiz','Luis Navarro'];
+    var sessions = raw.map(function(r,i){
+      var on = i === selId;
+      return {id:i,d:r[0],title:r[3],teacher:r[4],room:r[5],n:r[6],start:tm(r[1]),end:tm(r[2]),seat:r[6]+'/5',lv:cupo(r[6]),
+        top:((r[1]-9)*52+2)+'px',hgt:((r[2]-r[1])*52-4)+'px',pressed:on?'true':'false',
+        border:on?c.p600:cupo(r[6]).ring,shadow:on?('0 0 0 3px '+c.p200):'none',
+        pick:function(){self.setState({sel:i});}};
+    });
+    var s0 = sessions[selId];
+    var roster = (s0.title.indexOf('B1 Conversation')===0 ? b1 : pool.slice(selId % 3)).slice(0, s0.n).map(function(n){return {name:n,ini:ini(n)};});
+    var seats = [0,1,2,3,4].map(function(k){return {bg: k < s0.n ? c.p600 : '#E3E6EE'};});
+    var sel = {title:s0.title,teacher:s0.teacher,room:s0.room,start:s0.start,end:s0.end,seat:s0.seat,lv:s0.lv,dayName:dayNames[s0.d],roster:roster,seats:seats,
+      full:s0.n>=5,addBg:s0.n>=5?'#F1F3F8':c.p50,addFg:s0.n>=5?'#8C93A3':c.p700,addLabel:s0.n>=5?'Lista de espera':'Inscribir alumno'};
+    var days = ['Lun','Mar','Mié','Jue','Vie','Sáb'].map(function(k,i){
+      var today = i===0, on = i===dayIdx;
+      return {k:k,n:5+i,today:today,headBg:today?c.p600:'transparent',headFg:today?c.onP:'#141826',colBg:today?c.p50:'#FFFFFF',
+        sessions:sessions.filter(function(s){return s.d===i;}),
+        pressed:on?'true':'false',chipBg:on?c.p600:'#FFFFFF',chipFg:on?c.onP:'#141826',chipBorder:on?c.p600:'#E3E6EE',
+        pick:function(){var first=sessions.filter(function(s){return s.d===i;})[0];self.setState({day:i,sel:first?first.id:selId});}};
+    });
+    var daySessions = sessions.filter(function(s){return s.d===dayIdx;});
+    var hours = []; for (var h=9; h<21; h++) hours.push(h+':00');
+    var seatsTotal = raw.length*5, enrolled = raw.reduce(function(t,r){return t+r[6];},0);
+    var occ = {pct:Math.round(enrolled*100/seatsTotal)+' %',txt:enrolled+' de '+seatsTotal+' lugares'};
+    var heat = [9,11,16,17,18,19].map(function(hh){
+      return {label:hh+':00',cells:[0,1,2,3,4,5].map(function(d){
+        var r = raw.filter(function(x){return x[0]===d && x[1]===hh;})[0];
+        if(!r) return {txt:'—',bg:'#F7F8FB',fg:'#8C93A3'};
+        var L = cupo(r[6]); return {txt:r[6]+'/5',bg:L.bg,fg:L.fg};
+      })};
+    });
+
+    /* ---------- Dashboard ---------- */
+    var risk = [
+      {name:'Mateo García',group:'Kids A1 · asistencia 68 %',lv:lv('r','Alto')},
+      {name:'Paola Jiménez',group:'B2 Adultos · 3 faltas seguidas',lv:lv('r','Alto')},
+      {name:'Diego Méndez',group:'A2 Teens · pago vencido',lv:lv('o','Medio')},
+      {name:'Iker Salazar',group:'A2 Adultos · SP 5.8',lv:lv('o','Medio')}
+    ].map(function(r){r.ini=ini(r.name);return r;});
+    var debt = [
+      {name:'Diego Méndez',concept:'Colegiatura septiembre',amount:'$1,450',lv:lv('r','25 días')},
+      {name:'Mateo García',concept:'Colegiatura septiembre',amount:'$1,450',lv:lv('r','25 días')},
+      {name:'Camila Vega',concept:'Libro B1',amount:'$680',lv:lv('o','4 días')},
+      {name:'Javier Flores',concept:'Colegiatura octubre (parcial)',amount:'$725',lv:lv('o','2 días')}
+    ];
+
+    /* ---------- Expediente ---------- */
+    var tabKey = st.tab || 'eval';
+    var tabs = [['datos','Datos'],['pagos','Pagos'],['asis','Asistencia'],['eval','Evaluaciones'],['docs','Documentos'],['hist','Historial']].map(function(t){
+      var on = tabKey===t[0];
+      return {label:t[1],sel:on?'true':'false',bg:on?'#FFFFFF':'transparent',fg:on?'#141826':'#3A4152',shadow:on?'0 1px 2px rgba(20,24,38,0.12)':'none',pick:function(){self.setState({tab:t[0]});}};
+    });
+    var tab = {datos:tabKey==='datos',pagos:tabKey==='pagos',asis:tabKey==='asis',eval:tabKey==='eval',docs:tabKey==='docs',hist:tabKey==='hist'};
+    var fields = [
+      {k:'Fecha de nacimiento',v:'[DD/MM/AAAA]'},{k:'Teléfono',v:'[246 000 0000]'},{k:'Correo',v:'ana.lopez@correo.mx'},
+      {k:'Tutor',v:'[Nombre del tutor]'},{k:'WhatsApp del tutor',v:'[246 000 0000]'},{k:'Inscripción',v:'4 de agosto de 2026'},
+      {k:'Examen de ubicación',v:'B1 · 4 ago 2026'},{k:'Grupo',v:'B1 Conversation · Lun/Mié 18:00'},{k:'Teacher',v:'[Teacher 1]'}
+    ];
+    var expPays = [
+      {c:'Colegiatura octubre',d:'Vence 8 oct',amt:'$1,450',lv:lv('o','Por vencer')},
+      {c:'Colegiatura septiembre',d:'Pagado 7 sep · transferencia',amt:'$1,450',lv:lv('g','Pagado')},
+      {c:'Colegiatura agosto',d:'Pagado 4 ago · efectivo',amt:'$1,450',lv:lv('g','Pagado')},
+      {c:'Libro B1',d:'Pagado 4 ago',amt:'$680',lv:lv('g','Pagado')},
+      {c:'Inscripción 2026',d:'Pagado 4 ago',amt:'$900',lv:lv('g','Pagado')}
+    ];
+    var attDates = ['10 ago','12 ago','17 ago','19 ago','24 ago','26 ago','31 ago','2 sep','7 sep','9 sep','14 sep','16 sep','21 sep','23 sep','28 sep','30 sep','5 oct'];
+    var attend = attDates.map(function(d){
+      if(d==='26 ago') return {d:d,mark:'A',bg:'#FEF3F2',fg:'#B42318',border:'solid #FECDCA'};
+      if(d==='16 sep') return {d:d,mark:'F',bg:'#F7F8FB',fg:'#5F6778',border:'solid #E3E6EE'};
+      if(d==='5 oct') return {d:'Hoy',mark:'·',bg:'#FFFFFF',fg:c.p700,border:'dashed '+c.p300};
+      return {d:d,mark:'P',bg:'#EDFCF2',fg:'#087443',border:'solid #AAF0C4'};
+    });
+    function ev(code,score,date){
+      if(score===null) return {code:code,score:'—',date:date,fg:'#8C93A3',bg:'#FFFFFF',border:'dashed #CBD0DB'};
+      var k = score>=8?'g':(score>=6?'o':'r');
+      return {code:code,score:score.toFixed(1),date:date,fg:LV[k].fg,bg:'#FFFFFF',border:'solid #E3E6EE'};
+    }
+    var evals = [ev('1P',8.5,'12 sep · [Teacher 1]'),ev('2P',null,'Programado 14 nov'),ev('M',9.0,'19 sep · [Teacher 1]'),ev('WS',7.4,'26 sep · [Teacher 1]'),ev('SP',9.0,'28 sep · [Teacher 1]'),ev('WP',8.0,'1 oct · [Teacher 1]'),ev('PR',null,'Entrega 28 nov')];
+    var docs = [
+      {name:'Contrato de inscripción firmado',lv:lv('g','Completo'),action:'Ver'},
+      {name:'Identificación del tutor',lv:lv('g','Completo'),action:'Ver'},
+      {name:'Examen de ubicación (B1)',lv:lv('g','Completo'),action:'Ver'},
+      {name:'Comprobante de domicilio',lv:lv('r','Falta'),action:'Subir'}
+    ];
+    var hist = [
+      {d:'1 oct',t:'Calificación WP 8.0 registrada',dot:c.p500},
+      {d:'1 oct',t:'Recordatorio de pago de octubre enviado por WhatsApp',dot:'#F97316'},
+      {d:'28 sep',t:'Calificación SP 9.0 registrada',dot:c.p500},
+      {d:'7 sep',t:'Pago de colegiatura de septiembre · $1,450',dot:'#099250'},
+      {d:'26 ago',t:'Falta registrada por [Teacher 1]',dot:'#B42318'},
+      {d:'17 ago',t:'Cambio de grupo: B1 Sabatino → B1 Lun/Mié 18:00',dot:'#8C93A3'},
+      {d:'4 ago',t:'Inscripción y examen de ubicación (resultado B1)',dot:c.a500}
+    ];
+
+    /* ---------- Pase de lista ---------- */
+    var att = st.att || {0:'p',1:'p',4:'a'};
+    var code = st.code === undefined ? 'SP' : st.code;
+    var codeList = ['Ninguno','1P','2P','M','WS','SP','WP','PR'];
+    var codes = codeList.map(function(k){
+      var val = k==='Ninguno' ? '' : k; var on = code===val;
+      return {label:k,pressed:on?'true':'false',bg:on?c.p600:'#FFFFFF',fg:on?c.onP:'#141826',border:on?c.p600:'#CBD0DB',
+        font:k==='Ninguno'?"'Figtree', sans-serif":"'JetBrains Mono', monospace",pick:function(){self.setState({code:val});}};
+    });
+    var pcts = ['94 %','91 %','88 %','96 %','72 %'];
+    var students = b1.map(function(n,i){
+      var m = att[i];
+      function setTo(v){return function(){var na={}; for(var k in att){na[k]=att[k];} na[i]=v; self.setState({att:na});};}
+      return {i:i,name:n,ini:ini(n),att:pcts[i],attFg:i===4?'#B42318':'#087443',
+        pP:m==='p'?'true':'false',aP:m==='a'?'true':'false',
+        pBg:m==='p'?'#099250':'#FFFFFF',pFg:m==='p'?'#FFFFFF':'#141826',pBorder:m==='p'?'#099250':'#CBD0DB',
+        aBg:m==='a'?'#B42318':'#FFFFFF',aFg:m==='a'?'#FFFFFF':'#141826',aBorder:m==='a'?'#B42318':'#CBD0DB',
+        border:m?'#E3E6EE':c.p300,
+        showScore:m==='p' && code!=='',absentNote:m==='a' && code!=='',setP:setTo('p'),setA:setTo('a')};
+    });
+    var present=0, absent=0; for (var k2=0;k2<5;k2++){ if(att[k2]==='p')present++; if(att[k2]==='a')absent++; }
+    var roll = {present:present,absent:absent,pending:5-present-absent,marked:present+absent};
+
+    /* ---------- Estado de cuenta ---------- */
+    var moves = [
+      {f:'01 oct',c:'Colegiatura octubre',cargo:'$1,450',abono:'',saldo:'$2,900',amt:'+$1,450',amtFg:'#141826',lv:lv('o','Por vencer')},
+      {f:'01 sep',c:'Colegiatura septiembre',cargo:'$1,450',abono:'',saldo:'$1,450',amt:'+$1,450',amtFg:'#141826',lv:lv('r','Vencido')},
+      {f:'06 ago',c:'Pago · transferencia',cargo:'',abono:'$1,450',saldo:'$0',amt:'−$1,450',amtFg:'#087443',lv:lv('g','Aplicado')},
+      {f:'01 ago',c:'Colegiatura agosto',cargo:'$1,450',abono:'',saldo:'$1,450',amt:'+$1,450',amtFg:'#141826',lv:lv('g','Pagado')},
+      {f:'15 jul',c:'Pago · efectivo en recepción',cargo:'',abono:'$680',saldo:'$0',amt:'−$680',amtFg:'#087443',lv:lv('g','Aplicado')},
+      {f:'15 jul',c:'Libro A2 Teens',cargo:'$680',abono:'',saldo:'$680',amt:'+$680',amtFg:'#141826',lv:lv('g','Pagado')}
+    ];
+    var dun = [
+      {d:'7 oct · programado',t:'Recordatorio automático de octubre',s:'WhatsApp al tutor',dot:'#FFFFFF',ring:c.p500},
+      {d:'3 oct',t:'Llamada de recepción',s:'Promesa de pago para el 7 oct',dot:'#F97316',ring:'#F97316'},
+      {d:'30 sep',t:'Segundo aviso de adeudo',s:'WhatsApp · leído',dot:'#B42318',ring:'#B42318'},
+      {d:'11 sep',t:'Aviso de pago vencido',s:'WhatsApp y correo · entregado',dot:'#B42318',ring:'#B42318'}
+    ];
+
+    /* ---------- Toast ---------- */
+    var tst = st.toast;
+    var toast = tst ? {show:true,title:tst.title,body:tst.body,icon:tst.ok?'✓':'!',bg:tst.ok?'#EDFCF2':'#FFF4ED',fg:tst.ok?'#099250':'#E2570B',ring:tst.ok?'#AAF0C4':'#FFD6AE'} : {show:false};
+
+    return {
+      c:c, school:school, dim:dim, meta:meta, nav:nav, go:goMap,
+      isDesk:!mob, isMob:mob,
+      show:{login:screen==='login',app:screen!=='login',dash:screen==='dash',agenda:screen==='agenda',exp:screen==='exp',lista:screen==='lista',cuenta:screen==='cuenta'},
+      days:days, hours:hours, daySessions:daySessions, sel:sel, occ:occ, heat:heat, risk:risk, debt:debt,
+      tabs:tabs, tab:tab, fields:fields, expPays:expPays, attend:attend, evals:evals, docs:docs, hist:hist,
+      codes:codes, code:code, students:students, roll:roll,
+      allPresent:function(){self.setState({att:{0:'p',1:'p',2:'p',3:'p',4:'p'}});},
+      saveRoll:function(){
+        if (roll.pending>0) self.setState({toast:{ok:false,title:'Faltan '+roll.pending+' por marcar',body:'Marca Presente o Ausente a todos para guardar.'}});
+        else self.setState({toast:{ok:true,title:'Pase de lista guardado',body:roll.present+' presentes · '+roll.absent+' ausentes'+(code?(' · código '+code):'')}});
+      },
+      closeToast:function(){self.setState({toast:null});},
+      moves:moves, dun:dun, toast:toast
+    };
+  }
+}
+</script>
+</body>
+</html>

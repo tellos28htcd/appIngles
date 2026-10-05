@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>AppIngles · Modales, toasts y estados</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3A4152}a:hover{color:#141826}
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+@keyframes ai-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 1420px; box-sizing: border-box; padding: 72px 80px 96px; background: #FFFFFF; font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: #141826; display: flex; flex-direction: column; gap: 48px">
+
+  <header style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{c.p700}}">Retroalimentación</span>
+    <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; letter-spacing: -0.025em">Modales, toasts y estados de pantalla</h1>
+  </header>
+
+  <section style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px">
+    <div style="border-radius: 24px; background: rgba(20,24,38,0.45); padding: 48px; display: flex; align-items: center; justify-content: center; min-height: 460px">
+      <div role="dialog" aria-modal="true" aria-labelledby="m-title" style="width: 480px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 24px 48px -12px rgba(20,24,38,0.32); padding: 28px; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+          <span style="width: 48px; height: 48px; border-radius: 14px; background: #FEF3F2; color: #D92D20; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 16.5h-19z"></path><path d="M12 10v4M12 17v.01"></path></svg></span>
+          <button type="button" aria-label="Cerrar" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #5F6778; display: inline-flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h2 id="m-title" style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 700">¿Dar de baja a Emiliano Cruz?</h2>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3A4152">Dejará su lugar en el grupo A2 Mar/Jue 17:00. Su historial, pagos y evaluaciones se conservan en modo de solo lectura.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <label for="mb" style="font-size: 14px; font-weight: 600">Motivo de la baja</label>
+          <select id="mb" style="height: 44px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 15px; background: #FFFFFF"><option>Cambio de horario</option><option>Motivos económicos</option><option>Se mudó</option><option>Otro</option></select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px">
+          <button type="button" style="height: 44px; padding: 0 18px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Cancelar</button>
+          <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #D92D20; color: #FFFFFF; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Confirmar baja</button>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700">Modal</h2>
+      <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #3A4152">Ancho 480 (sm) / 640 (md) / 880 (lg). Radio 24, sombra pop, fondo ink-900 al 45 %. En móvil se vuelve hoja inferior a pantalla completa con botones apilados. Foco atrapado, Esc cierra, el botón destructivo va a la derecha y nunca es el foco inicial.</p>
+      <h2 style="margin: 16px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700">Toasts</h2>
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 400px">
+        <div role="status" style="padding: 14px 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E6EE; box-shadow: 0 12px 32px -12px rgba(20,24,38,0.25); display: flex; gap: 12px; align-items: flex-start">
+          <span style="width: 28px; height: 28px; border-radius: 999px; background: #EDFCF2; color: #099250; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span>
+          <div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 15px; font-weight: 700">Pago registrado</span><span style="font-size: 14px; color: #3A4152">Recibo enviado al tutor por WhatsApp.</span></div>
+          <a href="#" style="font-size: 14px; font-weight: 700; color: {{c.p700}}">Ver</a>
+        </div>
+        <div role="status" style="padding: 14px 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E6EE; box-shadow: 0 12px 32px -12px rgba(20,24,38,0.25); display: flex; gap: 12px; align-items: flex-start">
+          <span style="width: 28px; height: 28px; border-radius: 999px; background: #FFF4ED; color: #E2570B; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 7v6M12 17v.01"></path></svg></span>
+          <div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 15px; font-weight: 700">Grupo casi lleno</span><span style="font-size: 14px; color: #3A4152">B1 Lun/Mié 18:00 tiene 4 de 5 lugares.</span></div>
+        </div>
+        <div role="alert" style="padding: 14px 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #FECDCA; box-shadow: 0 12px 32px -12px rgba(20,24,38,0.25); display: flex; gap: 12px; align-items: flex-start">
+          <span style="width: 28px; height: 28px; border-radius: 999px; background: #FEF3F2; color: #D92D20; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span>
+          <div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><span style="font-size: 15px; font-weight: 700">No se pudo guardar</span><span style="font-size: 14px; color: #3A4152">Revisa tu conexión e inténtalo de nuevo.</span></div>
+          <a href="#" style="font-size: 14px; font-weight: 700; color: #B42318">Reintentar</a>
+        </div>
+        <div role="status" style="padding: 14px 16px; border-radius: 16px; background: #141826; color: #FFFFFF; box-shadow: 0 12px 32px -12px rgba(20,24,38,0.4); display: flex; gap: 12px; align-items: center">
+          <span style="font-size: 15px; font-weight: 600; flex: 1">Alumno movido a “Pausado”.</span>
+          <a href="#" style="font-size: 14px; font-weight: 700; color: {{c.a300}}">Deshacer</a>
+        </div>
+      </div>
+      <span style="font-size: 13px; color: #5F6778">Escritorio: abajo a la derecha · Móvil: arriba, ancho completo · 5 s (errores persisten hasta cerrarse).</span>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 20px">
+    <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Estados de pantalla</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+      <div style="border-radius: 20px; border: 1px solid #E3E6EE; padding: 40px 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; min-height: 360px; box-sizing: border-box; justify-content: center">
+        <span style="width: 88px; height: 88px; border-radius: 28px; background: {{c.p50}}; color: {{c.p600}}; display: flex; align-items: center; justify-content: center"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 012-2h12v14H6a2 2 0 00-2 2.5z"></path><path d="M4 19.5A2 2 0 006 21h12v-4"></path><path d="M9 8h5M9 11h3"></path></svg></span>
+        <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5F6778">Vacío</span>
+        <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Aún no hay alumnos en este grupo</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #3A4152; max-width: 300px">Inscribe al primero o importa tu lista desde Excel.</p>
+        <div style="display: flex; gap: 10px">
+          <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Inscribir alumno</button>
+          <button type="button" style="height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: transparent; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Importar</button>
+        </div>
+      </div>
+      <div aria-busy="true" style="border-radius: 20px; border: 1px solid #E3E6EE; padding: 28px; display: flex; flex-direction: column; gap: 16px; min-height: 360px; box-sizing: border-box">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5F6778">Cargando · skeleton</span>
+          <span style="width: 18px; height: 18px; border-radius: 999px; border: 2.5px solid {{c.p200}}; border-top-color: {{c.p600}}; animation: ai-spin 0.8s linear infinite"></span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <div style="height: 76px; border-radius: 14px; background: #F1F3F8; animation: ai-pulse 1.4s ease-in-out infinite"></div>
+          <div style="height: 76px; border-radius: 14px; background: #F1F3F8; animation: ai-pulse 1.4s ease-in-out infinite"></div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center"><div style="width: 36px; height: 36px; border-radius: 999px; background: #F1F3F8"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div style="height: 12px; width: 60%; border-radius: 6px; background: #F1F3F8; animation: ai-pulse 1.4s ease-in-out infinite"></div><div style="height: 10px; width: 35%; border-radius: 6px; background: #F1F3F8"></div></div></div>
+        <div style="display: flex; gap: 12px; align-items: center"><div style="width: 36px; height: 36px; border-radius: 999px; background: #F1F3F8"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div style="height: 12px; width: 72%; border-radius: 6px; background: #F1F3F8; animation: ai-pulse 1.4s ease-in-out infinite"></div><div style="height: 10px; width: 40%; border-radius: 6px; background: #F1F3F8"></div></div></div>
+        <div style="display: flex; gap: 12px; align-items: center"><div style="width: 36px; height: 36px; border-radius: 999px; background: #F1F3F8"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div style="height: 12px; width: 52%; border-radius: 6px; background: #F1F3F8; animation: ai-pulse 1.4s ease-in-out infinite"></div><div style="height: 10px; width: 30%; border-radius: 6px; background: #F1F3F8"></div></div></div>
+        <span style="font-size: 13px; color: #5F6778; margin-top: auto">Skeleton si tarda más de 300 ms (wire:loading.delay). Spinner solo en botones.</span>
+      </div>
+      <div role="alert" style="border-radius: 20px; border: 1px solid #E3E6EE; padding: 40px 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; min-height: 360px; box-sizing: border-box; justify-content: center">
+        <span style="width: 88px; height: 88px; border-radius: 28px; background: #FEF3F2; color: #D92D20; display: flex; align-items: center; justify-content: center"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0120 0"></path><path d="M5.5 12a10 10 0 0113 0"></path><path d="M9 15.5a5 5 0 016 0"></path><path d="M3 3l18 18"></path></svg></span>
+        <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #B42318">Error</span>
+        <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">No pudimos cargar los pagos</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #3A4152; max-width: 300px">Puede ser un problema de conexión. Tus datos están a salvo.</p>
+        <button type="button" style="height: 44px; padding: 0 18px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 10-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>Reintentar</button>
+      </div>
+    </div>
+    <div style="padding: 16px 20px; border-radius: 16px; background: #FFF4ED; color: #B93815; display: flex; gap: 12px; align-items: center; font-size: 15px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 16.5h-19z"></path><path d="M12 10v4M12 17v.01"></path></svg>
+      <span style="color: #141826"><b>Banner en línea:</b> 3 alumnos de este grupo tienen pagos por vencer esta semana.</span>
+      <a href="#" style="margin-left: auto; font-weight: 700; color: #B93815">Ver alumnos</a>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"primary":{"editor":"color","default":"#4361EE","section":"White-label","options":["#4361EE","#0F8B7E","#C2185B","#7C3AED"]},"accent":{"editor":"color","default":"#FFC23D","section":"White-label","options":["#FFC23D","#FF6B4A","#2EC4B6","#F472B6"]},"$preview":{"width":1440,"height":1420}}'>
+class Component extends DCLogic {
+  palette(p, a) {
+    function hx(h){h=String(h||'#000000').replace('#','');if(h.length===3){h=h.split('').map(function(x){return x+x;}).join('');}var n=parseInt(h,16);if(isNaN(n)){n=0;}return [(n>>16)&255,(n>>8)&255,n&255];}
+    function toHex(r){return '#'+r.map(function(v){v=Math.round(Math.max(0,Math.min(255,v)));return (v<16?'0':'')+v.toString(16);}).join('').toUpperCase();}
+    function mix(x,y,t){var A=hx(x),B=hx(y);return toHex(A.map(function(v,i){return v+(B[i]-v)*t;}));}
+    function lum(h){var q=hx(h).map(function(v){v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*q[0]+0.7152*q[1]+0.0722*q[2];}
+    function on(bg){return (1.05/(lum(bg)+0.05))>=4.5?'#FFFFFF':'#141826';}
+    var steps=[['50','#FFFFFF',0.92],['100','#FFFFFF',0.84],['200','#FFFFFF',0.68],['300','#FFFFFF',0.46],['400','#FFFFFF',0.22],['500',null,0],['600','#000000',0.14],['700','#000000',0.30],['800','#000000',0.45],['900','#000000',0.60]];
+    var c={};
+    function sc(b,k){steps.forEach(function(s){c[k+s[0]]=s[1]?mix(b,s[1],s[2]):toHex(hx(b));});}
+    sc(p,'p'); sc(a,'a');
+    c.onP=on(c.p600); c.onA=on(c.a500);
+    return c;
+  }
+  renderVals() {
+    return { c: this.palette(this.props.primary ?? '#4361EE', this.props.accent ?? '#FFC23D') };
+  }
+}
+</script>
+</body>
+</html>

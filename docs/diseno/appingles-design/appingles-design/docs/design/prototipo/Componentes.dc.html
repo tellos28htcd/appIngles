@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>AppIngles · Componentes base</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3A4152}a:hover{color:#141826}
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 2050px; box-sizing: border-box; padding: 72px 80px 96px; background: #FFFFFF; font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: #141826; display: flex; flex-direction: column; gap: 56px">
+
+  <header style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{c.p700}}">Componentes base</span>
+    <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; letter-spacing: -0.025em">Botones, campos y estados.</h1>
+  </header>
+
+  <section style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Botones</h2>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">x-ui.button variant · size</span>
+    </div>
+    <div style="padding: 32px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 28px">
+      <div style="display: flex; gap: 32px; align-items: flex-end; flex-wrap: wrap">
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Nuevo alumno</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">primary</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: {{c.p50}}; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Ver grupo</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">secondary</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #141826; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Exportar</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">outline</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: transparent; color: #3A4152; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Cancelar</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">ghost</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: {{c.a500}}; color: {{c.onA}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Reclamar insignia</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">accent (uso puntual)</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: #D92D20; color: #FFFFFF; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Dar de baja</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">danger</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" aria-label="Más opciones" style="width: 44px; height: 44px; border: 1.5px solid #CBD0DB; border-radius: 12px; background: #FFFFFF; color: #3A4152; display: inline-flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">icon</span>
+        </div>
+      </div>
+      <div style="height: 1px; background: #E3E6EE"></div>
+      <div style="display: flex; gap: 40px; align-items: flex-end; flex-wrap: wrap">
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700">Pequeño</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">sm · 36 · solo escritorio</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Mediano</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">md · 44 · default</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 52px; padding: 0 28px; border: 0; border-radius: 14px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 16px; font-weight: 700">Grande</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">lg · 52 · CTA móvil</span>
+        </div>
+        <div style="width: 1px; align-self: stretch; background: #E3E6EE"></div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: {{c.p700}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Guardar</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">hover · 700</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700; box-shadow: 0 0 0 4px {{c.p200}}">Guardar</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">focus · ring-4 200</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" disabled="disabled" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; gap: 10px; opacity: 0.85"><span style="width: 16px; height: 16px; border-radius: 999px; border: 2px solid currentColor; border-right-color: transparent; animation: ai-spin 0.8s linear infinite"></span>Guardando…</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">loading · wire:loading</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" disabled="disabled" style="height: 44px; padding: 0 20px; border: 0; border-radius: 12px; background: #F1F3F8; color: #8C93A3; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Guardar</button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">disabled</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Campos y selects</h2>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">x-ui.input · x-ui.select · etiqueta siempre visible</span>
+    </div>
+    <div style="padding: 32px; border-radius: 20px; border: 1px solid #E3E6EE; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 28px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="f1" style="font-size: 14px; font-weight: 600">Nombre del alumno</label>
+        <input id="f1" type="text" placeholder="Ej. Ana López" style="height: 44px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 15px; color: #141826; background: #FFFFFF">
+        <span style="font-size: 13px; color: #5F6778">Default · placeholder ink-400</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="f2" style="font-size: 14px; font-weight: 600">Correo del tutor</label>
+        <input id="f2" type="email" value="tutor@correo.com" style="height: 44px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid {{c.p500}}; border-radius: 12px; box-shadow: 0 0 0 4px {{c.p100}}; font-family: 'Figtree', sans-serif; font-size: 15px; color: #141826; background: #FFFFFF; outline: none">
+        <span style="font-size: 13px; color: #5F6778">Foco · borde primary-500 + anillo 100</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="f3" style="font-size: 14px; font-weight: 600">Teléfono (WhatsApp)</label>
+        <input id="f3" type="tel" value="246 12" aria-invalid="true" style="height: 44px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #D92D20; border-radius: 12px; box-shadow: 0 0 0 4px #FEF3F2; font-family: 'Figtree', sans-serif; font-size: 15px; color: #141826; background: #FFFFFF">
+        <span style="font-size: 13px; color: #B42318; font-weight: 600; display: flex; gap: 6px; align-items: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.5v.01"></path></svg>Ingresa los 10 dígitos.</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="f4" style="font-size: 14px; font-weight: 600">Buscar</label>
+        <div style="position: relative; display: flex; align-items: center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6778" stroke-width="2.2" stroke-linecap="round" style="position: absolute; left: 14px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input id="f4" type="search" placeholder="Alumno, matrícula o tutor" style="width: 100%; height: 44px; box-sizing: border-box; padding: 0 14px 0 42px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 15px; background: #F7F8FB">
+        </div>
+        <span style="font-size: 13px; color: #5F6778">wire:model.live.debounce.300ms</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="f5" style="font-size: 14px; font-weight: 600">Matrícula</label>
+        <input id="f5" type="text" value="AI-2026-0147" disabled="disabled" style="height: 44px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #E3E6EE; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #8C93A3; background: #F1F3F8">
+        <span style="font-size: 13px; color: #5F6778">Deshabilitado / solo lectura</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="f6" style="font-size: 14px; font-weight: 600">Notas para el teacher</label>
+        <textarea id="f6" rows="2" placeholder="Opcional" style="box-sizing: border-box; padding: 12px 14px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 15px; resize: vertical; min-height: 44px"></textarea>
+        <span style="font-size: 13px; color: #5F6778">Textarea · mínimo 2 líneas</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="s1" style="font-size: 14px; font-weight: 600">Nivel</label>
+        <div style="position: relative; display: flex; align-items: center">
+          <select id="s1" style="width: 100%; height: 44px; box-sizing: border-box; padding: 0 40px 0 14px; border: 1.5px solid #CBD0DB; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 15px; color: #141826; background: #FFFFFF; appearance: none">
+            <option>B1 · Intermedio</option>
+            <option>A1 · Principiante</option>
+            <option>A2 · Básico</option>
+          </select>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6778" stroke-width="2.2" stroke-linecap="round" style="position: absolute; right: 14px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+        </div>
+        <span style="font-size: 13px; color: #5F6778">Select nativo (móvil usa picker del sistema)</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; grid-column: span 2">
+        <label for="s2" style="font-size: 14px; font-weight: 600">Teacher asignado</label>
+        <div style="display: flex; gap: 28px; align-items: flex-start">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+            <button id="s2" type="button" aria-expanded="true" style="height: 44px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid {{c.p500}}; box-shadow: 0 0 0 4px {{c.p100}}; border-radius: 12px; font-family: 'Figtree', sans-serif; font-size: 15px; color: #141826; background: #FFFFFF; display: flex; align-items: center; justify-content: space-between; text-align: left"><span>Elige un teacher</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6778" stroke-width="2.2" stroke-linecap="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+            <div style="padding: 6px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E6EE; box-shadow: 0 24px 48px -12px rgba(20,24,38,0.22); display: flex; flex-direction: column; gap: 2px">
+              <div style="padding: 6px 8px 8px"><input type="search" aria-label="Filtrar teachers" placeholder="Filtrar…" style="width: 100%; height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid #E3E6EE; border-radius: 10px; font-family: 'Figtree', sans-serif; font-size: 14px; background: #F7F8FB"></div>
+              <div style="height: 44px; padding: 0 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; background: {{c.p50}}; color: {{c.p800}}; font-size: 15px; font-weight: 600"><span style="width: 28px; height: 28px; border-radius: 999px; background: {{c.p200}}; color: {{c.p800}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">MR</span>[Teacher 1]<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-left: auto"><path d="M5 12l5 5L20 7"></path></svg></div>
+              <div style="height: 44px; padding: 0 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 15px"><span style="width: 28px; height: 28px; border-radius: 999px; background: #F1F3F8; color: #3A4152; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">JS</span>[Teacher 2]</div>
+              <div style="height: 44px; padding: 0 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 15px; background: #F7F8FB"><span style="width: 28px; height: 28px; border-radius: 999px; background: #F1F3F8; color: #3A4152; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">LP</span>[Teacher 3]<span style="margin-left: auto; font-size: 12px; color: #5F6778">hover</span></div>
+            </div>
+          </div>
+          <div style="width: 300px; display: flex; flex-direction: column; gap: 18px; padding-top: 4px">
+            <span style="font-size: 13px; font-weight: 700; color: #5F6778">Selección</span>
+            <label style="display: flex; align-items: center; gap: 12px; font-size: 15px; min-height: 44px"><span style="width: 22px; height: 22px; border-radius: 7px; background: {{c.p600}}; color: {{c.onP}}; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span>Enviar recibo por WhatsApp</label>
+            <label style="display: flex; align-items: center; gap: 12px; font-size: 15px; min-height: 44px"><span style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 6px solid {{c.p600}}; background: #FFFFFF"></span>Pago mensual</label>
+            <label style="display: flex; align-items: center; gap: 12px; font-size: 15px; min-height: 44px"><span style="width: 44px; height: 26px; border-radius: 999px; background: {{c.p600}}; position: relative; display: block"><span style="position: absolute; top: 3px; left: 21px; width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(20,24,38,0.2)"></span></span>Recordatorios activos</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Badges de estado</h2>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">x-ui.status</span>
+      </div>
+      <div style="padding: 32px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 22px; flex: 1">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px">
+          <span style="display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 999px; background: #EDFCF2; color: #087443; box-shadow: inset 0 0 0 1px #AAF0C4; font-size: 13px; font-weight: 700"><span style="width: 8px; height: 8px; border-radius: 999px; background: #16B364"></span>Activo</span>
+          <span style="display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 999px; background: #FFF4ED; color: #B93815; box-shadow: inset 0 0 0 1px #FFD6AE; font-size: 13px; font-weight: 700"><svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1" width="2.2" height="8" rx="1" fill="#F97316"></rect><rect x="6.3" y="1" width="2.2" height="8" rx="1" fill="#F97316"></rect></svg>Pausado</span>
+          <span style="display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 999px; background: #FEF3F2; color: #B42318; box-shadow: inset 0 0 0 1px #FECDCA; font-size: 13px; font-weight: 700"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#D92D20" stroke-width="2" stroke-linecap="round"><path d="M2 2l6 6M8 2l-6 6"></path></svg>Baja</span>
+          <span style="display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 999px; background: #F4F3FF; color: #5925DC; box-shadow: inset 0 0 0 1px #D9D6FE; font-size: 13px; font-weight: 700"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6938EF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"></path><path d="M6 11v5c3 2 9 2 12 0v-5"></path></svg>Egresado</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #3A4152; line-height: 1.5">
+          <span><b style="color: #141826">Activo</b> · inscrito y asistiendo.</span>
+          <span><b style="color: #141826">Pausado</b> · congelado temporalmente (viaje, salud, vacaciones); conserva lugar.</span>
+          <span><b style="color: #141826">Baja</b> · dejó la escuela; historial de solo lectura.</span>
+          <span><b style="color: #141826">Egresado</b> · terminó su programa o certificación.</span>
+        </div>
+        <div style="height: 1px; background: #E3E6EE"></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <span style="font-size: 13px; font-weight: 700; color: #5F6778; margin-right: 4px">Etiquetas neutras</span>
+          <span style="height: 26px; padding: 0 10px; border-radius: 8px; background: #F1F3F8; color: #3A4152; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">A2</span>
+          <span style="height: 26px; padding: 0 10px; border-radius: 8px; background: #F1F3F8; color: #3A4152; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">B1</span>
+          <span style="height: 26px; padding: 0 10px; border-radius: 8px; background: #F1F3F8; color: #3A4152; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">Kids</span>
+          <span style="height: 26px; padding: 0 10px; border-radius: 8px; background: {{c.a100}}; color: {{c.a900}}; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center">Nuevo</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Semáforo</h2>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">x-ui.semaforo level="verde|naranja|rojo"</span>
+      </div>
+      <div style="padding: 32px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 24px; flex: 1">
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+          <div style="padding: 18px; border-radius: 16px; background: #EDFCF2; display: flex; flex-direction: column; gap: 12px">
+            <span style="width: 40px; height: 40px; border-radius: 999px; background: #099250; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span>
+            <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: #087443">Verde · Bien</span>
+            <span style="font-size: 13px; color: #3A4152; line-height: 1.5">Asistencia ≥ 90 % · pagos al corriente · avance en tiempo</span>
+          </div>
+          <div style="padding: 18px; border-radius: 16px; background: #FFF4ED; display: flex; flex-direction: column; gap: 12px">
+            <span style="width: 40px; height: 40px; border-radius: 999px; background: #F97316; color: #141826; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 6v7M12 17.5v.01"></path></svg></span>
+            <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: #B93815">Naranja · Atención</span>
+            <span style="font-size: 13px; color: #3A4152; line-height: 1.5">Asistencia 75–89 % · pago vence en ≤ 5 días · 1 unit atrasada</span>
+          </div>
+          <div style="padding: 18px; border-radius: 16px; background: #FEF3F2; display: flex; flex-direction: column; gap: 12px">
+            <span style="width: 40px; height: 40px; border-radius: 8px; background: #B42318; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+            <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: #B42318">Rojo · Riesgo</span>
+            <span style="font-size: 13px; color: #3A4152; line-height: 1.5">Asistencia menor a 75 % · pago vencido · riesgo de baja</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <span style="font-size: 13px; font-weight: 700; color: #5F6778">Versiones compactas (tablas y móvil)</span>
+          <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap">
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #087443"><span style="width: 12px; height: 12px; border-radius: 999px; background: #099250"></span>92 %</span>
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #B93815"><span style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid #F97316"></span>81 %</span>
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #B42318"><span style="width: 11px; height: 11px; border-radius: 2px; background: #B42318"></span>64 %</span>
+            <span style="width: 1px; height: 24px; background: #E3E6EE"></span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; background: #FFF4ED; color: #B93815; font-size: 13px; font-weight: 700"><span style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #F97316"></span>Vence en 3 días</span>
+          </div>
+          <span style="font-size: 13px; color: #5F6778; line-height: 1.5">Forma + color + texto: círculo, triángulo y cuadrado distinguen el nivel aun sin percibir color. Verde oscuro, naranja claro y rojo profundo también difieren en luminosidad.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"primary":{"editor":"color","default":"#4361EE","section":"White-label","options":["#4361EE","#0F8B7E","#C2185B","#7C3AED"]},"accent":{"editor":"color","default":"#FFC23D","section":"White-label","options":["#FFC23D","#FF6B4A","#2EC4B6","#F472B6"]},"$preview":{"width":1440,"height":2050}}'>
+class Component extends DCLogic {
+  palette(p, a) {
+    function hx(h){h=String(h||'#000000').replace('#','');if(h.length===3){h=h.split('').map(function(x){return x+x;}).join('');}var n=parseInt(h,16);if(isNaN(n)){n=0;}return [(n>>16)&255,(n>>8)&255,n&255];}
+    function toHex(r){return '#'+r.map(function(v){v=Math.round(Math.max(0,Math.min(255,v)));return (v<16?'0':'')+v.toString(16);}).join('').toUpperCase();}
+    function mix(x,y,t){var A=hx(x),B=hx(y);return toHex(A.map(function(v,i){return v+(B[i]-v)*t;}));}
+    function lum(h){var q=hx(h).map(function(v){v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*q[0]+0.7152*q[1]+0.0722*q[2];}
+    function on(bg){return (1.05/(lum(bg)+0.05))>=4.5?'#FFFFFF':'#141826';}
+    var steps=[['50','#FFFFFF',0.92],['100','#FFFFFF',0.84],['200','#FFFFFF',0.68],['300','#FFFFFF',0.46],['400','#FFFFFF',0.22],['500',null,0],['600','#000000',0.14],['700','#000000',0.30],['800','#000000',0.45],['900','#000000',0.60]];
+    var c={};
+    function sc(b,k){steps.forEach(function(s){c[k+s[0]]=s[1]?mix(b,s[1],s[2]):toHex(hx(b));});}
+    sc(p,'p'); sc(a,'a');
+    c.onP=on(c.p600); c.onA=on(c.a500);
+    return c;
+  }
+  renderVals() {
+    return { c: this.palette(this.props.primary ?? '#4361EE', this.props.accent ?? '#FFC23D') };
+  }
+}
+</script>
+</body>
+</html>

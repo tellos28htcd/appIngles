@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>AppIngles · Fundamentos y color</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3A4152}a:hover{color:#141826}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 2200px; box-sizing: border-box; padding: 72px 80px 96px; background: #FFFFFF; font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif; color: #141826; display: flex; flex-direction: column; gap: 72px">
+
+  <header style="display: flex; justify-content: space-between; align-items: flex-start; gap: 48px">
+    <div style="display: flex; flex-direction: column; gap: 20px; max-width: 860px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div style="width: 44px; height: 44px; border-radius: 14px; background: {{c.p600}}; color: {{c.onP}}; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 17px">Ai</div>
+        <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.01em">AppIngles</span>
+        <span style="margin-left: 8px; padding: 6px 12px; border-radius: 999px; background: #F1F3F8; color: #3A4152; font-size: 13px; font-weight: 600">Sistema de diseño · v1.0</span>
+      </div>
+      <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 64px; line-height: 1.05; letter-spacing: -0.03em">Moderna, cálida y confiable.</h1>
+      <p style="margin: 0; font-size: 20px; line-height: 1.55; color: #3A4152; max-width: 760px">Fundamentos visuales de la plataforma para academias de inglés. Educativa sin ser infantil: luminosa, con mucho espacio en blanco, esquinas redondeadas y un acento vivo que se reserva para destacar y celebrar.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 300px; padding: 24px; border-radius: 20px; background: #F7F8FB; border: 1px solid #E3E6EE">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5F6778">Quién la usa</span>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">Administración</span><span style="color: #5F6778">Escritorio</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">Recepción</span><span style="color: #5F6778">Escritorio / tablet</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">Teachers</span><span style="color: {{c.p700}}; font-weight: 600">Mobile-first</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">Alumnos</span><span style="color: {{c.p700}}; font-weight: 600">Mobile-first</span></div>
+    </div>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px">
+    <div style="padding: 28px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">01</span>
+      <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Claridad primero</h3>
+      <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3A4152">Una acción principal por pantalla. La jerarquía la marca la tipografía antes que el color.</p>
+    </div>
+    <div style="padding: 28px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">02</span>
+      <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Calidez medida</h3>
+      <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3A4152">Esquinas de 12–20 px, textos en tono humano y el acento solo para destacar o celebrar logros.</p>
+    </div>
+    <div style="padding: 28px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">03</span>
+      <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Estados explícitos</h3>
+      <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3A4152">Badges con texto y semáforo con icono + etiqueta. Nunca comunicar solo con color.</p>
+    </div>
+    <div style="padding: 28px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">04</span>
+      <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Pulgar primero</h3>
+      <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3A4152">Alumno y teacher viven en el móvil: objetivos táctiles de 44 px y acciones al alcance del pulgar.</p>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{c.p700}}">White-label</span>
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 36px; font-weight: 800; letter-spacing: -0.02em">La escuela elige 3 cosas. El resto se adapta solo.</h2>
+      <p style="margin: 0; font-size: 17px; color: #3A4152; max-width: 820px; line-height: 1.55">Prueba: abre Tweaks en este artboard y cambia Primario y Acento. Escalas, texto sobre color, anillos de foco y fondos suaves se recalculan. Neutros, semáforo y estados son fijos y reservados.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 64px 1.6fr; gap: 20px; align-items: stretch">
+      <div style="padding: 24px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 14px">
+        <span style="font-size: 13px; font-weight: 700; color: #5F6778">1 · Logo</span>
+        <div style="height: 88px; border-radius: 14px; border: 2px dashed #CBD0DB; display: flex; align-items: center; justify-content: center; color: #5F6778; font-size: 14px; font-weight: 600; background: #FFFFFF">[LOGO DE LA ESCUELA]</div>
+        <span style="font-size: 13px; color: #5F6778">SVG o PNG transparente · alto 32 px en barra</span>
+      </div>
+      <div style="padding: 24px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 14px">
+        <span style="font-size: 13px; font-weight: 700; color: #5F6778">2 · Primario</span>
+        <div style="height: 88px; border-radius: 14px; background: {{c.p500}}"></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #3A4152">--brand-primary: {{c.p500}}</span>
+      </div>
+      <div style="padding: 24px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 14px">
+        <span style="font-size: 13px; font-weight: 700; color: #5F6778">3 · Acento</span>
+        <div style="height: 88px; border-radius: 14px; background: {{c.a500}}"></div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #3A4152">--brand-accent: {{c.a500}}</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: center; color: #8C93A3">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+      </div>
+      <div style="padding: 24px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 16px">
+        <span style="font-size: 13px; font-weight: 700; color: #5F6778">Derivado automáticamente</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: {{c.p600}}; color: {{c.onP}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Inscribir alumno</button>
+          <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: {{c.p50}}; color: {{c.p700}}; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 700">Ver grupo</button>
+          <span style="padding: 6px 12px; border-radius: 999px; background: {{c.a500}}; color: {{c.onA}}; font-size: 13px; font-weight: 700">¡Nivel completado!</span>
+          <a href="#" style="font-size: 15px; font-weight: 600; color: {{c.p700}}">Enlace de texto</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; justify-content: space-between; font-size: 13px; color: #3A4152"><span>Progreso del nivel B1</span><span style="font-weight: 700">7 / 12 units</span></div>
+          <div style="height: 10px; border-radius: 999px; background: {{c.p100}}"><div style="width: 58%; height: 10px; border-radius: 999px; background: {{c.p600}}"></div></div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center">
+          <div style="flex: 1; height: 44px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid {{c.p500}}; box-shadow: 0 0 0 4px {{c.p100}}; display: flex; align-items: center; padding: 0 14px; font-size: 15px; color: #141826">Foco: anillo primary-100</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Primario · escala derivada</h2>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5F6778">color-mix(var(--brand-primary), white | black)</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{c.pList}}" as="s" hint-placeholder-count="10">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="height: 96px; border-radius: 14px; background: {{s.hex}}; color: {{s.fg}}; display: flex; align-items: flex-end; padding: 10px; box-sizing: border-box; font-size: 13px; font-weight: 700">{{s.k}}</div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #3A4152">{{s.name}}</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">{{s.hex}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Acento · escala derivada</h2>
+      <span style="font-size: 14px; color: #5F6778">Solo para destacar: logros, “nuevo”, hoy en calendario. Nunca para estados.</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{c.aList}}" as="s" hint-placeholder-count="10">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="height: 96px; border-radius: 14px; background: {{s.hex}}; color: {{s.fg}}; display: flex; align-items: flex-end; padding: 10px; box-sizing: border-box; font-size: 13px; font-weight: 700">{{s.k}}</div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #3A4152">{{s.name}}</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">{{s.hex}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 24px; padding: 18px 22px; border-radius: 16px; background: #F7F8FB; font-size: 14px; color: #3A4152; flex-wrap: wrap">
+      <span><b style="color: #141826">Texto sobre primario:</b> <span style="font-family: 'JetBrains Mono', monospace">--color-on-primary = {{c.onP}}</span> (se calcula por contraste ≥ 4.5:1)</span>
+      <span><b style="color: #141826">Texto sobre acento:</b> <span style="font-family: 'JetBrains Mono', monospace">--color-on-accent = {{c.onA}}</span></span>
+      <span><b style="color: #141826">Uso:</b> botón = 600 · hover = 700 · fondo suave = 50 · foco = 100 · enlaces = 700</span>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Neutros · fijos</h2>
+      <span style="font-size: 14px; color: #5F6778">Ligeramente fríos para que cualquier primario de escuela combine.</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{neutrals}}" as="s" hint-placeholder-count="9">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="height: 80px; border-radius: 14px; background: {{s.hex}}; border: 1px solid #E3E6EE"></div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #3A4152">{{s.name}}</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">{{s.hex}}</span>
+          <span style="font-size: 12px; color: #5F6778">{{s.use}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 700">Semánticos · fijos y reservados</h2>
+      <span style="font-size: 14px; color: #5F6778">Alimentan badges de estado, semáforo, toasts y validaciones.</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px">
+      <sc-for list="{{semantic}}" as="g" hint-placeholder-count="4">
+        <div style="padding: 20px; border-radius: 20px; border: 1px solid #E3E6EE; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700">{{g.label}}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5F6778">{{g.key}}-*</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+            <sc-for list="{{g.steps}}" as="s" hint-placeholder-count="5">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div style="height: 52px; border-radius: 10px; background: {{s.hex}}; border: 1px solid rgba(20,24,38,0.06)"></div>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5F6778">{{s.k}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size: 13px; line-height: 1.5; color: #3A4152">{{g.use}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+    <div style="padding: 28px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 18px">
+      <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Radios</h3>
+      <div style="display: flex; gap: 14px; align-items: flex-end">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 56px; height: 56px; background: #FFFFFF; border: 1.5px solid #CBD0DB; border-radius: 8px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3A4152">sm 8</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 56px; height: 56px; background: #FFFFFF; border: 1.5px solid #CBD0DB; border-radius: 12px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3A4152">md 12</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 56px; height: 56px; background: #FFFFFF; border: 1.5px solid #CBD0DB; border-radius: 16px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3A4152">lg 16</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 56px; height: 56px; background: #FFFFFF; border: 1.5px solid #CBD0DB; border-radius: 20px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3A4152">xl 20</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 56px; height: 56px; background: #FFFFFF; border: 1.5px solid #CBD0DB; border-radius: 999px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3A4152">full</span></div>
+      </div>
+      <span style="font-size: 13px; color: #5F6778">Botón/input md · tarjeta xl · modal 24 · badge full</span>
+    </div>
+    <div style="padding: 28px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 18px">
+      <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Elevación</h3>
+      <div style="display: flex; gap: 18px">
+        <div style="flex: 1; height: 72px; border-radius: 16px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(20,24,38,0.06); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px">shadow-xs</div>
+        <div style="flex: 1; height: 72px; border-radius: 16px; background: #FFFFFF; box-shadow: 0 4px 16px -4px rgba(20,24,38,0.10), 0 1px 2px rgba(20,24,38,0.05); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px">shadow-card</div>
+        <div style="flex: 1; height: 72px; border-radius: 16px; background: #FFFFFF; box-shadow: 0 24px 48px -12px rgba(20,24,38,0.22); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px">shadow-pop</div>
+      </div>
+      <span style="font-size: 13px; color: #5F6778">Preferir borde line + xs. Pop solo en modales, menús y toasts.</span>
+    </div>
+    <div style="padding: 28px; border-radius: 20px; background: #F7F8FB; display: flex; flex-direction: column; gap: 18px">
+      <h3 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700">Espaciado · base 4</h3>
+      <div style="display: flex; gap: 10px; align-items: flex-end">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 8px; height: 8px; background: {{c.p400}}; border-radius: 2px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">2</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 12px; height: 12px; background: {{c.p400}}; border-radius: 2px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">3</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 16px; height: 16px; background: {{c.p400}}; border-radius: 3px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">4</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 24px; height: 24px; background: {{c.p400}}; border-radius: 4px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">6</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 32px; height: 32px; background: {{c.p400}}; border-radius: 4px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">8</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 48px; height: 48px; background: {{c.p400}}; border-radius: 6px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">12</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 64px; height: 64px; background: {{c.p400}}; border-radius: 8px"></div><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">16</span></div>
+      </div>
+      <span style="font-size: 13px; color: #5F6778">Móvil: márgenes 16–20 · Escritorio: 24–32 · entre secciones 48+</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"primary":{"editor":"color","default":"#4361EE","section":"White-label","options":["#4361EE","#0F8B7E","#C2185B","#7C3AED"]},"accent":{"editor":"color","default":"#FFC23D","section":"White-label","options":["#FFC23D","#FF6B4A","#2EC4B6","#F472B6"]},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  palette(p, a) {
+    function hx(h){h=String(h||'#000000').replace('#','');if(h.length===3){h=h.split('').map(function(x){return x+x;}).join('');}var n=parseInt(h,16);if(isNaN(n)){n=0;}return [(n>>16)&255,(n>>8)&255,n&255];}
+    function toHex(r){return '#'+r.map(function(v){v=Math.round(Math.max(0,Math.min(255,v)));return (v<16?'0':'')+v.toString(16);}).join('').toUpperCase();}
+    function mix(x,y,t){var A=hx(x),B=hx(y);return toHex(A.map(function(v,i){return v+(B[i]-v)*t;}));}
+    function lum(h){var q=hx(h).map(function(v){v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*q[0]+0.7152*q[1]+0.0722*q[2];}
+    function on(bg){return (1.05/(lum(bg)+0.05))>=4.5?'#FFFFFF':'#141826';}
+    var steps=[['50','#FFFFFF',0.92],['100','#FFFFFF',0.84],['200','#FFFFFF',0.68],['300','#FFFFFF',0.46],['400','#FFFFFF',0.22],['500',null,0],['600','#000000',0.14],['700','#000000',0.30],['800','#000000',0.45],['900','#000000',0.60]];
+    var c={};
+    function sc(b,k,label){var list=[];steps.forEach(function(s){var v=s[1]?mix(b,s[1],s[2]):toHex(hx(b));c[k+s[0]]=v;list.push({k:s[0],hex:v,fg:on(v),name:label+'-'+s[0]});});return list;}
+    c.pList=sc(p,'p','primary');
+    c.aList=sc(a,'a','accent');
+    c.onP=on(c.p600); c.onA=on(c.a500);
+    return c;
+  }
+  renderVals() {
+    var c = this.palette(this.props.primary ?? '#4361EE', this.props.accent ?? '#FFC23D');
+    return {
+      c: c,
+      neutrals: [
+        {name:'ink-900',hex:'#141826',use:'Títulos y texto'},
+        {name:'ink-700',hex:'#3A4152',use:'Texto secundario'},
+        {name:'ink-500',hex:'#5F6778',use:'Texto tenue, iconos'},
+        {name:'ink-400',hex:'#8C93A3',use:'Placeholder, deshabilitado'},
+        {name:'line-strong',hex:'#CBD0DB',use:'Bordes de input'},
+        {name:'line',hex:'#E3E6EE',use:'Divisores, tarjetas'},
+        {name:'surface-2',hex:'#F1F3F8',use:'Hover, chips'},
+        {name:'surface',hex:'#F7F8FB',use:'Fondo de app'},
+        {name:'white',hex:'#FFFFFF',use:'Tarjetas, modales'}
+      ],
+      semantic: [
+        {label:'Éxito · verde',key:'success',use:'Activo, pagado, asistencia ≥ 90 %, guardado.',steps:[{k:'50',hex:'#EDFCF2'},{k:'200',hex:'#AAF0C4'},{k:'500',hex:'#16B364'},{k:'600',hex:'#099250'},{k:'700',hex:'#087443'}]},
+        {label:'Alerta · naranja',key:'warning',use:'Pausado, pago por vencer, asistencia 75–89 %.',steps:[{k:'50',hex:'#FFF4ED'},{k:'200',hex:'#FFD6AE'},{k:'500',hex:'#F97316'},{k:'600',hex:'#E2570B'},{k:'700',hex:'#B93815'}]},
+        {label:'Error · rojo',key:'danger',use:'Baja, pago vencido, asistencia menor a 75 %, errores.',steps:[{k:'50',hex:'#FEF3F2'},{k:'200',hex:'#FECDCA'},{k:'500',hex:'#F04438'},{k:'600',hex:'#D92D20'},{k:'700',hex:'#B42318'}]},
+        {label:'Info · violeta',key:'info',use:'Egresado, avisos informativos, exámenes.',steps:[{k:'50',hex:'#F4F3FF'},{k:'200',hex:'#D9D6FE'},{k:'500',hex:'#7A5AF8'},{k:'600',hex:'#6938EF'},{k:'700',hex:'#5925DC'}]}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
