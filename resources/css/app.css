@@ -1,9 +1,112 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* =========================================================
+   AppIngles · Design tokens (Tailwind CSS v4)
+   White-label: cada escuela solo sobreescribe --brand-* en el
+   layout (ver layouts/app.blade.php). Todo lo demás se deriva.
+   ========================================================= */
+
+/* 1 · Marca de la escuela (valores por defecto) */
+:root {
+  --brand-primary: #4361EE;
+  --brand-accent: #FFC23D;
+  --brand-on-primary: #FFFFFF; /* calculado en PHP: BrandColor::onPrimary() */
+  --brand-on-accent: #141826;  /* calculado en PHP: BrandColor::onColor()   */
+}
+
+/* 2 · Escalas derivadas (no editar) */
+@theme inline {
+  --color-primary-50:  color-mix(in oklab, var(--brand-primary) 8%,  white);
+  --color-primary-100: color-mix(in oklab, var(--brand-primary) 16%, white);
+  --color-primary-200: color-mix(in oklab, var(--brand-primary) 32%, white);
+  --color-primary-300: color-mix(in oklab, var(--brand-primary) 54%, white);
+  --color-primary-400: color-mix(in oklab, var(--brand-primary) 78%, white);
+  --color-primary-500: var(--brand-primary);
+  --color-primary-600: color-mix(in oklab, var(--brand-primary) 86%, black);
+  --color-primary-700: color-mix(in oklab, var(--brand-primary) 70%, black);
+  --color-primary-800: color-mix(in oklab, var(--brand-primary) 55%, black);
+  --color-primary-900: color-mix(in oklab, var(--brand-primary) 40%, black);
+
+  --color-accent-50:  color-mix(in oklab, var(--brand-accent) 8%,  white);
+  --color-accent-100: color-mix(in oklab, var(--brand-accent) 16%, white);
+  --color-accent-200: color-mix(in oklab, var(--brand-accent) 32%, white);
+  --color-accent-300: color-mix(in oklab, var(--brand-accent) 54%, white);
+  --color-accent-400: color-mix(in oklab, var(--brand-accent) 78%, white);
+  --color-accent-500: var(--brand-accent);
+  --color-accent-600: color-mix(in oklab, var(--brand-accent) 86%, black);
+  --color-accent-700: color-mix(in oklab, var(--brand-accent) 70%, black);
+  --color-accent-800: color-mix(in oklab, var(--brand-accent) 55%, black);
+  --color-accent-900: color-mix(in oklab, var(--brand-accent) 40%, black);
+
+  --color-on-primary: var(--brand-on-primary);
+  --color-on-accent: var(--brand-on-accent);
+}
+
+/* 3 · Tokens fijos (iguales para todas las escuelas) */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+  /* Neutros */
+  --color-ink-900: #141826;
+  --color-ink-700: #3A4152;
+  --color-ink-500: #5F6778;
+  --color-ink-400: #8C93A3;
+  --color-line-strong: #CBD0DB;
+  --color-line: #E3E6EE;
+  --color-surface-2: #F1F3F8;
+  --color-surface: #F7F8FB;
+
+  /* Semánticos (reservados: estados, semáforo, validaciones) */
+  --color-success-50: #EDFCF2;
+  --color-success-200: #AAF0C4;
+  --color-success-500: #16B364;
+  --color-success-600: #099250;
+  --color-success-700: #087443;
+
+  --color-warning-50: #FFF4ED;
+  --color-warning-200: #FFD6AE;
+  --color-warning-500: #F97316;
+  --color-warning-600: #E2570B;
+  --color-warning-700: #B93815;
+
+  --color-danger-50: #FEF3F2;
+  --color-danger-200: #FECDCA;
+  --color-danger-500: #F04438;
+  --color-danger-600: #D92D20;
+  --color-danger-700: #B42318;
+
+  --color-info-50: #F4F3FF;
+  --color-info-200: #D9D6FE;
+  --color-info-500: #7A5AF8;
+  --color-info-600: #6938EF;
+  --color-info-700: #5925DC;
+
+  /* Tipografía (Google Fonts: Plus Jakarta Sans, Figtree, JetBrains Mono) */
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text-display: 3rem;      --text-display--line-height: 3.5rem;
+  --text-h1: 2.25rem;        --text-h1--line-height: 2.75rem;
+  --text-h2: 1.75rem;        --text-h2--line-height: 2.25rem;
+  --text-h3: 1.375rem;       --text-h3--line-height: 1.875rem;
+  --text-h4: 1.125rem;       --text-h4--line-height: 1.625rem;
+  --text-kpi: 2.5rem;        --text-kpi--line-height: 2.75rem;
+
+  /* Forma */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  --shadow-xs: 0 1px 2px rgb(20 24 38 / 0.06);
+  --shadow-card: 0 4px 16px -4px rgb(20 24 38 / 0.10), 0 1px 2px rgb(20 24 38 / 0.05);
+  --shadow-pop: 0 24px 48px -12px rgb(20 24 38 / 0.22);
+}
+
+@layer base {
+  body { @apply bg-surface font-sans text-ink-900 antialiased; }
+  h1, h2, h3, h4 { @apply font-display; }
 }
