@@ -110,3 +110,5 @@
   body { @apply bg-surface font-sans text-ink-900 antialiased; }
   h1, h2, h3, h4 { @apply font-display; }
 }
+
+[x-cloak] { display: none !important; }

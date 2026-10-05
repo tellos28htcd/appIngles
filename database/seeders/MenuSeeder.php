@@ -1,0 +1,178 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\MenuItemStatus;
+use App\Models\MenuItem;
+use App\Models\Role;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Árbol del menú (módulo → submódulos) y qué rol ve cada opción.
+ * Al activar un módulo nuevo: poner su route_name y status = active.
+ */
+class MenuSeeder extends Seeder
+{
+    /**
+     * slug => [label, icon, route_name, status, children]
+     *
+     * @var array<string, array{0: string, 1: ?string, 2: ?string, 3: MenuItemStatus, 4?: array<string, array{0: string, 1: ?string, 2: ?string, 3: MenuItemStatus}>}>
+     */
+    private const TREE = [
+        'dashboard' => ['Inicio', 'home', 'dashboard', MenuItemStatus::Active],
+        'agenda' => ['Agenda', 'calendar', null, MenuItemStatus::ComingSoon],
+        'students' => ['Alumnos', 'student', null, MenuItemStatus::Active, [
+            'students-records' => ['Expedientes', null, null, MenuItemStatus::ComingSoon],
+            'students-guardians' => ['Tutores', null, null, MenuItemStatus::ComingSoon],
+        ]],
+        'tracking' => ['Seguimiento', 'clipboard', null, MenuItemStatus::Active, [
+            'tracking-attendance' => ['Pase de lista', null, null, MenuItemStatus::ComingSoon],
+            'tracking-evaluations' => ['Evaluaciones', null, null, MenuItemStatus::ComingSoon],
+            'tracking-risk' => ['Alumnos en riesgo', null, null, MenuItemStatus::ComingSoon],
+        ]],
+        'billing' => ['Cobranza', 'receipt', null, MenuItemStatus::Active, [
+            'billing-statements' => ['Estados de cuenta', null, null, MenuItemStatus::ComingSoon],
+            'billing-payments' => ['Pagos', null, null, MenuItemStatus::ComingSoon],
+            'billing-overdue' => ['Morosos', null, null, MenuItemStatus::ComingSoon],
+            'billing-actions' => ['Gestiones de cobranza', null, null, MenuItemStatus::ComingSoon],
+        ]],
+        'my-students' => ['Mis alumnos', 'heart', null, MenuItemStatus::Active, [
+            'my-students-progress' => ['Avance', null, null, MenuItemStatus::ComingSoon],
+            'my-students-account' => ['Estado de cuenta', null, null, MenuItemStatus::ComingSoon],
+        ]],
+        'reports' => ['Reportes', 'chart', null, MenuItemStatus::ComingSoon],
+        'settings' => ['Configuración', 'settings', null, MenuItemStatus::Active, [
+            'settings-school' => ['Mi escuela', null, null, MenuItemStatus::ComingSoon],
+            'settings-users' => ['Usuarios', null, null, MenuItemStatus::ComingSoon],
+            'settings-levels' => ['Niveles y units', null, null, MenuItemStatus::ComingSoon],
+            'settings-classrooms' => ['Salones', null, null, MenuItemStatus::ComingSoon],
+            'settings-evaluation-codes' => ['Códigos de evaluación', null, null, MenuItemStatus::ComingSoon],
+            'settings-payment-methods' => ['Métodos de pago', null, null, MenuItemStatus::ComingSoon],
+            'settings-charge-concepts' => ['Conceptos de cobro', null, null, MenuItemStatus::ComingSoon],
+            'settings-holidays' => ['Días festivos', null, null, MenuItemStatus::ComingSoon],
+        ]],
+        'platform' => ['Plataforma', 'building', null, MenuItemStatus::Active, [
+            'platform-schools' => ['Escuelas', null, null, MenuItemStatus::ComingSoon],
+            'platform-users' => ['Usuarios de escuelas', null, null, MenuItemStatus::ComingSoon],
+            'platform-roles' => ['Roles y menú', null, null, MenuItemStatus::ComingSoon],
+        ]],
+    ];
+
+    /**
+     * Opciones de último nivel que ve cada rol; el módulo padre se asigna solo.
+     * '*' = todo excepto lo exclusivo de plataforma y del tutor; '**' = todo.
+     * El Super Administrador además ve todo por código (Navigation).
+     *
+     * @var array<string, list<string>>
+     */
+    private const ACCESS = [
+        Role::PLATFORM_ADMIN => ['**'],
+        Role::SCHOOL_ADMIN => ['*'],
+        Role::STUDENT_SERVICES => [
+            'dashboard', 'agenda', 'students-records', 'students-guardians',
+            'billing-statements', 'billing-payments', 'billing-actions', 'reports',
+        ],
+        Role::ACADEMIC_COORDINATOR => [
+            'dashboard', 'agenda', 'students-records', 'students-guardians',
+            'tracking-attendance', 'tracking-evaluations', 'tracking-risk', 'reports',
+        ],
+        Role::TEACHER => ['dashboard', 'agenda', 'tracking-attendance', 'tracking-evaluations'],
+        Role::MENTOR => [
+            'dashboard', 'agenda', 'students-records', 'students-guardians',
+            'tracking-attendance', 'tracking-evaluations', 'tracking-risk',
+            'billing-statements', 'billing-payments', 'billing-overdue', 'billing-actions', 'reports',
+        ],
+        Role::RECEPTION => [
+            'dashboard', 'agenda', 'students-records', 'students-guardians',
+            'billing-statements', 'billing-payments',
+        ],
+        Role::GUARDIAN => ['dashboard', 'my-students-progress', 'my-students-account'],
+    ];
+
+    private const EXCLUSIVE = ['platform', 'my-students'];
+
+    public function run(): void
+    {
+        DB::transaction(function (): void {
+            $leaves = $this->syncTree();
+            $this->syncAccess($leaves);
+        });
+    }
+
+    /** @return array<string, MenuItem> Opciones de último nivel con su padre (si tiene). */
+    private function syncTree(): array
+    {
+        $leaves = [];
+        $order = 0;
+
+        foreach (self::TREE as $slug => $definition) {
+            $parent = $this->upsert($slug, $definition, null, $order += 10);
+            $children = $definition[4] ?? [];
+
+            if ($children === []) {
+                $leaves[$slug] = $parent;
+
+                continue;
+            }
+
+            $childOrder = 0;
+            foreach ($children as $childSlug => $childDefinition) {
+                $leaves[$childSlug] = $this->upsert($childSlug, $childDefinition, $parent->id, $childOrder += 10);
+            }
+        }
+
+        return $leaves;
+    }
+
+    /** @param array{0: string, 1: ?string, 2: ?string, 3: MenuItemStatus} $definition */
+    private function upsert(string $slug, array $definition, ?int $parentId, int $order): MenuItem
+    {
+        [$label, $icon, $routeName, $status] = $definition;
+
+        return MenuItem::updateOrCreate(['slug' => $slug], [
+            'parent_id' => $parentId,
+            'label' => $label,
+            'icon' => $icon,
+            'route_name' => $routeName,
+            'status' => $status,
+            'sort_order' => $order,
+        ]);
+    }
+
+    /** @param array<string, MenuItem> $leaves */
+    private function syncAccess(array $leaves): void
+    {
+        $shared = collect($leaves)
+            ->reject(fn (MenuItem $item, string $slug) => $this->isExclusive($slug))
+            ->keys();
+
+        foreach (self::ACCESS as $roleSlug => $slugs) {
+            $role = Role::where('slug', $roleSlug)->firstOrFail();
+
+            $granted = collect($slugs)
+                ->flatMap(fn (string $slug) => match ($slug) {
+                    '**' => array_keys($leaves),
+                    '*' => $shared,
+                    default => [$slug],
+                })
+                ->map(fn (string $slug) => $leaves[$slug])
+                ->flatMap(fn (MenuItem $item) => array_filter([$item->id, $item->parent_id]))
+                ->unique()
+                ->values();
+
+            $role->menuItems()->sync($granted);
+        }
+    }
+
+    private function isExclusive(string $slug): bool
+    {
+        foreach (self::EXCLUSIVE as $prefix) {
+            if ($slug === $prefix || str_starts_with($slug, $prefix.'-')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

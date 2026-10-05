@@ -204,7 +204,7 @@ Estadísticas avanzadas, notificaciones personalizadas. El sistema debe poder ag
 | RN-13 | Una escuela suspendida por falta de pago pierde acceso según la política que se defina (ver sección 12). |
 | RN-14 | Las sesiones se crean por día (fecha, horario de duración variable, salón, teacher) y la recepción registra en ellas las reservaciones. No hay grupos fijos permanentes. Puede haber sesiones cualquier día, incluido el domingo. |
 | RN-15 | Cada academia es una cuenta (tenant) independiente; una sucursal es una cuenta nueva. |
-| RN-16 | Un usuario pertenece a una sola escuela; el correo es único dentro de la escuela. La misma persona en dos academias tiene dos usuarios. |
+| RN-16 | Un usuario pertenece a una sola escuela; el correo es único dentro de la escuela. La misma persona en dos academias tiene dos usuarios. El login **solo pide correo y contraseña**; la escuela se resuelve internamente a partir del usuario, sin pantalla para elegirla. |
 | RN-17 | Matrícula del alumno: `AI-{ID escuela}-{año}-{consecutivo 0000}`, con consecutivo anual por escuela. |
 | RN-18 | Solo el Super Administrador da de alta escuelas y su usuario administrador inicial; no hay autorregistro. Por ahora existe un solo plan. |
 | RN-19 | Moneda y zona horaria por escuela; valores de inicio MXN y America/Mexico_City. |

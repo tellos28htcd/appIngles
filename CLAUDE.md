@@ -17,11 +17,14 @@ Verifica las versiones reales en composer.json y package.json.
 - Trabaja un módulo a la vez. Antes de programar, haz el análisis corto del
   módulo y espera mi aprobación.
 - Textos de interfaz en español (lang/es); código en inglés.
-- Despliegue final en AlmaLinux: configuración solo en .env, cuida
-  mayúsculas en nombres de archivo.
+- Despliegue final en AlmaLinux: configuración solo en .env. Todo nombre de
+  archivo, carpeta, URL, tabla y columna va en minúsculas; única excepción:
+  clases PHP en PascalCase (PSR-4). Detalle en la skill
+  laravel-livewire-fullstack (references/convenciones-codigo.md).
 
 ## Estado
-Módulo actual: ninguno (fase de análisis).
+Módulo actual: acceso (login, roles y menú dinámico) terminado.
+Siguiente: alta de escuelas (esperando el Excel con los datos de la escuela).
 
 <laravel-boost-guidelines>
 === foundation rules ===
