@@ -35,7 +35,7 @@ class ResetPassword extends Component
     {
         $this->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'string', 'confirmed', PasswordRule::min(8)->letters()->numbers()],
+            'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],
         ]);
 
         $status = Password::reset(

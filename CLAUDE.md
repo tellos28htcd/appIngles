@@ -11,8 +11,8 @@ Verifica las versiones reales en composer.json y package.json.
 
 ## Reglas del proyecto
 - Usa el skill laravel-livewire-fullstack en todo el trabajo de código.
-- Multi-tenant: una BD con company_id, global scope y policies. Toda tabla
-  transaccional lleva company_id. Cada módulo incluye pruebas de aislamiento.
+- Multi-tenant: una BD con school_id, global scope y policies. Toda tabla
+  transaccional lleva school_id. Cada módulo incluye pruebas de aislamiento.
 - White-label: colores y marca por tokens, nunca colores fijos en el código.
 - Trabaja un módulo a la vez. Antes de programar, haz el análisis corto del
   módulo y espera mi aprobación.
@@ -23,8 +23,9 @@ Verifica las versiones reales en composer.json y package.json.
   laravel-livewire-fullstack (references/convenciones-codigo.md).
 
 ## Estado
-Módulo actual: acceso (login, roles y menú dinámico) terminado.
-Siguiente: alta de escuelas (esperando el Excel con los datos de la escuela).
+Módulos terminados: acceso (login, menú dinámico), escuelas (tenants), usuarios, roles y permisos.
+Seguridad: ver docs/seguridad.md (controles y pasos obligatorios de producción).
+Siguiente: catálogos (turnos, libros, lecciones, actividades, clubes; pestaña 3 del Excel).
 
 <laravel-boost-guidelines>
 === foundation rules ===

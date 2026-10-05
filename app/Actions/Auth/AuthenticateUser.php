@@ -39,9 +39,9 @@ final class AuthenticateUser
             ]);
         }
 
-        $user = User::query()->with('role')->where('email', $email)->first();
+        $user = User::query()->with(['role', 'school'])->where('email', $email)->first();
 
-        if ($user === null || ! Hash::check($password, $user->password)) {
+        if ($user === null || ! $user->hasPassword() || ! Hash::check($password, $user->password)) {
             RateLimiter::hit($throttleKey, config('appingles.login.decay_seconds'));
             LoginLog::record(LoginEvent::Failed, $email, $user, $this->request);
 
@@ -52,6 +52,12 @@ final class AuthenticateUser
             LoginLog::record(LoginEvent::Inactive, $email, $user, $this->request);
 
             throw ValidationException::withMessages(['email' => __('access.inactive')]);
+        }
+
+        if ($user->school !== null && ! $user->school->isActive()) {
+            LoginLog::record(LoginEvent::Inactive, $email, $user, $this->request);
+
+            throw ValidationException::withMessages(['email' => __('access.school_suspended')]);
         }
 
         RateLimiter::clear($throttleKey);

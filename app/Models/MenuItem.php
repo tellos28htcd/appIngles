@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable(['parent_id', 'slug', 'label', 'icon', 'route_name', 'status', 'sort_order'])]
 class MenuItem extends Model
@@ -56,7 +57,8 @@ class MenuItem extends Model
 
     public function isActiveRoute(): bool
     {
-        if ($this->route_name !== null && request()->routeIs($this->route_name, $this->route_name.'.*')) {
+        // "users.index" marca como activo todo el módulo "users.*".
+        if ($this->route_name !== null && request()->routeIs($this->route_name, Str::beforeLast($this->route_name, '.').'.*')) {
             return true;
         }
 

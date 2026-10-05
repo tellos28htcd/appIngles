@@ -16,7 +16,7 @@
 
     <div class="flex min-h-dvh">
         {{-- Barra lateral (escritorio) --}}
-        <aside class="sticky top-0 hidden h-dvh w-64 flex-none flex-col gap-7 overflow-y-auto border-r border-line bg-white px-4 py-6 lg:flex">
+        <aside class="sticky top-0 hidden h-dvh w-64 flex-none flex-col gap-7 overflow-y-auto [scrollbar-gutter:stable] [scrollbar-width:thin] border-r border-line bg-white px-4 py-6 lg:flex">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 rounded-md px-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
                 <x-ui.brand-mark :brand="$brand" />
                 <span class="font-display text-base font-extrabold leading-tight">{{ $brand->name }}</span>
@@ -70,6 +70,8 @@
             <x-layout.user-card :user="$currentUser" />
         </div>
     </div>
+
+    <x-ui.toasts />
 
     @livewireScripts
 </body>

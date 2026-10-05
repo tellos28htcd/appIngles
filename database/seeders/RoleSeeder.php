@@ -6,6 +6,10 @@ use App\Enums\RoleScope;
 use App\Models\Role;
 use Illuminate\Database\Seeder;
 
+/**
+ * Roles base del catálogo. Solo crea los que faltan: el nombre, la
+ * descripción y el estado se editan desde Plataforma → Roles y permisos.
+ */
 class RoleSeeder extends Seeder
 {
     public function run(): void
@@ -22,13 +26,12 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($roles as $order => [$slug, $name, $scope, $description]) {
-            Role::updateOrCreate(['slug' => $slug], [
+            Role::firstOrNew(['slug' => $slug], [
                 'name' => $name,
-                'scope' => $scope,
                 'description' => $description,
                 'sort_order' => ($order + 1) * 10,
                 'is_active' => true,
-            ]);
+            ])->forceFill(['scope' => $scope, 'is_system' => true])->save();
         }
     }
 }

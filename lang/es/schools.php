@@ -1,0 +1,123 @@
+<?php
+
+return [
+    'title' => 'Escuelas',
+    'subtitle' => 'Planteles registrados en la plataforma',
+    'new' => 'Nueva escuela',
+    'create_title' => 'Nueva escuela',
+    'create_subtitle' => 'Datos del plantel, domicilio, identidad visual y configuración',
+    'edit_title' => 'Editar escuela',
+    'search' => 'Buscar por clave, nombre o razón social',
+    'empty' => 'Aún no hay escuelas registradas',
+    'empty_hint' => 'Da de alta el primer plantel para que pueda configurar sus usuarios.',
+    'no_results' => 'No hay escuelas con estos filtros',
+    'saved' => 'Escuela guardada.',
+    'activated' => 'Escuela activada.',
+    'suspended_msg' => 'Escuela suspendida. Sus usuarios ya no pueden entrar.',
+    'users_count' => '{0} Sin usuarios|{1} 1 usuario|[2,*] :count usuarios',
+    'all' => 'Todas',
+
+    'status' => [
+        'active' => 'Activa',
+        'suspended' => 'Suspendida',
+    ],
+
+    'actions' => [
+        'edit' => 'Editar',
+        'suspend' => 'Suspender',
+        'activate' => 'Activar',
+        'save' => 'Guardar escuela',
+        'cancel' => 'Cancelar',
+    ],
+
+    'confirm_suspend' => [
+        'title' => '¿Suspender :name?',
+        'body' => 'Sus usuarios no podrán iniciar sesión hasta que la vuelvas a activar. Su información se conserva.',
+        'confirm' => 'Suspender escuela',
+    ],
+
+    'sections' => [
+        'plantel' => 'Datos del plantel',
+        'address' => 'Domicilio',
+        'fiscal' => 'Contacto y datos fiscales',
+        'folios' => 'Folios de recibos',
+        'folios_hint' => 'Último folio utilizado en el sistema anterior; el siguiente recibo continuará desde ahí.',
+        'brand' => 'Identidad visual',
+        'brand_hint' => 'Logo y colores con los que la escuela verá el sistema.',
+        'operation' => 'Operación',
+        'settings' => 'Configuración del plantel',
+    ],
+
+    'fields' => [
+        'code' => 'Clave del instituto',
+        'name' => 'Descripción',
+        'name_hint' => 'Nombre con el que se identifica el plantel, p. ej. QUERÉTARO NORTE.',
+        'street' => 'Calle',
+        'exterior_number' => 'Núm. ext.',
+        'interior_number' => 'Núm. int.',
+        'neighborhood' => 'Colonia',
+        'postal_code' => 'Código postal',
+        'state_id' => 'Entidad federativa',
+        'municipality_id' => 'Localidad (municipio)',
+        'phone' => 'Teléfono',
+        'rfc' => 'RFC',
+        'legal_name' => 'Razón social',
+        'last_folio_series_a' => 'Último folio serie A (fiscalizado)',
+        'last_folio_series_b' => 'Último folio serie B (no fiscalizado)',
+        'logo' => 'Logo',
+        'logo_hint' => 'PNG, JPG o WebP, máximo 1 MB. Fondo transparente de preferencia.',
+        'logo_remove' => 'Quitar logo',
+        'brand_primary' => 'Color primario',
+        'brand_accent' => 'Color de acento',
+        'brand_accent_hint' => 'Opcional. Se usa solo para destacar (hoy, logros, novedades).',
+        'contrast_warning' => 'Este color tiene poco contraste sobre blanco (:ratio:1, mínimo 4.5:1). Los textos y enlaces pueden leerse con dificultad.',
+        'preview' => 'Vista previa',
+        'session_capacity' => 'Cupo de alumnos por sesión',
+        'session_capacity_hint' => 'Máximo :max. Cada sesión podrá tener menos lugares, mínimo 1.',
+        'timezone' => 'Zona horaria',
+        'currency' => 'Moneda',
+        'works_sundays' => 'Trabaja los días domingo',
+        'schedules_classrooms' => 'Programar horario para las aulas',
+        'books_without_classroom' => 'Agendar sin asignar un aula',
+        'hybrid_clubs' => 'Agendar clubes híbridos',
+        'requires_progress' => 'El alumno requiere progreso para acceder a los contenidos',
+        'self_booking' => 'Permitir que los alumnos reserven sus propias sesiones',
+        'max_sessions_scope' => '¿Las sesiones máximas se aplican por…?',
+        'max_sessions' => 'Cantidad máxima de sesiones por alumno',
+        'failed_activity_policy' => '¿Qué hacer en un grupo de actividades agendadas del alumno cuando alguna no se apruebe?',
+        'select_state' => 'Selecciona una entidad',
+        'select_municipality' => 'Selecciona un municipio',
+        'select_state_first' => 'Primero elige la entidad',
+    ],
+
+    'self_booking' => [
+        'disabled' => 'No permitir (solo recepción)',
+        'at_least_24h_before' => 'Solo 24 h antes',
+        'any_time' => 'A cualquier hora del día',
+    ],
+
+    'max_sessions_scope' => [
+        'school' => 'Plantel',
+        'student' => 'Alumno',
+    ],
+
+    'failed_activity_policy' => [
+        'delete' => 'Eliminar las actividades agendadas',
+        'shift' => 'Recorrer las actividades agendadas',
+    ],
+
+    'columns' => [
+        'school' => 'Escuela',
+        'location' => 'Ubicación',
+        'users' => 'Usuarios',
+        'status' => 'Estado',
+        'actions' => 'Acciones',
+    ],
+
+    'validation' => [
+        'municipality_state' => 'El municipio no pertenece a la entidad seleccionada.',
+        'rfc' => 'El RFC debe tener 12 caracteres (persona moral) o 13 (persona física).',
+        'color' => 'Usa un color en formato hexadecimal, p. ej. #4361EE.',
+        'postal_code' => 'El código postal debe tener 5 dígitos.',
+    ],
+];

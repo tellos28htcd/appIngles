@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * Menú dinámico: módulos (nivel 1) y submódulos (nivel 2) que el rol del
@@ -34,12 +35,18 @@ final class Navigation
     }
 
     /**
-     * ¿El usuario puede entrar a esta ruta? Las rutas que no están registradas
-     * en el menú (cerrar sesión, perfil…) no se restringen aquí.
+     * ¿El usuario puede entrar a esta ruta? Una opción del menú con ruta
+     * "users.index" cubre todo el módulo "users.*" (alta, edición…). Las rutas
+     * que no pertenecen a ningún módulo del menú (cerrar sesión…) no se
+     * restringen aquí; las acciones siempre se autorizan además con Policies.
      */
     public static function allows(User $user, string $routeName): bool
     {
-        $registered = MenuItem::query()->where('route_name', $routeName);
+        $module = Str::contains($routeName, '.') ? Str::beforeLast($routeName, '.') : $routeName;
+
+        $registered = MenuItem::query()->where(fn (Builder $query) => $query
+            ->where('route_name', $routeName)
+            ->orWhere('route_name', 'like', $module.'.%'));
 
         if ($user->isPlatformAdmin() || ! $registered->exists()) {
             return true;

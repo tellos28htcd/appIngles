@@ -44,7 +44,7 @@ class MenuSeeder extends Seeder
         'reports' => ['Reportes', 'chart', null, MenuItemStatus::ComingSoon],
         'settings' => ['Configuración', 'settings', null, MenuItemStatus::Active, [
             'settings-school' => ['Mi escuela', null, null, MenuItemStatus::ComingSoon],
-            'settings-users' => ['Usuarios', null, null, MenuItemStatus::ComingSoon],
+            'settings-users' => ['Usuarios', null, 'users.index', MenuItemStatus::Active],
             'settings-levels' => ['Niveles y units', null, null, MenuItemStatus::ComingSoon],
             'settings-classrooms' => ['Salones', null, null, MenuItemStatus::ComingSoon],
             'settings-evaluation-codes' => ['Códigos de evaluación', null, null, MenuItemStatus::ComingSoon],
@@ -53,9 +53,8 @@ class MenuSeeder extends Seeder
             'settings-holidays' => ['Días festivos', null, null, MenuItemStatus::ComingSoon],
         ]],
         'platform' => ['Plataforma', 'building', null, MenuItemStatus::Active, [
-            'platform-schools' => ['Escuelas', null, null, MenuItemStatus::ComingSoon],
-            'platform-users' => ['Usuarios de escuelas', null, null, MenuItemStatus::ComingSoon],
-            'platform-roles' => ['Roles y menú', null, null, MenuItemStatus::ComingSoon],
+            'platform-schools' => ['Escuelas', null, 'schools.index', MenuItemStatus::Active],
+            'platform-roles' => ['Roles y permisos', null, 'roles.index', MenuItemStatus::Active],
         ]],
     ];
 
@@ -96,8 +95,18 @@ class MenuSeeder extends Seeder
     {
         DB::transaction(function (): void {
             $leaves = $this->syncTree();
+            $this->removeObsoleteItems();
             $this->syncAccess($leaves);
         });
+    }
+
+    /** Quita del menú las opciones que ya no están en el árbol. */
+    private function removeObsoleteItems(): void
+    {
+        $slugs = collect(self::TREE)
+            ->flatMap(fn (array $definition, string $slug) => [$slug, ...array_keys($definition[4] ?? [])]);
+
+        MenuItem::whereNotIn('slug', $slugs)->delete();
     }
 
     /** @return array<string, MenuItem> Opciones de último nivel con su padre (si tiene). */
@@ -125,22 +134,29 @@ class MenuSeeder extends Seeder
         return $leaves;
     }
 
-    /** @param array{0: string, 1: ?string, 2: ?string, 3: MenuItemStatus} $definition */
+    /**
+     * Lo que define el código (jerarquía, ícono, ruta, estado) se actualiza
+     * siempre; el nombre y el orden solo al crear, porque se editan desde
+     * Plataforma → Roles y permisos → Menú.
+     *
+     * @param  array{0: string, 1: ?string, 2: ?string, 3: MenuItemStatus}  $definition
+     */
     private function upsert(string $slug, array $definition, ?int $parentId, int $order): MenuItem
     {
         [$label, $icon, $routeName, $status] = $definition;
 
-        return MenuItem::updateOrCreate(['slug' => $slug], [
-            'parent_id' => $parentId,
-            'label' => $label,
-            'icon' => $icon,
-            'route_name' => $routeName,
-            'status' => $status,
-            'sort_order' => $order,
-        ]);
+        $item = MenuItem::firstOrNew(['slug' => $slug], ['label' => $label, 'sort_order' => $order]);
+        $item->fill(['parent_id' => $parentId, 'icon' => $icon, 'route_name' => $routeName, 'status' => $status])->save();
+
+        return $item;
     }
 
-    /** @param array<string, MenuItem> $leaves */
+    /**
+     * Asigna los permisos iniciales sin quitar nunca los que se dieron desde
+     * la pantalla: solo para opciones nuevas o roles que aún no tienen ninguna.
+     *
+     * @param  array<string, MenuItem>  $leaves
+     */
     private function syncAccess(array $leaves): void
     {
         $shared = collect($leaves)
@@ -149,6 +165,7 @@ class MenuSeeder extends Seeder
 
         foreach (self::ACCESS as $roleSlug => $slugs) {
             $role = Role::where('slug', $roleSlug)->firstOrFail();
+            $isNewRole = $role->menuItems()->doesntExist();
 
             $granted = collect($slugs)
                 ->flatMap(fn (string $slug) => match ($slug) {
@@ -157,11 +174,12 @@ class MenuSeeder extends Seeder
                     default => [$slug],
                 })
                 ->map(fn (string $slug) => $leaves[$slug])
+                ->filter(fn (MenuItem $item) => $isNewRole || $item->wasRecentlyCreated)
                 ->flatMap(fn (MenuItem $item) => array_filter([$item->id, $item->parent_id]))
                 ->unique()
                 ->values();
 
-            $role->menuItems()->sync($granted);
+            $role->menuItems()->syncWithoutDetaching($granted);
         }
     }
 

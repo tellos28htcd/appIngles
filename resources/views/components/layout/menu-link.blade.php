@@ -7,8 +7,8 @@ $base = $nested
 @if ($item->isComingSoon() || $item->route_name === null)
     <span class="{{ $base }} cursor-default font-semibold text-ink-400" aria-disabled="true">
         @unless ($nested)<x-ui.icon :name="$item->icon" />@endunless
-        <span class="flex-1 truncate">{{ $item->label }}</span>
-        <span class="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-bold text-ink-500">{{ __('layout.coming_soon') }}</span>
+        <span @class(["flex-1", "truncate" => ! $nested, "leading-tight" => $nested])>{{ $item->label }}</span>
+        <span class="flex-none rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-ink-500">{{ __('layout.coming_soon') }}</span>
     </span>
 @else
     <a href="{{ route($item->route_name) }}" wire:navigate
@@ -20,6 +20,6 @@ $base = $nested
            'font-semibold text-ink-700 hover:bg-surface-2' => ! $item->isActiveRoute(),
        ])>
         @unless ($nested)<x-ui.icon :name="$item->icon" />@endunless
-        <span class="flex-1 truncate">{{ $item->label }}</span>
+        <span @class(["flex-1", "truncate" => ! $nested, "leading-tight" => $nested])>{{ $item->label }}</span>
     </a>
 @endif

@@ -61,9 +61,9 @@ Objetivos del sistema:
 
 ## 4. Arquitectura multi-tenant
 
-**Estrategia (según la propuesta): una sola base de datos con campo discriminador `company_id` (tenant) en las tablas transaccionales.**
+**Estrategia (según la propuesta): una sola base de datos con campo discriminador `school_id` (tenant) en las tablas transaccionales.** La tabla de tenants es `schools` (una escuela = un plantel).
 
-- Reforzar con **Global Scopes** de Eloquent (por ejemplo, un trait `BelongsToCompany` que aplique el filtro y asigne `company_id` al crear) y con **Policies** para garantizar por código que una escuela nunca acceda a datos de otra.
+- Reforzar con **Global Scopes** de Eloquent (por ejemplo, un trait `BelongsToSchool` que aplique el filtro y asigne `school_id` al crear) y con **Policies** para garantizar por código que una escuela nunca acceda a datos de otra.
 - Los datos de cada escuela (alumnos, profesores, calificaciones, finanzas) están estrictamente aislados.
 - Cada escuela configura su identidad visual (white-label): logotipo, colores corporativos y, opcionalmente, subdominio o dominio personalizado (ej. `tuacademia.dominio.com`).
 - **Una cuenta por academia.** No se modelan sucursales: si una academia tiene otro plantel, se registra como **una cuenta (tenant) nueva**.
@@ -204,7 +204,7 @@ Estadísticas avanzadas, notificaciones personalizadas. El sistema debe poder ag
 | RN-13 | Una escuela suspendida por falta de pago pierde acceso según la política que se defina (ver sección 12). |
 | RN-14 | Las sesiones se crean por día (fecha, horario de duración variable, salón, teacher) y la recepción registra en ellas las reservaciones. No hay grupos fijos permanentes. Puede haber sesiones cualquier día, incluido el domingo. |
 | RN-15 | Cada academia es una cuenta (tenant) independiente; una sucursal es una cuenta nueva. |
-| RN-16 | Un usuario pertenece a una sola escuela; el correo es único dentro de la escuela. La misma persona en dos academias tiene dos usuarios. El login **solo pide correo y contraseña**; la escuela se resuelve internamente a partir del usuario, sin pantalla para elegirla. |
+| RN-16 | Solo el Super Administrador no tiene escuela; todo otro usuario pertenece a **una sola** escuela. El correo es **único en toda la plataforma**: la misma persona en dos academias tiene dos usuarios con correos distintos. El login **solo pide correo y contraseña**; la escuela se resuelve internamente a partir del usuario, sin pantalla para elegirla. |
 | RN-17 | Matrícula del alumno: `AI-{ID escuela}-{año}-{consecutivo 0000}`, con consecutivo anual por escuela. |
 | RN-18 | Solo el Super Administrador da de alta escuelas y su usuario administrador inicial; no hay autorregistro. Por ahora existe un solo plan. |
 | RN-19 | Moneda y zona horaria por escuela; valores de inicio MXN y America/Mexico_City. |
@@ -212,6 +212,9 @@ Estadísticas avanzadas, notificaciones personalizadas. El sistema debe poder ag
 | RN-21 | Cada escuela define su cupo de alumnos por sesión durante su configuración inicial (máximo 6). Cada sesión puede tener un cupo menor al de la escuela, con un **mínimo de 1** (ej. clase privada): `1 ≤ cupo de la sesión ≤ cupo de la escuela ≤ 6`. |
 | RN-22 | Los días del catálogo de festivos de la escuela no admiten sesiones y no cuentan para el cálculo de asistencia. |
 | RN-23 | La leyenda "Con tecnología de AppIngles" se muestra siempre, junto con el logo de la escuela. |
+| RN-24 | Un usuario solo se puede **eliminar** si no tiene registros en ningún módulo (haber iniciado sesión no cuenta); si los tiene, solo se puede desactivar. |
+| RN-25 | Al dar de alta un usuario nadie captura su contraseña: el sistema le envía por correo un enlace para crearla. |
+| RN-26 | Domicilio de la escuela con entidad federativa y municipio del catálogo oficial del INEGI. |
 
 Niveles de idioma: la propuesta menciona niveles **CEFR (A1–C2)** para el control de niveles, y también usa "básico / medio / avanzado" para los grupos. Hay que definir cómo se relacionan (ver sección 12).
 
@@ -221,7 +224,7 @@ Niveles de idioma: la propuesta menciona niveles **CEFR (A1–C2)** para el cont
 
 - **Seguridad:** autenticación robusta, autorización por Policies en cada acción (incluidas las acciones de Livewire), datos personales y de menores protegidos, documentos adjuntos en almacenamiento privado con acceso controlado por tenant y rol.
 - **Notificaciones:** correo y WhatsApp mediante **colas** (queues) para recordatorios y avisos masivos.
-- **Rendimiento:** sin N+1, paginación en listados, índices en columnas de búsqueda y filtro (incluyendo `company_id`).
+- **Rendimiento:** sin N+1, paginación en listados, índices en columnas de búsqueda y filtro (incluyendo `school_id`).
 - **Disponibilidad de información:** consulta en tiempo real, accesible desde cualquier dispositivo.
 - **Escalabilidad:** sin límite fijo de usuarios y registros (depende de la capacidad del servidor).
 - **Auditoría** de cambios y de consultas a información sensible.
@@ -232,7 +235,7 @@ Niveles de idioma: la propuesta menciona niveles **CEFR (A1–C2)** para el cont
 ## 10. Convenciones para el desarrollo
 
 - Seguir el skill `laravel-livewire-fullstack` y el `CLAUDE.md` del proyecto.
-- Toda tabla transaccional lleva `company_id` con llave foránea e índice; los modelos usan el trait/scope de tenant.
+- Toda tabla transaccional lleva `school_id` con llave foránea e índice; los modelos usan el trait/scope de tenant.
 - Estados como enums de PHP; dinero en `decimal` (nunca float); fechas en UTC con presentación en zona horaria configurable por escuela.
 - Migraciones reversibles, factories y seeders por módulo, pruebas de feature por módulo (incluyendo aislamiento entre tenants).
 - Commits pequeños por módulo o sub-tarea; cada entrega explica cómo probarla.

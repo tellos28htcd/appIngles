@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'name', 'description', 'scope', 'sort_order', 'is_active'])]
+#[Fillable(['slug', 'name', 'description', 'scope', 'is_system', 'sort_order', 'is_active'])]
 class Role extends Model
 {
     /** @use HasFactory<RoleFactory> */
@@ -36,6 +36,7 @@ class Role extends Model
     {
         return [
             'scope' => RoleScope::class,
+            'is_system' => 'boolean',
             'is_active' => 'boolean',
         ];
     }
@@ -50,5 +51,10 @@ class Role extends Model
     public function menuItems(): BelongsToMany
     {
         return $this->belongsToMany(MenuItem::class);
+    }
+
+    public function isPlatformAdmin(): bool
+    {
+        return $this->slug === self::PLATFORM_ADMIN;
     }
 }

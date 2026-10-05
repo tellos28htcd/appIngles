@@ -5,6 +5,7 @@ return [
     'headline' => 'Tu academia, en orden y al día.',
     'platform_caption' => 'Plataforma para academias de inglés',
     'powered_by' => 'Con tecnología de',
+    'school_suspended' => 'Tu escuela está suspendida temporalmente. Comunícate con su administración.',
     'inactive' => 'Tu cuenta está desactivada. Comunícate con el administrador de tu escuela.',
 
     'fields' => [
@@ -38,7 +39,7 @@ return [
 
     'reset' => [
         'title' => 'Nueva contraseña',
-        'subtitle' => 'Usa al menos 8 caracteres, con letras y números.',
+        'subtitle' => 'Usa al menos 10 caracteres, con mayúsculas, minúsculas y números.',
         'submit' => 'Guardar contraseña',
         'submitting' => 'Guardando…',
         'done' => 'Tu contraseña se actualizó. Ya puedes iniciar sesión.',

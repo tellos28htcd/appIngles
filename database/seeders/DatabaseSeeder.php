@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            InegiCatalogSeeder::class,
             RoleSeeder::class,
             MenuSeeder::class,
             SuperAdminSeeder::class,

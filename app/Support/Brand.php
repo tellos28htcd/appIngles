@@ -2,9 +2,11 @@
 
 namespace App\Support;
 
+use App\Models\School;
+
 /**
- * Identidad visual activa. Mientras no existe el módulo de escuelas solo hay
- * la marca de la plataforma; después se resolverá la de la escuela del usuario.
+ * Identidad visual activa: la de la escuela del usuario conectado o, si no
+ * tiene escuela (Super Admin, login), la de la plataforma.
  * Las propiedades brand_primary / brand_accent son las que lee
  * layouts/partials/brand.blade.php.
  */
@@ -20,7 +22,20 @@ final readonly class Brand
 
     public static function current(): self
     {
-        return once(fn () => self::platform());
+        $school = auth()->user()?->loadMissing('school')->school;
+
+        return $school ? self::forSchool($school) : self::platform();
+    }
+
+    public static function forSchool(School $school): self
+    {
+        return new self(
+            name: $school->name,
+            monogram: $school->monogram(),
+            logo_url: $school->logoUrl(),
+            brand_primary: $school->brand_primary,
+            brand_accent: $school->brand_accent ?? config('appingles.brand.accent'),
+        );
     }
 
     public static function platform(): self
