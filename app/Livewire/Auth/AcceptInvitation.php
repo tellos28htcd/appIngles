@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Livewire\Auth\Concerns\RequiresSignedOut;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\View\View;
@@ -17,6 +18,8 @@ use Livewire\Component;
 #[Layout('layouts.guest')]
 class AcceptInvitation extends Component
 {
+    use RequiresSignedOut;
+
     #[Locked]
     public string $token = '';
 
@@ -31,10 +34,13 @@ class AcceptInvitation extends Component
     {
         $this->token = $token;
         $this->email = Str::lower(trim((string) request()->query('email', '')));
+        $this->rememberReturnUrl();
     }
 
     public function save(): void
     {
+        $this->ensureSignedOut();
+
         $this->validate([
             'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],
         ]);

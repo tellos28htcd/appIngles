@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Livewire\Auth\Concerns\RequiresSignedOut;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\View\View;
@@ -16,6 +17,8 @@ use Livewire\Component;
 #[Layout('layouts.guest')]
 class ResetPassword extends Component
 {
+    use RequiresSignedOut;
+
     #[Locked]
     public string $token = '';
 
@@ -29,10 +32,13 @@ class ResetPassword extends Component
     {
         $this->token = $token;
         $this->email = (string) request()->query('email', '');
+        $this->rememberReturnUrl();
     }
 
     public function resetPassword(): void
     {
+        $this->ensureSignedOut();
+
         $this->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],

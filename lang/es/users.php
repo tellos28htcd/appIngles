@@ -62,6 +62,11 @@ return [
         'save' => 'Guardar usuario',
         'cancel' => 'Cancelar',
         'more' => 'Más acciones para :name',
+        'edit_named' => 'Editar a :name',
+        'resend_named' => 'Reenviar invitación a :name',
+        'activate_named' => 'Activar a :name',
+        'deactivate_named' => 'Desactivar a :name',
+        'delete_named' => 'Eliminar a :name',
     ],
 
     'messages' => [
@@ -70,6 +75,8 @@ return [
         'activated' => 'Usuario activado.',
         'deactivated' => 'Usuario desactivado. Ya no puede iniciar sesión.',
         'deleted' => 'Usuario eliminado.',
+        'created_mail_failed' => 'Usuario creado, pero no se pudo enviar el correo de invitación. Revisa la configuración de correo y usa "Reenviar invitación".',
+        'mail_failed' => 'No se pudo enviar el correo. Revisa la configuración del servidor de correo e inténtalo de nuevo.',
         'invitation_sent' => 'Invitación reenviada a :email.',
         'cannot_delete' => 'Este usuario tiene registros en el sistema; solo se puede desactivar.',
     ],

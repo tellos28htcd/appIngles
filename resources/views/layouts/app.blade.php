@@ -16,15 +16,27 @@
 
     <div class="flex min-h-dvh">
         {{-- Barra lateral (escritorio) --}}
-        <aside class="sticky top-0 hidden h-dvh w-64 flex-none flex-col gap-7 overflow-y-auto [scrollbar-gutter:stable] [scrollbar-width:thin] border-r border-line bg-white px-4 py-6 lg:flex">
-            <a href="{{ route('dashboard') }}" class="flex items-center gap-3 rounded-md px-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
-                <x-ui.brand-mark :brand="$brand" />
-                <span class="font-display text-base font-extrabold leading-tight">{{ $brand->name }}</span>
-            </a>
+        {{-- Barra lateral (escritorio): mismo panel de marca que el login --}}
+        <aside class="sticky top-0 hidden h-dvh w-64 flex-none overflow-hidden bg-primary-600 text-on-primary lg:block">
+            <div class="pointer-events-none absolute -left-15 -top-15 size-50 rotate-[18deg] rounded-[48px] bg-primary-700" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute -bottom-40 -right-36 size-[360px] rounded-full bg-primary-500" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute -right-3 top-3 size-9 rounded-full bg-accent-500" aria-hidden="true"></div>
 
-            <x-layout.menu :items="$menu" />
+            <div class="relative flex h-full flex-col gap-7 overflow-y-auto px-4 py-6 [scrollbar-width:thin] [scrollbar-color:var(--color-primary-400)_transparent]">
+                <a href="{{ route('dashboard') }}" class="flex items-center gap-3 rounded-md px-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-on-primary/40">
+                    <x-ui.brand-mark :brand="$brand" inverse />
+                    <span class="flex min-w-0 flex-col">
+                        <span class="truncate font-display text-base font-extrabold leading-tight">{{ $brand->name }}</span>
+                        @if ($currentUser->isPlatformAdmin())
+                            <span class="truncate text-xs text-on-primary/75">{{ __('access.platform_caption') }}</span>
+                        @endif
+                    </span>
+                </a>
 
-            <x-layout.user-card :user="$currentUser" class="mt-auto" />
+                <x-layout.menu :items="$menu" variant="brand" />
+
+                <x-layout.user-card :user="$currentUser" variant="brand" class="mt-auto" />
+            </div>
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">

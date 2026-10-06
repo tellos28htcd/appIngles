@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Storage;
     'logo_path', 'brand_primary', 'brand_accent',
     'session_capacity', 'timezone', 'currency',
     'works_sundays', 'schedules_classrooms', 'books_without_classroom', 'hybrid_clubs', 'requires_progress',
-    'self_booking', 'max_sessions_scope', 'max_sessions', 'failed_activity_policy',
+    'self_booking', 'max_sessions_scope', 'max_sessions', 'failed_activity_policy', 'club_min_lesson_number',
     'status',
 ])]
 class School extends Model
@@ -49,6 +49,7 @@ class School extends Model
             'requires_progress' => 'boolean',
             'session_capacity' => 'integer',
             'max_sessions' => 'integer',
+            'club_min_lesson_number' => 'integer',
             'last_folio_series_a' => 'integer',
             'last_folio_series_b' => 'integer',
         ];
@@ -58,6 +59,18 @@ class School extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /** @return HasMany<Shift, $this> */
+    public function shifts(): HasMany
+    {
+        return $this->hasMany(Shift::class);
+    }
+
+    /** @return HasMany<Book, $this> */
+    public function books(): HasMany
+    {
+        return $this->hasMany(Book::class);
     }
 
     /** @return BelongsTo<State, $this> */

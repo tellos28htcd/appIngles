@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Closure;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,12 +29,39 @@ class AuditLog extends Model
         return $this->belongsTo(User::class);
     }
 
+    private static bool $muted = false;
+
+    /**
+     * Ejecuta sin registrar eventos individuales (copias masivas); quien
+     * llama registra después un solo evento resumen.
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
+    public static function muted(Closure $callback): mixed
+    {
+        $previous = self::$muted;
+        self::$muted = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$muted = $previous;
+        }
+    }
+
     /**
      * @param  array<string, mixed>|null  $old
      * @param  array<string, mixed>|null  $new
      */
-    public static function record(Model $model, string $event, ?array $old = null, ?array $new = null): self
+    public static function record(Model $model, string $event, ?array $old = null, ?array $new = null): ?self
     {
+        if (self::$muted) {
+            return null;
+        }
+
         $actor = auth()->user();
 
         return self::create([

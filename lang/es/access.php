@@ -5,6 +5,11 @@ return [
     'headline' => 'Tu academia, en orden y al día.',
     'platform_caption' => 'Plataforma para academias de inglés',
     'powered_by' => 'Con tecnología de',
+    'signed_in' => [
+        'title' => 'Tienes abierta la sesión de :name',
+        'body' => 'Para usar este enlace primero hay que cerrar esa sesión en este navegador.',
+        'action' => 'Cerrar sesión y continuar',
+    ],
     'school_suspended' => 'Tu escuela está suspendida temporalmente. Comunícate con su administración.',
     'inactive' => 'Tu cuenta está desactivada. Comunícate con el administrador de tu escuela.',
 

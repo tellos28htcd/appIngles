@@ -45,15 +45,15 @@ class MenuSeeder extends Seeder
         'settings' => ['Configuración', 'settings', null, MenuItemStatus::Active, [
             'settings-school' => ['Mi escuela', null, null, MenuItemStatus::ComingSoon],
             'settings-users' => ['Usuarios', null, 'users.index', MenuItemStatus::Active],
-            'settings-levels' => ['Niveles y units', null, null, MenuItemStatus::ComingSoon],
+            'settings-catalogs' => ['Catálogos académicos', null, 'catalogs.index', MenuItemStatus::Active],
             'settings-classrooms' => ['Salones', null, null, MenuItemStatus::ComingSoon],
-            'settings-evaluation-codes' => ['Códigos de evaluación', null, null, MenuItemStatus::ComingSoon],
             'settings-payment-methods' => ['Métodos de pago', null, null, MenuItemStatus::ComingSoon],
             'settings-charge-concepts' => ['Conceptos de cobro', null, null, MenuItemStatus::ComingSoon],
             'settings-holidays' => ['Días festivos', null, null, MenuItemStatus::ComingSoon],
         ]],
         'platform' => ['Plataforma', 'building', null, MenuItemStatus::Active, [
             'platform-schools' => ['Escuelas', null, 'schools.index', MenuItemStatus::Active],
+            'platform-catalogs' => ['Catálogos base', null, 'base-catalogs.index', MenuItemStatus::Active],
             'platform-roles' => ['Roles y permisos', null, 'roles.index', MenuItemStatus::Active],
             'platform-menu' => ['Menú', null, 'menu.index', MenuItemStatus::Active],
         ]],

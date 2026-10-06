@@ -84,6 +84,8 @@ return [
         'self_booking' => 'Permitir que los alumnos reserven sus propias sesiones',
         'max_sessions_scope' => '¿Las sesiones máximas se aplican por…?',
         'max_sessions' => 'Cantidad máxima de sesiones por alumno',
+        'club_min_lesson_number' => '¿A partir de cuál lección el alumno puede participar en clubes?',
+        'club_min_lesson_none' => 'Desde el inicio (sin restricción)',
         'failed_activity_policy' => '¿Qué hacer en un grupo de actividades agendadas del alumno cuando alguna no se apruebe?',
         'select_state' => 'Selecciona una entidad',
         'select_municipality' => 'Selecciona un municipio',

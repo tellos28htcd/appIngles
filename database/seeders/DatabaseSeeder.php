@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             InegiCatalogSeeder::class,
+            CatalogBaseSeeder::class,
             RoleSeeder::class,
             MenuSeeder::class,
             SuperAdminSeeder::class,

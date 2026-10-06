@@ -46,9 +46,15 @@ class UserEditor extends Component
 
         $created = $this->form->save($sendInvitation);
 
+        $mailFailed = $created && $this->form->invitationSent === false;
+
         session()->flash('toast', [
-            'type' => 'success',
-            'message' => __($created ? 'users.messages.created' : 'users.messages.updated'),
+            'type' => $mailFailed ? 'warning' : 'success',
+            'message' => __(match (true) {
+                $mailFailed => 'users.messages.created_mail_failed',
+                $created => 'users.messages.created',
+                default => 'users.messages.updated',
+            }),
         ]);
 
         $this->redirectRoute('users.index', navigate: true);

@@ -5,6 +5,8 @@ use App\Livewire\Auth\AcceptInvitation;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\ResetPassword;
+use App\Livewire\Catalogs\BaseCatalogs;
+use App\Livewire\Catalogs\SchoolCatalogs;
 use App\Livewire\Dashboard;
 use App\Livewire\Menu\MenuManager;
 use App\Livewire\Roles\RoleEditor;
@@ -20,9 +22,11 @@ Route::redirect('/', '/inicio');
 Route::middleware('guest')->group(function () {
     Route::livewire('/login', Login::class)->name('login');
     Route::livewire('/recuperar-contrasena', ForgotPassword::class)->name('password.request');
-    Route::livewire('/restablecer-contrasena/{token}', ResetPassword::class)->name('password.reset');
-    Route::livewire('/crear-contrasena/{token}', AcceptInvitation::class)->name('invitation.accept');
 });
+
+// Enlaces que llegan por correo: se abren aunque haya otra sesión iniciada (la pantalla ofrece cerrarla).
+Route::livewire('/restablecer-contrasena/{token}', ResetPassword::class)->name('password.reset');
+Route::livewire('/crear-contrasena/{token}', AcceptInvitation::class)->name('invitation.accept');
 
 Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(function () {
     Route::livewire('/inicio', Dashboard::class)->name('dashboard');
@@ -36,6 +40,9 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
     Route::livewire('/roles/{role}/editar', RoleEditor::class)->name('roles.edit');
 
     Route::livewire('/menu', MenuManager::class)->name('menu.index');
+
+    Route::livewire('/catalogos-base', BaseCatalogs::class)->name('base-catalogs.index');
+    Route::livewire('/configuracion/catalogos', SchoolCatalogs::class)->name('catalogs.index');
 
     Route::livewire('/usuarios', UserIndex::class)->name('users.index');
     Route::livewire('/usuarios/nuevo', UserEditor::class)->name('users.create');

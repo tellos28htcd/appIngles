@@ -158,6 +158,8 @@
                     <x-ui.choice name="form.failed_activity_policy" :label="__('schools.fields.failed_activity_policy')"
                                  :options="collect(\App\Enums\FailedActivityPolicy::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->all()"
                                  wire:model="form.failed_activity_policy" />
+                    <x-ui.select name="form.club_min_lesson_number" :label="__('schools.fields.club_min_lesson_number')" :options="$form->lessonOptions()"
+                                 :placeholder="__('schools.fields.club_min_lesson_none')" wire:model="form.club_min_lesson_number" />
                 </div>
             </div>
         </x-ui.card>

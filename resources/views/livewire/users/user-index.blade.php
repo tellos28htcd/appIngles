@@ -45,8 +45,9 @@
                     @endif
                 </x-ui.empty-state>
             @else
-                {{-- Escritorio: tabla --}}
-                <table class="hidden w-full text-left lg:table">
+                {{-- Escritorio: tabla (con desplazamiento horizontal si no cabe; nunca se sale de la tarjeta) --}}
+                <div class="hidden overflow-x-auto lg:block">
+                <table class="w-full text-left">
                     <thead class="bg-surface text-xs uppercase tracking-wide text-ink-500">
                         <tr>
                             <th scope="col" class="px-4 py-3 font-bold">{{ __('users.columns.user') }}</th>
@@ -55,7 +56,7 @@
                                 <th scope="col" class="px-4 py-3 font-bold">{{ __('users.columns.school') }}</th>
                             @endif
                             <th scope="col" class="px-4 py-3 font-bold">{{ __('users.columns.status') }}</th>
-                            <th scope="col" class="px-4 py-3 font-bold">{{ __('users.columns.last_login') }}</th>
+                            <th scope="col" class="whitespace-nowrap px-4 py-3 font-bold">{{ __('users.columns.last_login') }}</th>
                             <th scope="col" class="px-4 py-3 text-right font-bold">{{ __('users.columns.actions') }}</th>
                         </tr>
                     </thead>
@@ -65,10 +66,10 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
                                         <span class="flex size-9 flex-none items-center justify-center rounded-full bg-primary-100 text-[13px] font-bold text-primary-800" aria-hidden="true">{{ $user->initials() }}</span>
-                                        <div class="flex min-w-0 flex-col">
-                                            <span class="truncate font-bold">
+                                        <div class="flex min-w-0 max-w-[17rem] flex-col">
+                                            <span class="font-bold leading-snug [overflow-wrap:anywhere]">
                                                 {{ $user->name }}
-                                                @if ($user->is($actor))<span class="ml-1 rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-ink-900">{{ __('users.you') }}</span>@endif
+                                                @if ($user->is($actor))<span class="ml-1 whitespace-nowrap rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-ink-900">{{ __('users.you') }}</span>@endif
                                             </span>
                                             <span class="truncate text-sm text-ink-500">{{ $user->email }}</span>
                                         </div>
@@ -78,21 +79,23 @@
                                 @if ($isPlatform)
                                     <td class="px-4 py-3 text-sm text-ink-700">
                                         @if ($user->school)
-                                            <span class="font-mono text-xs text-ink-500">{{ $user->school->code }}</span> {{ $user->school->name }}
+                                            <span class="block font-mono text-xs text-ink-500">{{ $user->school->code }}</span>
+                                            <span class="block max-w-[11rem] leading-snug">{{ $user->school->name }}</span>
                                         @else
                                             <span class="text-ink-500">{{ __('users.no_school') }}</span>
                                         @endif
                                     </td>
                                 @endif
-                                <td class="px-4 py-3">@include('livewire.users.partials.status')</td>
-                                <td class="px-4 py-3 text-sm tabular-nums text-ink-700">
-                                    {{ $user->last_login_at?->timezone(config('appingles.timezone'))->translatedFormat('j M Y, H:i') ?? __('users.never') }}
+                                <td class="whitespace-nowrap px-4 py-3">@include('livewire.users.partials.status')</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm tabular-nums text-ink-700">
+                                    {{ $user->last_login_at?->timezone(config('appingles.timezone'))->translatedFormat('j M Y H:i') ?? __('users.never') }}
                                 </td>
-                                <td class="px-4 py-3"><div class="flex justify-end gap-1">@include('livewire.users.partials.row-actions')</div></td>
+                                <td class="w-px px-4 py-3"><div class="flex items-center justify-end gap-0.5">@include('livewire.users.partials.row-actions')</div></td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
+                </div>
 
                 {{-- Móvil y tablet: tarjetas --}}
                 <ul class="divide-y divide-line lg:hidden">

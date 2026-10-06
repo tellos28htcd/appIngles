@@ -16,6 +16,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -367,5 +368,71 @@ class UserManagementTest extends TestCase
         Livewire::test(UserIndex::class)->call('resendInvitation', $pending->id)->assertDispatched('toast');
 
         Notification::assertSentTo($pending, UserInvitation::class);
+    }
+
+    // ---- Falla del servidor de correo -------------------------------------------
+
+    private function breakMailServer(): void
+    {
+        config([
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => '127.0.0.1',
+            'mail.mailers.smtp.port' => 1,
+            'mail.mailers.smtp.timeout' => 2,
+        ]);
+    }
+
+    public function test_user_is_created_even_if_the_invitation_email_fails(): void
+    {
+        $this->breakMailServer();
+        $this->actingAs($this->userWithRole(Role::PLATFORM_ADMIN));
+
+        Livewire::test(UserEditor::class)
+            ->set('form.first_name', 'Ana')
+            ->set('form.last_name', 'López')
+            ->set('form.email', 'ana@appingles.com')
+            ->set('form.role_id', $this->roleId(Role::TEACHER))
+            ->set('form.school_id', $this->schoolA->id)
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', ['email' => 'ana@appingles.com']);
+        $this->assertSame('warning', session('toast')['type']);
+    }
+
+    public function test_resend_reports_mail_failure(): void
+    {
+        $this->breakMailServer();
+        $pending = $this->userWithRole(Role::TEACHER, $this->schoolA, ['password' => null]);
+        $this->actingAs($this->userWithRole(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        Livewire::test(UserIndex::class)
+            ->call('resendInvitation', $pending->id)
+            ->assertDispatched('toast', type: 'error');
+    }
+
+    public function test_invitation_link_opened_with_another_session_offers_to_sign_out(): void
+    {
+        $invited = $this->userWithRole(Role::TEACHER, $this->schoolA, ['password' => null, 'email' => 'nuevo@appingles.com']);
+        $token = Password::broker('invitations')->createToken($invited);
+        $url = route('invitation.accept', ['token' => $token, 'email' => $invited->email]);
+
+        $this->actingAs($this->userWithRole(Role::PLATFORM_ADMIN));
+
+        // Antes mandaba al Inicio del admin; ahora muestra el aviso.
+        $this->get($url)->assertOk()->assertSee('Cerrar sesión y continuar');
+
+        Livewire::withQueryParams(['email' => $invited->email])
+            ->test(AcceptInvitation::class, ['token' => $token])
+            ->call('save')
+            ->assertForbidden();
+
+        Livewire::withQueryParams(['email' => $invited->email])
+            ->test(AcceptInvitation::class, ['token' => $token])
+            ->call('signOutAndContinue')
+            ->assertRedirect();
+
+        $this->assertGuest();
     }
 }

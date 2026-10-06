@@ -4,6 +4,9 @@
         <p class="text-[15px] text-ink-700">{{ __('access.reset.subtitle') }}</p>
     </div>
 
+    @auth
+        @include('livewire.auth.partials.signed-in-notice')
+    @else
     <form wire:submit="resetPassword" class="flex flex-col gap-4.5" novalidate>
         <x-ui.input name="email" type="email" size="lg" :label="__('access.fields.email')"
                     wire:model="email" autocomplete="username" inputmode="email" required />
@@ -22,4 +25,5 @@
             </span>
         </x-ui.button>
     </form>
+    @endauth
 </div>

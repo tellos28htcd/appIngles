@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Forms;
 
+use App\Actions\Catalogs\CopyBaseCatalogs;
 use App\Enums\FailedActivityPolicy;
 use App\Enums\MaxSessionsScope;
 use App\Enums\SelfBooking;
+use App\Models\Book;
 use App\Models\Municipality;
 use App\Models\School;
 use DateTimeZone;
@@ -80,6 +82,8 @@ class SchoolForm extends Form
 
     public string $failed_activity_policy = 'shift';
 
+    public ?int $club_min_lesson_number = null;
+
     public function setSchool(School $school): void
     {
         $this->school = $school;
@@ -87,7 +91,7 @@ class SchoolForm extends Form
         $this->fill([
             ...$school->only([
                 'code', 'name', 'state_id', 'municipality_id', 'last_folio_series_a', 'last_folio_series_b',
-                'brand_primary', 'session_capacity', 'timezone', 'currency', 'max_sessions',
+                'brand_primary', 'session_capacity', 'timezone', 'currency', 'max_sessions', 'club_min_lesson_number',
                 'works_sundays', 'schedules_classrooms', 'books_without_classroom', 'hybrid_clubs', 'requires_progress',
             ]),
             ...array_map(fn ($value) => (string) $value, $school->only([
@@ -138,6 +142,7 @@ class SchoolForm extends Form
             'max_sessions_scope' => ['required', Rule::enum(MaxSessionsScope::class)],
             'max_sessions' => ['nullable', 'integer', 'min:1', 'max:99'],
             'failed_activity_policy' => ['required', Rule::enum(FailedActivityPolicy::class)],
+            'club_min_lesson_number' => ['nullable', 'integer', Rule::in(array_keys($this->lessonOptions()))],
         ];
     }
 
@@ -174,9 +179,16 @@ class SchoolForm extends Form
 
         $data = array_map(fn ($value) => $value === '' ? null : $value, $data);
 
-        $school = DB::transaction(function () use ($data): School {
+        $creating = $this->school === null;
+
+        $school = DB::transaction(function () use ($data, $creating): School {
             $school = $this->school ?? new School;
             $school->fill($data)->save();
+
+            // Toda escuela nueva parte del catálogo académico base.
+            if ($creating) {
+                app(CopyBaseCatalogs::class)->handle($school);
+            }
 
             return $school;
         });
@@ -220,5 +232,21 @@ class SchoolForm extends Form
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();
+    }
+
+    /**
+     * Lecciones para "¿a partir de cuál lección participa en clubes?": las del
+     * primer libro de la escuela (o del catálogo base si aún no tiene).
+     *
+     * @return array<int, string> número de actividad => nombre
+     */
+    public function lessonOptions(): array
+    {
+        $book = Book::withoutGlobalScope('school')
+            ->ofCatalog($this->school?->books()->exists() ? $this->school->id : null)
+            ->orderBy('level')
+            ->first();
+
+        return $book?->lessons()->withoutGlobalScope('school')->pluck('name', 'number')->all() ?? [];
     }
 }

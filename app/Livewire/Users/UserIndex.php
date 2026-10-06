@@ -124,7 +124,11 @@ class UserIndex extends Component
         $user = $this->findVisible($userId);
         $this->authorize('resendInvitation', $user);
 
-        $sendInvitation->handle($user);
+        if (! $sendInvitation->handle($user)) {
+            $this->dispatch('toast', type: 'error', message: __('users.messages.mail_failed'));
+
+            return;
+        }
 
         $this->dispatch('toast', type: 'success', message: __('users.messages.invitation_sent', ['email' => $user->email]));
     }

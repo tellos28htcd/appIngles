@@ -30,6 +30,9 @@ class UserForm extends Form
 
     public string $notes = '';
 
+    /** Resultado del envío de la invitación en el último alta (null si no hubo alta). */
+    public ?bool $invitationSent = null;
+
     public function setUser(User $user): void
     {
         $this->user = $user;
@@ -125,7 +128,7 @@ class UserForm extends Form
         });
 
         if ($creating) {
-            $sendInvitation->handle($user);
+            $this->invitationSent = $sendInvitation->handle($user);
         }
 
         $this->setUser($user->refresh());

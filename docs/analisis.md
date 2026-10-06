@@ -173,17 +173,28 @@ Estadísticas avanzadas, notificaciones personalizadas. El sistema debe poder ag
 
 ## 8. Glosario y reglas de negocio
 
-### Códigos de evaluación de desempeño por clase (catálogo fijo)
+### Actividades / códigos de evaluación (catálogo base, confirmado el 5-oct-2026)
 
-| Código | Significado | Descripción |
+Fuente: `Información general.xlsx`, pestaña *Catálogos* → *Actividad*. **Sustituye** a la tabla original de la propuesta
+(M = Mastery, WS = Well Supported, SP = Satisfactory, PR = Pendiente de revisión), que ya no aplica.
+
+| Núm. | Código | Significado |
 | --- | --- | --- |
-| 1P | Una participación | Participó una vez en la clase |
-| 2P | Dos participaciones | Participó dos veces |
-| M | Excelente / Mastery | Domina el tema |
-| WS | Well Supported | Necesita apoyo, pero va por buen camino |
-| SP | Satisfactory Performance | Desempeño satisfactorio |
-| WP | Weak Performance | Desempeño débil, necesita refuerzo |
-| PR | Pendiente de revisión | Necesita sesión adicional antes de avanzar |
+| 1 | BA | Book Answered |
+| 2 | 1P | Primera Pronunciation |
+| 3 | M | Mentoría |
+| 4 | WS | Worksheet |
+| 5 | 2P | Segunda Pronunciation |
+| 6 | WP | Written performance |
+| 7 | SP | Spoken demonstration |
+| 8 | PR | Presentación |
+
+Cada actividad tiene además minutos y un valor "Newton de la actividad" (por definir, ver §12).
+
+### Catálogos académicos: base de plataforma + ajuste por escuela (decisión del 5-oct-2026)
+
+Turnos, libros (niveles), lecciones, actividades y clubes tienen un **catálogo base** que administra el Super Admin.
+Cada escuela parte de esa base y **puede ajustarla** para su plantel sin afectar a las demás.
 
 ### Reglas de negocio identificadas
 
@@ -195,7 +206,7 @@ Estadísticas avanzadas, notificaciones personalizadas. El sistema debe poder ag
 | RN-04 | Un maestro no puede tener dos clases al mismo tiempo. |
 | RN-05 | Un salón no puede usarse en dos clases simultáneas. |
 | RN-06 | Más de 3 inasistencias de un alumno notifican al administrador. |
-| RN-07 | Acumular códigos `WP` o `PR` genera sugerencia de acciones. |
+| RN-07 | ⚠️ **Por redefinir.** La regla original (acumular `WP` o `PR` = alerta) asumía WP = desempeño débil y PR = pendiente de revisión; con los significados confirmados (Written performance, Presentación) hay que definir qué dispara la alerta de bajo desempeño (¿calificación baja en cualquier actividad?). |
 | RN-08 | Aviso de pago 3 días antes del vencimiento; vencido: alerta inmediata al admin. |
 | RN-09 | Escalamiento de cobranza: 5 días atraso = naranja; 10 = rojo; 20 = riesgo de cancelación de inscripción. |
 | RN-10 | El teacher solo ve alumnos de sus grupos (los alumnos reservados en las sesiones que tiene asignadas). |
@@ -288,6 +299,9 @@ Este orden es una propuesta: valídalo y ajústalo en el análisis inicial.
 21. ~~**Festivos**~~ → **Resuelto:** se agrega un catálogo de días festivos / sin clase por escuela (ver §12.1).
 22. ~~**Leyenda "Con tecnología de AppIngles"**~~ → **Resuelto:** se muestra siempre, junto con el logo de la escuela (ver §12.1).
 23. ~~**Cupo**~~ → **Resuelto:** cada escuela define su cupo durante su configuración; cada sesión puede tener menos lugares, mínimo 1 (ver §12.1 y RN-21).
+24. **"Newton de la actividad"** (Excel, valor 3.15): ¿qué es y cómo se usa?
+25. **Alerta de bajo desempeño (RN-07):** con los nuevos significados de los códigos, ¿qué la dispara?
+26. **Estatus del alumno:** el Excel tiene *Situación del alumno* (ACTIVO), *Estatus* (Activo/Inactivo) y *Tipo de alumno* (PRESENCIAL); el análisis, activo/pausado/egresado/baja. Definir cómo se relacionan (módulo Expediente).
 
 ---
 

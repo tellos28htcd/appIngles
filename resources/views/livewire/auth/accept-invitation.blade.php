@@ -9,6 +9,9 @@
         <span class="truncate font-semibold">{{ $email }}</span>
     </div>
 
+    @auth
+        @include('livewire.auth.partials.signed-in-notice')
+    @else
     <form wire:submit="save" class="flex flex-col gap-4.5" novalidate>
         <x-ui.input name="password" size="lg" :label="__('access.fields.password')" revealable
                     :hint="__('access.reset.subtitle')"
@@ -25,4 +28,5 @@
             </span>
         </x-ui.button>
     </form>
+    @endauth
 </div>

@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\Support\Brand;
 use App\Support\Navigation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +41,12 @@ class AppServiceProvider extends ServiceProvider
             ->mixedCase()
             ->numbers()
             ->when($this->app->isProduction(), fn (Password $rule) => $rule->uncompromised()));
+
+        // Catálogos académicos: el base (null) lo administra el Super Admin;
+        // la copia de una escuela, solo el administrador de esa escuela.
+        Gate::define('manage-catalog', fn (User $user, ?int $schoolId = null) => $schoolId === null
+            ? $user->isPlatformAdmin()
+            : $user->isSchoolAdmin() && $user->school_id === $schoolId);
 
         // Límite general de peticiones web por usuario (o por IP si no ha iniciado sesión).
         RateLimiter::for('web', fn (Request $request) => Limit::perMinute(300)
