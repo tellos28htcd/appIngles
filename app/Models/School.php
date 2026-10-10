@@ -6,6 +6,7 @@ use App\Enums\FailedActivityPolicy;
 use App\Enums\MaxSessionsScope;
 use App\Enums\SchoolStatus;
 use App\Enums\SelfBooking;
+use App\Models\Concerns\Auditable;
 use Database\Factories\SchoolFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,7 +32,7 @@ use Illuminate\Support\Facades\Storage;
 class School extends Model
 {
     /** @use HasFactory<SchoolFactory> */
-    use HasFactory;
+    use Auditable, HasFactory;
 
     public const MAX_SESSION_CAPACITY = 6;
 
@@ -83,6 +84,12 @@ class School extends Model
     public function municipality(): BelongsTo
     {
         return $this->belongsTo(Municipality::class);
+    }
+
+    /** Los consecutivos de folio avanzan con cada recibo; no son un cambio de configuración. */
+    protected function auditExcept(): array
+    {
+        return ['last_folio_series_a', 'last_folio_series_b'];
     }
 
     public function isActive(): bool

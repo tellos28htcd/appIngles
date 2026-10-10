@@ -23,7 +23,7 @@ Cada control tiene su prueba automática en `tests/Feature` (sobre todo `Securit
 | Asignación masiva | `#[Fillable]` en modelos; en desarrollo falla si llega un campo no permitido | Modelos, `AppServiceProvider` |
 | Rutas por URL directa | Middleware `menu.access`: un rol sin el módulo asignado recibe 403 en todas las rutas del módulo | `EnsureMenuAccess` |
 | Usuarios desactivados / escuela suspendida | No pueden entrar; si estaban dentro, se cierra su sesión en la siguiente petición | `EnsureUserIsActive` |
-| Auditoría | Bitácora de accesos (`login_logs`) y de cambios (`audit_logs`), solo inserción, se conservan para siempre | Modelos `LoginLog`, `AuditLog` |
+| Auditoría | Bitácora de accesos (`login_logs`) y de cambios (`audit_logs`), solo inserción, se conservan para siempre; contraseñas y rutas privadas nunca se guardan; consulta en Plataforma y Configuración → Bitácora | Modelos `LoginLog`, `AuditLog`, trait `Auditable` |
 | Cabeceras | `nosniff`, `Referrer-Policy`, `Permissions-Policy` (sin cámara/micrófono/ubicación), `COOP`, HSTS en HTTPS | `SecurityHeaders` |
 
 ## 2. Obligatorio al desplegar en producción (`.env`)

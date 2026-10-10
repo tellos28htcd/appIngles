@@ -57,12 +57,14 @@ class MenuSeeder extends Seeder
             'settings-payment-methods' => ['Métodos de pago', null, 'payment-methods.index', MenuItemStatus::Active],
             'settings-charge-concepts' => ['Conceptos de cobro', null, 'charge-concepts.index', MenuItemStatus::Active],
             'settings-holidays' => ['Días festivos', null, 'holidays.index', MenuItemStatus::Active],
+            'settings-audit' => ['Bitácora', null, 'school-audit-logs.index', MenuItemStatus::Active],
         ]],
         'platform' => ['Plataforma', 'building', null, MenuItemStatus::Active, [
             'platform-schools' => ['Escuelas', null, 'schools.index', MenuItemStatus::Active],
             'platform-catalogs' => ['Catálogos base', null, 'base-catalogs.index', MenuItemStatus::Active],
             'platform-roles' => ['Roles y permisos', null, 'roles.index', MenuItemStatus::Active],
             'platform-menu' => ['Menú', null, 'menu.index', MenuItemStatus::Active],
+            'platform-audit' => ['Bitácora', null, 'audit-logs.index', MenuItemStatus::Active],
         ]],
     ];
 

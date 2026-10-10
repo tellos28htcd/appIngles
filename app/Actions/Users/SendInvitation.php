@@ -2,6 +2,7 @@
 
 namespace App\Actions\Users;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Notifications\UserInvitation;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,7 @@ final class SendInvitation
 
         try {
             $user->notify(new UserInvitation($token));
+            AuditLog::record($user, 'invitation_sent', null, ['email' => $user->email]);
 
             return true;
         } catch (Throwable $exception) {

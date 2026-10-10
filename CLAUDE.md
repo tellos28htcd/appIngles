@@ -23,9 +23,9 @@ Verifica las versiones reales en composer.json y package.json.
   laravel-livewire-fullstack (references/convenciones-codigo.md).
 
 ## Estado
-Módulos terminados: acceso (login, menú dinámico), escuelas (tenants), usuarios, roles y permisos, menú (Plataforma), catálogos académicos (base + copia por escuela), configuración de la escuela (mi escuela, salones, métodos de pago, conceptos de cobro, días festivos; con base en Plataforma), rol Alumno (portal pendiente), teachers.
+Módulos terminados: acceso (login, menú dinámico), escuelas (tenants), usuarios, roles y permisos, menú (Plataforma), catálogos académicos (base + copia por escuela), configuración de la escuela (mi escuela, salones, métodos de pago, conceptos de cobro, días festivos; con base en Plataforma), rol Alumno (portal pendiente), teachers, bitácora/auditoría (Plataforma y Configuración).
 Seguridad: ver docs/seguridad.md (controles y pasos obligatorios de producción).
-Siguiente: bitácora/auditoría (Plataforma y Configuración).
+Pendiente: Alumnos (en espera de los datos que la academia quiere registrar).
 
 <laravel-boost-guidelines>
 === foundation rules ===

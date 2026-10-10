@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\TeacherPhotoController;
+use App\Livewire\Audit\AuditLogIndex;
 use App\Livewire\Auth\AcceptInvitation;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
@@ -48,6 +49,10 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
     Route::livewire('/roles/{role}/editar', RoleEditor::class)->name('roles.edit');
 
     Route::livewire('/menu', MenuManager::class)->name('menu.index');
+
+    // Bitácora: Plataforma (todas las escuelas) y Configuración (solo la escuela del usuario).
+    Route::livewire('/bitacora', AuditLogIndex::class)->name('audit-logs.index');
+    Route::livewire('/configuracion/bitacora', AuditLogIndex::class)->name('school-audit-logs.index');
 
     Route::livewire('/catalogos-base', BaseCatalogs::class)->name('base-catalogs.index');
     Route::livewire('/configuracion/catalogos', SchoolCatalogs::class)->name('catalogs.index');

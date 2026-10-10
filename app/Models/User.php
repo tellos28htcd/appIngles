@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserStatus;
+use App\Models\Concerns\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -18,7 +19,7 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Auditable, HasFactory, Notifiable;
 
     /**
      * Relaciones que, si tienen registros, impiden eliminar al usuario (RN-24).
@@ -116,6 +117,18 @@ class User extends Authenticatable
         }
 
         return false;
+    }
+
+    /** Cada inicio de sesión ya queda en login_logs; no se repite aquí. */
+    protected function auditExcept(): array
+    {
+        return ['remember_token', 'last_login_at', 'email_verified_at'];
+    }
+
+    /** De la contraseña solo se registra que cambió, nunca su valor. */
+    protected function auditRedact(): array
+    {
+        return ['password'];
     }
 
     public function initials(): string

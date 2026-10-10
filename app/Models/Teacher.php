@@ -62,6 +62,17 @@ class Teacher extends Model
         return mb_strtoupper(mb_substr($this->first_name, 0, 1).mb_substr($this->last_name, 0, 1));
     }
 
+    public function auditLabel(): string
+    {
+        return $this->fullName();
+    }
+
+    /** La ruta privada de la foto no se guarda en la bitácora; solo que cambió. */
+    protected function auditRedact(): array
+    {
+        return ['photo_path'];
+    }
+
     /** Ficha creada desde Usuarios sin datos de contratación todavía. */
     public function isIncomplete(): bool
     {
