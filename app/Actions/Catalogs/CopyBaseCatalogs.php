@@ -2,11 +2,16 @@
 
 namespace App\Actions\Catalogs;
 
+use App\Enums\HolidayType;
 use App\Models\Activity;
 use App\Models\AuditLog;
 use App\Models\Book;
+use App\Models\ChargeConcept;
+use App\Models\Classroom;
 use App\Models\Club;
+use App\Models\Holiday;
 use App\Models\Lesson;
+use App\Models\PaymentMethod;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Shift;
@@ -30,7 +35,14 @@ final class CopyBaseCatalogs
         'lessons' => Lesson::class,
         'activities' => Activity::class,
         'clubs' => Club::class,
+        'classrooms' => Classroom::class,
+        'payment_methods' => PaymentMethod::class,
+        'charge_concepts' => ChargeConcept::class,
+        'holidays' => Holiday::class,
     ];
+
+    /** Catálogos donde el nombre es único por escuela: si ya existe uno igual, se vincula en vez de duplicar. */
+    private const UNIQUE_BY_NAME = [Classroom::class, PaymentMethod::class, ChargeConcept::class];
 
     /**
      * @param  array<string, list<int>>|null  $only  catálogo => IDs base a copiar (null = todo lo pendiente)
@@ -85,6 +97,8 @@ final class CopyBaseCatalogs
             ->whereNull('school_id')
             ->where('is_active', true)
             ->whereNotIn('id', $copiedBaseIds)
+            // Los festivos oficiales los genera cada escuela; de la base solo se copian días propios.
+            ->when($model === Holiday::class, fn (Builder $query) => $query->where('type', HolidayType::School))
             ->when($ids !== null, fn (Builder $query) => $query->whereKey($ids))
             ->orderBy('id')
             ->get();
@@ -111,6 +125,19 @@ final class CopyBaseCatalogs
         foreach (['shift_id', 'book_id'] as $dependency) {
             if (array_key_exists($dependency, $attributes) && $attributes[$dependency] === null) {
                 return null;
+            }
+        }
+
+        if (in_array($base::class, self::UNIQUE_BY_NAME, true)) {
+            $existing = $base::withoutGlobalScope('school')
+                ->where('school_id', $school->id)
+                ->where('name', $base->getAttribute('name'))
+                ->first();
+
+            if ($existing !== null) {
+                $existing->update(['base_id' => $base->id]);
+
+                return $existing;
             }
         }
 

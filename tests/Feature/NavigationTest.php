@@ -73,6 +73,29 @@ class NavigationTest extends TestCase
             ->assertDontSee('Agenda');
     }
 
+    public function test_student_sees_his_learning_portal_only(): void
+    {
+        $this->actingAs($this->userWithRole(Role::STUDENT))
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Mi aprendizaje')
+            ->assertSee('Mi avance')
+            ->assertSee('Agendar clase')
+            ->assertSee('Agendar club')
+            ->assertSee('Mi estado de cuenta')
+            ->assertDontSee('Configuración')
+            ->assertDontSee('Cobranza')
+            ->assertDontSee('Mis alumnos');
+    }
+
+    public function test_school_admin_does_not_get_the_student_portal(): void
+    {
+        $this->actingAs($this->userWithRole(Role::SCHOOL_ADMIN))
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Mi aprendizaje');
+    }
+
     public function test_role_without_the_menu_item_cannot_open_its_route(): void
     {
         $role = Role::factory()->create();
@@ -98,7 +121,7 @@ class NavigationTest extends TestCase
 
         $this->seed([RoleSeeder::class, MenuSeeder::class, SuperAdminSeeder::class, SuperAdminSeeder::class]);
 
-        $this->assertSame(8, Role::count());
+        $this->assertSame(9, Role::count());
         $this->assertSame(1, User::count());
         $this->assertTrue(User::sole()->isPlatformAdmin());
         $this->assertSame(1, MenuItem::where('slug', 'dashboard')->count());

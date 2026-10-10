@@ -23,6 +23,12 @@ class SchoolPolicy
         return $actor->isPlatformAdmin();
     }
 
+    /** "Mi escuela": el administrador de la escuela edita sus propios datos. */
+    public function updateOwn(User $actor, School $school): bool
+    {
+        return $actor->isSchoolAdmin() && $actor->school_id === $school->id;
+    }
+
     public function toggleStatus(User $actor, School $school): bool
     {
         return $actor->isPlatformAdmin();

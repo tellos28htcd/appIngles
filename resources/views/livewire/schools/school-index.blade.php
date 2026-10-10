@@ -54,7 +54,7 @@
                             <tr wire:key="school-{{ $school->id }}" class="hover:bg-surface">
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
-                                        <x-ui.brand-mark :brand="\App\Support\Brand::forSchool($school)" size="sm" />
+                                        <x-ui.brand-mark :brand="\App\Support\Brand::forSchool($school)" size="sm" scoped />
                                         <div class="flex min-w-0 flex-col">
                                             <span class="truncate font-bold">{{ $school->name }}</span>
                                             <span class="font-mono text-xs text-ink-500">{{ $school->code }}</span>
@@ -81,7 +81,7 @@
                     @foreach ($this->schools as $school)
                         <li wire:key="school-card-{{ $school->id }}" class="flex flex-col gap-3 p-4">
                             <div class="flex items-start gap-3">
-                                <x-ui.brand-mark :brand="\App\Support\Brand::forSchool($school)" size="sm" />
+                                <x-ui.brand-mark :brand="\App\Support\Brand::forSchool($school)" size="sm" scoped />
                                 <div class="flex min-w-0 flex-1 flex-col">
                                     <span class="truncate font-bold">{{ $school->name }}</span>
                                     <span class="text-xs text-ink-500"><span class="font-mono">{{ $school->code }}</span> · {{ trans_choice('schools.users_count', $school->users_count) }}</span>

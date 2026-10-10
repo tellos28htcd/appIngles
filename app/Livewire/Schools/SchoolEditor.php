@@ -71,16 +71,28 @@ class SchoolEditor extends Component
             : null;
     }
 
+    /** En "Mi escuela" el administrador no cambia la clave ni el estado. */
+    protected function isOwnSchool(): bool
+    {
+        return false;
+    }
+
     public function render(): View
     {
         $editing = $this->form->school !== null;
 
         return view('livewire.schools.school-editor', [
             'editing' => $editing,
+            'ownSchool' => $this->isOwnSchool(),
+            'cancelRoute' => $this->isOwnSchool() ? route('dashboard') : route('schools.index'),
             'timezones' => collect(DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, 'MX'))
                 ->mapWithKeys(fn (string $zone) => [$zone => str_replace(['America/', '_'], ['', ' '], $zone)])
                 ->all(),
             'logoPreview' => $this->form->logo?->isPreviewable() ? $this->form->logo->temporaryUrl() : null,
-        ])->title(__($editing ? 'schools.edit_title' : 'schools.create_title'));
+        ])->title(__(match (true) {
+            $this->isOwnSchool() => 'schools.my_school_title',
+            $editing => 'schools.edit_title',
+            default => 'schools.create_title',
+        }));
     }
 }

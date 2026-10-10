@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Forms;
 
+use App\Actions\Teachers\SyncTeacherFromUser;
 use App\Actions\Users\SendInvitation;
 use App\Enums\UserStatus;
 use App\Models\Role;
@@ -123,6 +124,9 @@ class UserForm extends Form
         $user = DB::transaction(function () use ($data): User {
             $user = $this->user ?? new User(['status' => UserStatus::Active]);
             $user->fill([...$data, 'school_id' => $data['school_id'] ?? null])->save();
+
+            // Un usuario Teacher siempre tiene su ficha en el módulo Teachers.
+            app(SyncTeacherFromUser::class)->handle($user);
 
             return $user;
         });

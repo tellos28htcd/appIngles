@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\TeacherPhotoController;
 use App\Livewire\Auth\AcceptInvitation;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
@@ -13,6 +14,13 @@ use App\Livewire\Roles\RoleEditor;
 use App\Livewire\Roles\RoleIndex;
 use App\Livewire\Schools\SchoolEditor;
 use App\Livewire\Schools\SchoolIndex;
+use App\Livewire\Settings\ChargeConceptIndex;
+use App\Livewire\Settings\ClassroomIndex;
+use App\Livewire\Settings\HolidayIndex;
+use App\Livewire\Settings\MySchool;
+use App\Livewire\Settings\PaymentMethodIndex;
+use App\Livewire\Teachers\TeacherEditor;
+use App\Livewire\Teachers\TeacherIndex;
 use App\Livewire\Users\UserEditor;
 use App\Livewire\Users\UserIndex;
 use Illuminate\Support\Facades\Route;
@@ -43,10 +51,24 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
 
     Route::livewire('/catalogos-base', BaseCatalogs::class)->name('base-catalogs.index');
     Route::livewire('/configuracion/catalogos', SchoolCatalogs::class)->name('catalogs.index');
+    Route::livewire('/configuracion/mi-escuela', MySchool::class)->name('my-school.edit');
+    Route::livewire('/configuracion/salones', ClassroomIndex::class)->name('classrooms.index');
+    Route::livewire('/configuracion/metodos-de-pago', PaymentMethodIndex::class)->name('payment-methods.index');
+    Route::livewire('/configuracion/conceptos-de-cobro', ChargeConceptIndex::class)->name('charge-concepts.index');
+    Route::livewire('/configuracion/dias-festivos', HolidayIndex::class)->name('holidays.index');
+
+    Route::livewire('/teachers', TeacherIndex::class)->name('teachers.index');
+    Route::livewire('/teachers/nuevo', TeacherEditor::class)->name('teachers.create');
+    Route::livewire('/teachers/{teacher}/editar', TeacherEditor::class)->name('teachers.edit');
 
     Route::livewire('/usuarios', UserIndex::class)->name('users.index');
     Route::livewire('/usuarios/nuevo', UserEditor::class)->name('users.create');
     Route::livewire('/usuarios/{user}/editar', UserEditor::class)->name('users.edit');
 });
+
+// Foto privada del teacher: la ve quien lo administra y el propio teacher (fuera del control por menú).
+Route::get('/fotos/teachers/{teacher}', TeacherPhotoController::class)
+    ->middleware(['auth', 'auth.session', 'active'])
+    ->name('teacher-photos.show');
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');

@@ -23,6 +23,7 @@ class RoleSeeder extends Seeder
             [Role::MENTOR, 'Mentor / Administrador', RoleScope::School, 'Acompaña a los alumnos y apoya en la administración.'],
             [Role::RECEPTION, 'Recepción', RoleScope::School, 'Agenda reservaciones, registra pagos y atiende en mostrador.'],
             [Role::GUARDIAN, 'Tutor', RoleScope::School, 'Padre, madre o tutor: consulta el avance y los pagos de sus alumnos.'],
+            [Role::STUDENT, 'Alumno', RoleScope::School, 'Consulta su avance en las lecciones, agenda clases y clubes, y revisa su estado de cuenta.'],
         ];
 
         foreach ($roles as $order => [$slug, $name, $scope, $description]) {

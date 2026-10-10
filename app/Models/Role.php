@@ -32,6 +32,8 @@ class Role extends Model
 
     public const GUARDIAN = 'guardian';
 
+    public const STUDENT = 'student';
+
     protected function casts(): array
     {
         return [

@@ -1,13 +1,14 @@
 <div class="flex flex-col gap-6">
-    <x-ui.page-header :title="__($editing ? 'schools.edit_title' : 'schools.create_title')"
-                      :subtitle="$editing ? $form->code.' · '.$form->name : __('schools.create_subtitle')" />
+    <x-ui.page-header :title="__($ownSchool ? 'schools.my_school_title' : ($editing ? 'schools.edit_title' : 'schools.create_title'))"
+                      :subtitle="$ownSchool ? __('schools.my_school_subtitle') : ($editing ? $form->code.' · '.$form->name : __('schools.create_subtitle'))" />
 
     <form wire:submit="save" class="flex flex-col gap-4 md:gap-6" novalidate>
         <div class="grid gap-4 md:gap-6 xl:grid-cols-2">
             {{-- Datos del plantel --}}
             <x-ui.card :title="__('schools.sections.plantel')">
                 <div class="grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)]">
-                    <x-ui.input name="form.code" :label="__('schools.fields.code')" wire:model="form.code" maxlength="20" class="font-mono uppercase" required />
+                    <x-ui.input name="form.code" :label="__('schools.fields.code')" wire:model="form.code" maxlength="20" class="font-mono uppercase"
+                                :disabled="$ownSchool" :hint="$ownSchool ? __('schools.fields.code_locked') : null" required />
                     <x-ui.input name="form.name" :label="__('schools.fields.name')" :hint="__('schools.fields.name_hint')" wire:model="form.name" maxlength="150" required />
                 </div>
             </x-ui.card>
@@ -166,7 +167,7 @@
 
         {{-- Acciones: fijas abajo en móvil --}}
         <div class="sticky bottom-20 z-20 -mx-4 flex flex-col-reverse gap-2.5 border-t border-line bg-white/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:flex-row md:justify-end md:border-0 md:bg-transparent md:p-0">
-            <a href="{{ route('schools.index') }}" wire:navigate
+            <a href="{{ $cancelRoute }}" wire:navigate
                class="inline-flex h-11 items-center justify-center rounded-md px-5 text-[15px] font-bold text-ink-700 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
                 {{ __('schools.actions.cancel') }}
             </a>

@@ -9,11 +9,16 @@ use App\Livewire\Catalogs\ClubsTab;
 use App\Livewire\Catalogs\SchoolCatalogs;
 use App\Livewire\Catalogs\ShiftsTab;
 use App\Livewire\Schools\SchoolEditor;
+use App\Livewire\Settings\ClassroomIndex;
+use App\Livewire\Settings\PaymentMethodIndex;
 use App\Models\Activity;
 use App\Models\Book;
+use App\Models\ChargeConcept;
+use App\Models\Classroom;
 use App\Models\Club;
 use App\Models\Lesson;
 use App\Models\Municipality;
+use App\Models\PaymentMethod;
 use App\Models\Role;
 use App\Models\ScheduleSlot;
 use App\Models\School;
@@ -307,5 +312,70 @@ class CatalogManagementTest extends TestCase
         $this->assertTrue(Club::where('name', 'Podcast Club')->exists());
         $this->assertSame('Libro contestado', Activity::where('code', 'BA')->value('description'));
         $this->assertFalse(Club::withoutGlobalScope('school')->ofCatalog($this->schoolB->id)->where('name', 'Podcast Club')->exists());
+    }
+    // ---- Catálogos de Configuración (salones, métodos, conceptos, días) -----
+
+    public function test_new_school_also_receives_configuration_catalogs(): void
+    {
+        $this->assertSame(9, $this->catalogCount(Classroom::class, $this->schoolA->id));
+        $this->assertSame(5, $this->catalogCount(PaymentMethod::class, $this->schoolA->id));
+        $this->assertSame(5, $this->catalogCount(ChargeConcept::class, $this->schoolA->id));
+
+        $classroom = Classroom::withoutGlobalScope('school')->ofCatalog($this->schoolA->id)->where('name', '1')->first();
+        $this->assertSame(5, $classroom->capacity);
+        $this->assertSame('Salón', $classroom->description);
+        $this->assertNotNull($classroom->base_id);
+    }
+
+    public function test_super_admin_manages_configuration_base_from_platform(): void
+    {
+        $this->actingAs($this->superAdmin)
+            ->get(route('base-catalogs.index', ['pestana' => 'salones']))
+            ->assertOk()
+            ->assertSee('Nuevo salón');
+
+        Livewire::test(ClassroomIndex::class, ['schoolId' => null, 'embedded' => true])
+            ->call('edit')
+            ->set('name', '10')
+            ->set('capacity', 6)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(10, $this->catalogCount(Classroom::class, null));
+        $this->assertSame(9, $this->catalogCount(Classroom::class, $this->schoolA->id));
+    }
+
+    public function test_school_admin_cannot_mount_the_configuration_base(): void
+    {
+        $this->actingAs($this->schoolAdmin($this->schoolA));
+
+        Livewire::test(PaymentMethodIndex::class, ['schoolId' => null, 'embedded' => true])->assertForbidden();
+    }
+
+    public function test_school_incorporates_new_base_classroom_from_its_settings_page(): void
+    {
+        Classroom::ofCatalog(null)->create(['school_id' => null, 'name' => 'Laboratorio', 'capacity' => 4]);
+        $this->actingAs($this->schoolAdmin($this->schoolA));
+
+        Livewire::test(ClassroomIndex::class)
+            ->assertSee('Hay 1 novedad en el catálogo base')
+            ->call('incorporateBaseUpdates')
+            ->assertDontSee('novedad en el catálogo base');
+
+        $this->assertTrue(Classroom::where('name', 'Laboratorio')->exists());
+        $this->assertSame(9, $this->catalogCount(Classroom::class, $this->schoolB->id));
+    }
+
+    public function test_existing_records_with_the_same_name_are_linked_not_duplicated(): void
+    {
+        $school = School::factory()->create();
+        Classroom::withoutGlobalScope('school')->create(['school_id' => $school->id, 'name' => '1', 'capacity' => 8]);
+
+        app(CopyBaseCatalogs::class)->handle($school);
+
+        $this->assertSame(9, $this->catalogCount(Classroom::class, $school->id));
+        $linked = Classroom::withoutGlobalScope('school')->ofCatalog($school->id)->where('name', '1')->sole();
+        $this->assertNotNull($linked->base_id);
+        $this->assertSame(8, $linked->capacity);
     }
 }

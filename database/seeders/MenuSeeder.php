@@ -22,6 +22,7 @@ class MenuSeeder extends Seeder
     private const TREE = [
         'dashboard' => ['Inicio', 'home', 'dashboard', MenuItemStatus::Active],
         'agenda' => ['Agenda', 'calendar', null, MenuItemStatus::ComingSoon],
+        'teachers' => ['Teachers', 'users', 'teachers.index', MenuItemStatus::Active],
         'students' => ['Alumnos', 'student', null, MenuItemStatus::Active, [
             'students-records' => ['Expedientes', null, null, MenuItemStatus::ComingSoon],
             'students-guardians' => ['Tutores', null, null, MenuItemStatus::ComingSoon],
@@ -41,15 +42,21 @@ class MenuSeeder extends Seeder
             'my-students-progress' => ['Avance', null, null, MenuItemStatus::ComingSoon],
             'my-students-account' => ['Estado de cuenta', null, null, MenuItemStatus::ComingSoon],
         ]],
+        'student-portal' => ['Mi aprendizaje', 'book', null, MenuItemStatus::Active, [
+            'student-portal-progress' => ['Mi avance', null, null, MenuItemStatus::ComingSoon],
+            'student-portal-book-class' => ['Agendar clase', null, null, MenuItemStatus::ComingSoon],
+            'student-portal-book-club' => ['Agendar club', null, null, MenuItemStatus::ComingSoon],
+            'student-portal-account' => ['Mi estado de cuenta', null, null, MenuItemStatus::ComingSoon],
+        ]],
         'reports' => ['Reportes', 'chart', null, MenuItemStatus::ComingSoon],
         'settings' => ['Configuración', 'settings', null, MenuItemStatus::Active, [
-            'settings-school' => ['Mi escuela', null, null, MenuItemStatus::ComingSoon],
+            'settings-school' => ['Mi escuela', null, 'my-school.edit', MenuItemStatus::Active],
             'settings-users' => ['Usuarios', null, 'users.index', MenuItemStatus::Active],
             'settings-catalogs' => ['Catálogos académicos', null, 'catalogs.index', MenuItemStatus::Active],
-            'settings-classrooms' => ['Salones', null, null, MenuItemStatus::ComingSoon],
-            'settings-payment-methods' => ['Métodos de pago', null, null, MenuItemStatus::ComingSoon],
-            'settings-charge-concepts' => ['Conceptos de cobro', null, null, MenuItemStatus::ComingSoon],
-            'settings-holidays' => ['Días festivos', null, null, MenuItemStatus::ComingSoon],
+            'settings-classrooms' => ['Salones', null, 'classrooms.index', MenuItemStatus::Active],
+            'settings-payment-methods' => ['Métodos de pago', null, 'payment-methods.index', MenuItemStatus::Active],
+            'settings-charge-concepts' => ['Conceptos de cobro', null, 'charge-concepts.index', MenuItemStatus::Active],
+            'settings-holidays' => ['Días festivos', null, 'holidays.index', MenuItemStatus::Active],
         ]],
         'platform' => ['Plataforma', 'building', null, MenuItemStatus::Active, [
             'platform-schools' => ['Escuelas', null, 'schools.index', MenuItemStatus::Active],
@@ -74,7 +81,7 @@ class MenuSeeder extends Seeder
             'billing-statements', 'billing-payments', 'billing-actions', 'reports',
         ],
         Role::ACADEMIC_COORDINATOR => [
-            'dashboard', 'agenda', 'students-records', 'students-guardians',
+            'dashboard', 'agenda', 'teachers', 'students-records', 'students-guardians',
             'tracking-attendance', 'tracking-evaluations', 'tracking-risk', 'reports',
         ],
         Role::TEACHER => ['dashboard', 'agenda', 'tracking-attendance', 'tracking-evaluations'],
@@ -88,9 +95,10 @@ class MenuSeeder extends Seeder
             'billing-statements', 'billing-payments',
         ],
         Role::GUARDIAN => ['dashboard', 'my-students-progress', 'my-students-account'],
+        Role::STUDENT => ['dashboard', 'student-portal-progress', 'student-portal-book-class', 'student-portal-book-club', 'student-portal-account'],
     ];
 
-    private const EXCLUSIVE = ['platform', 'my-students'];
+    private const EXCLUSIVE = ['platform', 'my-students', 'student-portal'];
 
     public function run(): void
     {

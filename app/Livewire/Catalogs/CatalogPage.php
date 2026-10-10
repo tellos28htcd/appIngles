@@ -21,6 +21,15 @@ abstract class CatalogPage extends Component
 {
     public const TABS = ['horarios', 'libros', 'actividades', 'clubes'];
 
+    /** Catálogos que se administran en esta página (los de Configuración tienen sus propias pantallas). */
+    public const ACADEMIC_CATALOGS = ['shifts', 'schedule_slots', 'books', 'lessons', 'activities', 'clubs'];
+
+    /** @return list<string> */
+    protected function tabs(): array
+    {
+        return self::TABS;
+    }
+
     #[Locked]
     public ?int $schoolId = null;
 
@@ -41,7 +50,7 @@ abstract class CatalogPage extends Component
 
     public function updatedTab(): void
     {
-        if (! in_array($this->tab, self::TABS, true)) {
+        if (! in_array($this->tab, $this->tabs(), true)) {
             $this->tab = 'horarios';
         }
     }
@@ -60,8 +69,7 @@ abstract class CatalogPage extends Component
     {
         $this->authorizeSchool();
 
-        $selection = collect(CopyBaseCatalogs::CATALOGS)
-            ->keys()
+        $selection = collect(self::ACADEMIC_CATALOGS)
             ->mapWithKeys(fn (string $catalog) => [$catalog => array_map('intval', $this->selectedUpdates[$catalog] ?? [])])
             ->all();
 
@@ -86,6 +94,7 @@ abstract class CatalogPage extends Component
         $school = School::findOrFail($this->schoolId);
 
         return collect(CopyBaseCatalogs::CATALOGS)
+            ->only(self::ACADEMIC_CATALOGS)
             ->map(fn (string $model) => CopyBaseCatalogs::pending($school, $model))
             ->filter(fn ($items) => $items->isNotEmpty())
             ->all();
@@ -102,7 +111,7 @@ abstract class CatalogPage extends Component
         return view('livewire.catalogs.catalog-page', [
             'pageTitle' => $this->title(),
             'pageSubtitle' => $this->subtitle(),
-            'tabs' => collect(self::TABS)->mapWithKeys(fn (string $tab) => [$tab => __("catalogs.tabs.$tab")])->all(),
+            'tabs' => collect($this->tabs())->mapWithKeys(fn (string $tab) => [$tab => __("catalogs.tabs.$tab")])->all(),
             'updatesCount' => collect($this->pendingUpdates)->sum(fn ($items) => $items->count()),
         ])->title($this->title());
     }

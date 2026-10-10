@@ -2,7 +2,7 @@
 
 return [
     'base_title' => 'Catálogos base',
-    'base_subtitle' => 'La base académica que recibe cada escuela al darse de alta. Los cambios aquí no modifican lo que cada escuela ya ajustó.',
+    'base_subtitle' => 'Lo que recibe cada escuela al darse de alta: catálogos académicos y de configuración. Los cambios aquí no modifican lo que cada escuela ya ajustó; le llegan como novedades.',
     'school_title' => 'Catálogos académicos',
     'school_subtitle' => 'Turnos, horarios, libros, lecciones, actividades y clubes de tu escuela. Puedes ajustarlos sin afectar a otras escuelas.',
     'empty' => 'Aún no hay registros',
@@ -12,6 +12,10 @@ return [
         'libros' => 'Libros y lecciones',
         'actividades' => 'Actividades',
         'clubes' => 'Clubes',
+        'salones' => 'Salones',
+        'metodos' => 'Métodos de pago',
+        'conceptos' => 'Conceptos de cobro',
+        'dias' => 'Días sin clase',
     ],
 
     'shifts' => [
@@ -130,6 +134,7 @@ return [
         'modal_title' => 'Novedades del catálogo base',
         'modal_body' => 'Marca lo que quieres incorporar a los catálogos de tu escuela.',
         'incorporate' => 'Incorporar seleccionadas',
+        'incorporate_all' => 'Incorporar',
         'incorporated' => '{0} No se incorporó nada.|{1} Se incorporó 1 registro.|[2,*] Se incorporaron :count registros.',
         'catalogs' => [
             'shifts' => 'Turnos',
@@ -138,6 +143,10 @@ return [
             'lessons' => 'Lecciones',
             'activities' => 'Actividades',
             'clubs' => 'Clubes',
+            'classrooms' => 'Salones',
+            'payment_methods' => 'Métodos de pago',
+            'charge_concepts' => 'Conceptos de cobro',
+            'holidays' => 'Días sin clase',
         ],
     ],
 

@@ -13,6 +13,12 @@ class BaseCatalogs extends CatalogPage
         $this->schoolId = null;
     }
 
+    /** La base también incluye los catálogos de Configuración de cada escuela. */
+    protected function tabs(): array
+    {
+        return [...parent::tabs(), 'salones', 'metodos', 'conceptos', 'dias'];
+    }
+
     protected function title(): string
     {
         return __('catalogs.base_title');

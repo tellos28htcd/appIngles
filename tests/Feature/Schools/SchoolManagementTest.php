@@ -196,4 +196,14 @@ class SchoolManagementTest extends TestCase
             ->assertSee('--brand-primary: #3B2BB8', false)
             ->assertSee('QUERÉTARO NORTE');
     }
+
+    public function test_school_list_shows_each_school_with_its_own_colors(): void
+    {
+        School::factory()->create(['name' => 'VERDE', 'brand_primary' => '#6FEC9B']);
+
+        $this->actingAs($this->userWithRole(Role::PLATFORM_ADMIN))
+            ->get(route('schools.index'))
+            ->assertOk()
+            ->assertSee('--brand-primary: #6FEC9B', false);
+    }
 }

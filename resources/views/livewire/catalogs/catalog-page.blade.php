@@ -39,6 +39,18 @@
             @case('clubes')
                 <livewire:catalogs.clubs-tab :school-id="$schoolId" wire:key="clubs-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
+            @case('salones')
+                <livewire:settings.classroom-index :school-id="$schoolId" :embedded="true" wire:key="classrooms-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
+            @case('metodos')
+                <livewire:settings.payment-method-index :school-id="$schoolId" :embedded="true" wire:key="methods-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
+            @case('conceptos')
+                <livewire:settings.charge-concept-index :school-id="$schoolId" :embedded="true" wire:key="concepts-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
+            @case('dias')
+                <livewire:settings.holiday-index :school-id="$schoolId" :embedded="true" wire:key="holidays-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
             @default
                 <livewire:catalogs.shifts-tab :school-id="$schoolId" wire:key="shifts-{{ $schoolId ?? 'base' }}-{{ $version }}" />
         @endswitch

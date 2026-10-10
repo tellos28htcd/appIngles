@@ -9,8 +9,11 @@
    layout (ver layouts/app.blade.php). Todo lo demás se deriva.
    ========================================================= */
 
-/* 1 · Marca de la escuela (valores por defecto) */
-:root {
+/* 1 · Marca de la escuela (valores por defecto)
+   :where() deja estos valores con especificidad 0: los que inyecta el layout
+   (layouts/partials/brand.blade.php, selector :root) siempre ganan, sin
+   importar si este archivo se carga antes o después. */
+:where(:root) {
   --brand-primary: #4361EE;
   --brand-accent: #FFC23D;
   --brand-on-primary: #FFFFFF; /* calculado en PHP: BrandColor::onPrimary() */

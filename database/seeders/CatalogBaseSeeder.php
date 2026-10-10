@@ -3,12 +3,16 @@
 namespace Database\Seeders;
 
 use App\Actions\Catalogs\CopyBaseCatalogs;
+use App\Enums\ChargeConceptType;
 use App\Enums\LessonType;
 use App\Models\Activity;
 use App\Models\AuditLog;
 use App\Models\Book;
+use App\Models\ChargeConcept;
+use App\Models\Classroom;
 use App\Models\Club;
 use App\Models\Lesson;
+use App\Models\PaymentMethod;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Shift;
@@ -66,6 +70,23 @@ class CatalogBaseSeeder extends Seeder
         'Ted Talks Club' => [null, null, 10],
     ];
 
+    /** Método => ¿pide referencia (folio, autorización, número de cheque)? */
+    private const PAYMENT_METHODS = [
+        'Efectivo' => false,
+        'Transferencia' => true,
+        'Tarjeta de crédito' => true,
+        'Tarjeta de débito' => true,
+        'Cheque' => true,
+    ];
+
+    private const CHARGE_CONCEPTS = [
+        'Inscripción' => ChargeConceptType::Enrollment,
+        'Colegiatura mensual' => ChargeConceptType::Tuition,
+        'Libro' => ChargeConceptType::Material,
+        'Convenio de extensión' => ChargeConceptType::Extension,
+        'Recargo por pago tardío' => ChargeConceptType::LateFee,
+    ];
+
     public function run(): void
     {
         DB::transaction(fn () => AuditLog::muted(function (): void {
@@ -73,6 +94,7 @@ class CatalogBaseSeeder extends Seeder
             $books = $this->seedBooksAndLessons();
             $this->seedActivities();
             $this->seedClubs($books);
+            $this->seedSchoolSettings();
         }));
 
         $copy = app(CopyBaseCatalogs::class);
@@ -81,6 +103,52 @@ class CatalogBaseSeeder extends Seeder
             ->whereDoesntHave('shifts')
             ->whereDoesntHave('books')
             ->each(fn (School $school) => $copy->handle($school));
+
+        // Catálogos de Configuración: se copian una sola vez a cada escuela que aún no
+        // tiene nada vinculado a la base (lo que la escuela elimine después no regresa).
+        $settings = array_intersect_key(CopyBaseCatalogs::CATALOGS, array_flip(['classrooms', 'payment_methods', 'charge_concepts', 'holidays']));
+
+        School::query()->each(function (School $school) use ($copy, $settings): void {
+            $only = [];
+
+            foreach ($settings as $catalog => $model) {
+                $linked = $model::withoutGlobalScope('school')->where('school_id', $school->id)->whereNotNull('base_id')->exists();
+
+                if (! $linked) {
+                    $only[$catalog] = CopyBaseCatalogs::pending($school, $model)->modelKeys();
+                }
+            }
+
+            if (array_filter($only) !== []) {
+                $copy->handle($school, $only);
+            }
+        });
+    }
+
+    /** Salones 1–9, métodos de pago y conceptos de cobro de la base (sin montos: el precio es de cada escuela). */
+    private function seedSchoolSettings(): void
+    {
+        foreach (range(1, 9) as $number) {
+            Classroom::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => (string) $number], [
+                'capacity' => 5,
+                'description' => 'Salón',
+                'is_active' => true,
+            ]);
+        }
+
+        foreach (self::PAYMENT_METHODS as $name => $requiresReference) {
+            PaymentMethod::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
+                'requires_reference' => $requiresReference,
+                'is_active' => true,
+            ]);
+        }
+
+        foreach (self::CHARGE_CONCEPTS as $name => $type) {
+            ChargeConcept::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
+                'type' => $type,
+                'is_active' => true,
+            ]);
+        }
     }
 
     private function seedShiftsAndSlots(): void

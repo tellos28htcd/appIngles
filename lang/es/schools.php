@@ -5,6 +5,9 @@ return [
     'subtitle' => 'Planteles registrados en la plataforma',
     'new' => 'Nueva escuela',
     'create_title' => 'Nueva escuela',
+    'my_school_title' => 'Mi escuela',
+    'my_school_subtitle' => 'Datos, identidad visual y configuración de tu plantel',
+    'my_school_saved' => 'Los datos de tu escuela se guardaron.',
     'create_subtitle' => 'Datos del plantel, domicilio, identidad visual y configuración',
     'edit_title' => 'Editar escuela',
     'search' => 'Buscar por clave, nombre o razón social',
@@ -50,6 +53,7 @@ return [
 
     'fields' => [
         'code' => 'Clave del instituto',
+        'code_locked' => 'La clave solo la cambia el administrador de la plataforma.',
         'name' => 'Descripción',
         'name_hint' => 'Nombre con el que se identifica el plantel, p. ej. QUERÉTARO NORTE.',
         'street' => 'Calle',
