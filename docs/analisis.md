@@ -125,7 +125,7 @@ Registro único y centralizado de cada estudiante.
 
 - **Matrícula:** formato `AI-{ID escuela}-{año}-{consecutivo de 4 dígitos}` (ej. `AI-12-2026-0147`); el consecutivo se reinicia cada año y es independiente por escuela.
 - **Contenido:** datos personales (nombre, edad, teléfono, email, domicilio); inscripción (fecha de ingreso, nivel, fecha límite del curso de 1 año y convenios de extensión); contactos familiares (padres, apoderados, emergencia); pagos (cuotas, saldo, historial); progreso académico (calificaciones, asistencias, evaluaciones); notas del maestro; estatus; documentos (contratos, evaluación inicial, fotos).
-- **Estatus:** activo, pausado, egresado, baja.
+- **Estatus:** Activo, En pausa, Curso finalizado, Graduado, Baja y Reasignado (decidido el 13-oct-2026; ver docs/modulos/alumnos.md).
 - **Funciones:** crear/editar alumno; cambio de estatus; **histórico de cambios** (quién y cuándo modificó qué); búsqueda tolerante a faltas de ortografía; filtros por nivel, grupo, tutor asignado, estado de pago y fecha de inscripción; vistas de alumnos activos, con pagos pendientes y próximos a terminar nivel.
 - **Información de grupos (sesiones):** alumnos de la sesión (cupo configurable, máx. 6), distribución de niveles (ej. 2 básico, 2 medio, 1 avanzado), lugares disponibles, maestro y horario.
 - **Reportes automáticos:** altas y bajas por mes, ingresos mensuales por cobranza, retención (finalizaron vs. se fueron), indicadores clave (alumnos activos, nivel promedio, ingreso total).
@@ -216,7 +216,7 @@ Cada escuela parte de esa base y **puede ajustarla** para su plantel sin afectar
 | RN-14 | Las sesiones se crean por día (fecha, horario de duración variable, salón, teacher) y la recepción registra en ellas las reservaciones. No hay grupos fijos permanentes. Puede haber sesiones cualquier día, incluido el domingo. |
 | RN-15 | Cada academia es una cuenta (tenant) independiente; una sucursal es una cuenta nueva. |
 | RN-16 | Solo el Super Administrador no tiene escuela; todo otro usuario pertenece a **una sola** escuela. El correo es **único en toda la plataforma**: la misma persona en dos academias tiene dos usuarios con correos distintos. El login **solo pide correo y contraseña**; la escuela se resuelve internamente a partir del usuario, sin pantalla para elegirla. |
-| RN-17 | Matrícula del alumno: `AI-{ID escuela}-{año}-{consecutivo 0000}`, con consecutivo anual por escuela. |
+| RN-17 | Matrícula del alumno: `{PREFIJO 4 letras}{año 2}{mes 2}{consecutivo 4}` (p. ej. `QRON26080506`). El prefijo se propone con las 4 primeras letras de la primera palabra del nombre de la escuela y lo ajusta el Super Admin. El consecutivo es continuo por escuela (no reinicia). Un alumno que llega con matrícula de otra escuela de la franquicia la conserva y no consume consecutivo. |
 | RN-18 | Solo el Super Administrador da de alta escuelas y su usuario administrador inicial; no hay autorregistro. Por ahora existe un solo plan. |
 | RN-19 | Moneda y zona horaria por escuela; valores de inicio MXN y America/Mexico_City. |
 | RN-20 | Cada gestión de cobranza (recordatorio, llamada, nota) queda en una bitácora por alumno; los recordatorios automáticos se pueden desactivar por alumno. |
@@ -224,7 +224,7 @@ Cada escuela parte de esa base y **puede ajustarla** para su plantel sin afectar
 | RN-22 | Los días del catálogo de festivos de la escuela no admiten sesiones y no cuentan para el cálculo de asistencia. |
 | RN-23 | La leyenda "Con tecnología de AppIngles" se muestra siempre, junto con el logo de la escuela. |
 | RN-24 | Un usuario solo se puede **eliminar** si no tiene registros en ningún módulo (haber iniciado sesión no cuenta); si los tiene, solo se puede desactivar. |
-| RN-25 | Al dar de alta un usuario nadie captura su contraseña: el sistema le envía por correo un enlace para crearla. |
+| RN-25 | Al dar de alta un usuario nadie captura su contraseña: el sistema le envía por correo un enlace para crearla. **Excepción:** al alumno (alta o importación) nunca se le envía correo al darlo de alta; su acceso se manda solo cuando la escuela presiona "Enviar acceso". El tutor recibe acceso solo cuando lo solicita. |
 | RN-26 | Domicilio de la escuela con entidad federativa y municipio del catálogo oficial del INEGI. |
 
 Niveles de idioma: la propuesta menciona niveles **CEFR (A1–C2)** para el control de niveles, y también usa "básico / medio / avanzado" para los grupos. Hay que definir cómo se relacionan (ver sección 12).
@@ -301,7 +301,7 @@ Este orden es una propuesta: valídalo y ajústalo en el análisis inicial.
 23. ~~**Cupo**~~ → **Resuelto:** cada escuela define su cupo durante su configuración; cada sesión puede tener menos lugares, mínimo 1 (ver §12.1 y RN-21).
 24. **"Newton de la actividad"** (Excel, valor 3.15): ¿qué es y cómo se usa?
 25. **Alerta de bajo desempeño (RN-07):** con los nuevos significados de los códigos, ¿qué la dispara?
-26. **Estatus del alumno:** el Excel tiene *Situación del alumno* (ACTIVO), *Estatus* (Activo/Inactivo) y *Tipo de alumno* (PRESENCIAL); el análisis, activo/pausado/egresado/baja. Definir cómo se relacionan (módulo Expediente).
+26. ✅ **Resuelto (13-oct-2026):** Activo, En pausa, Curso finalizado, Graduado, Baja y Reasignado. ~~**Estatus del alumno:** el Excel tiene *Situación del alumno* (ACTIVO), *Estatus* (Activo/Inactivo) y *Tipo de alumno* (PRESENCIAL); el análisis, activo/pausado/egresado/baja. Definir cómo se relacionan (módulo Expediente).~~
 
 ---
 

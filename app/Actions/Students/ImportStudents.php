@@ -28,6 +28,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use OpenSpout\Reader\XLSX\Options;
 use OpenSpout\Reader\XLSX\Reader;
 use Throwable;
 
@@ -68,6 +69,13 @@ final class ImportStudents
         $seenEmails = [];
         $rows = [];
 
+        // Los asesores de la hoja Asesores se darán de alta: no se avisan como faltantes.
+        foreach ($parsed['advisors'] as $advisor) {
+            if (($name = $this->text($advisor, 'name')) !== null && $this->lookup('advisors', $name) === null) {
+                $this->lookups['advisors'][StudentTemplate::normalize($name)] = 0;
+            }
+        }
+
         foreach ($parsed['students'] as $line => $data) {
             $rows[] = $this->check($line, $data, $seenNumbers, $seenEmails);
         }
@@ -104,7 +112,7 @@ final class ImportStudents
             }
 
             try {
-                $student = DB::transaction(fn () => $this->importRow($data));
+                $student = DB::transaction(fn () => $this->importRow($data, $check['email']));
             } catch (Throwable $exception) {
                 Log::error('No se pudo importar la fila de alumno.', ['school_id' => $school->id, 'line' => $line, 'error' => $exception->getMessage()]);
                 $result['failed'][] = $line;
@@ -134,7 +142,8 @@ final class ImportStudents
         $this->questions = SurveyQuestion::query()->ofCatalog($school->id)->orderBy('sort_order')->get()->keyBy('id');
         $this->lookups = [];
 
-        $reader = new Reader;
+        // Se conservan las filas vacías para que el número de fila coincida con el de Excel.
+        $reader = new Reader(new Options(SHOULD_PRESERVE_EMPTY_ROWS: true));
         $reader->open($path);
 
         $students = [];
@@ -208,7 +217,7 @@ final class ImportStudents
      * @param  array<string, mixed>  $data
      * @param  array<string, int>  $seenNumbers
      * @param  array<string, int>  $seenEmails
-     * @return array{line: int, name: string, number: ?string, action: string, errors: list<string>, warnings: list<string>}
+     * @return array{line: int, name: string, number: ?string, action: string, email: ?string, errors: list<string>, warnings: list<string>}
      */
     private function check(int $line, array $data, array &$seenNumbers, array &$seenEmails): array
     {
@@ -239,26 +248,24 @@ final class ImportStudents
             }
         }
 
+        // Un correo con problema no impide importar al alumno: se registra sin correo (sin acceso) y se avisa.
         $email = $this->text($data, 'email');
-        if ($email !== null) {
-            $email = Str::lower($email);
+        $email = $email === null ? null : Str::lower($email);
+        $emailProblem = match (true) {
+            $email === null => __('students.import.warnings.no_email'),
+            filter_var($email, FILTER_VALIDATE_EMAIL) === false => __('students.import.warnings.email_invalid', ['value' => $email]),
+            isset($seenEmails[$email]) => __('students.import.warnings.email_duplicate', ['value' => $email, 'line' => $seenEmails[$email]]),
+            User::where('email', $email)->when($existing?->user_id, fn ($query, $userId) => $query->whereKeyNot($userId))->exists()
+                || Student::withoutGlobalScope('school')->where('school_id', $this->school->id)->where('email', $email)
+                    ->when($existing?->id, fn ($query, $id) => $query->whereKeyNot($id))->exists() => __('students.import.warnings.email_taken', ['value' => $email]),
+            default => null,
+        };
 
-            if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-                $errors[] = __('students.import.errors.email', ['value' => $email]);
-            } elseif (isset($seenEmails[$email])) {
-                $errors[] = __('students.import.errors.duplicate_email', ['line' => $seenEmails[$email]]);
-            } else {
-                $seenEmails[$email] = $line;
-                $taken = User::where('email', $email)->when($existing?->user_id, fn ($query, $userId) => $query->whereKeyNot($userId))->exists()
-                    || Student::withoutGlobalScope('school')->where('school_id', $this->school->id)->where('email', $email)
-                        ->when($existing?->id, fn ($query, $id) => $query->whereKeyNot($id))->exists();
-
-                if ($taken) {
-                    $errors[] = __('students.import.errors.email_taken', ['value' => $email]);
-                }
-            }
+        if ($emailProblem !== null) {
+            $warnings[] = $emailProblem;
+            $email = null;
         } else {
-            $warnings[] = __('students.import.warnings.no_email');
+            $seenEmails[$email] = $line;
         }
 
         foreach (['birth_date', 'status_date', 'registered_on', 'starts_on', 'ends_on', 'withdrawn_on', 'reenrolled_on', 'graduated_on', 'absence_from', 'absence_to'] as $field) {
@@ -294,6 +301,7 @@ final class ImportStudents
             'name' => trim(implode(' ', array_filter([$this->text($data, 'first_name'), $this->text($data, 'last_name'), $this->text($data, 'second_last_name')]))),
             'number' => $number,
             'action' => $existing !== null && $existing->school_id === $this->school->id ? 'update' : 'create',
+            'email' => $email,
             'errors' => $errors,
             'warnings' => $warnings,
         ];
@@ -329,8 +337,11 @@ final class ImportStudents
         return $count;
     }
 
-    /** @param array<string, mixed> $data */
-    private function importRow(array $data): Student
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  string|null  $email  correo ya revisado (null si falta o tiene problema)
+     */
+    private function importRow(array $data, ?string $email): Student
     {
         $number = $this->text($data, 'enrollment_number');
         $number = $number === null ? null : Str::upper(preg_replace('/\s+/', '', $number));
@@ -343,15 +354,13 @@ final class ImportStudents
         }
 
         $status = $this->filled($data, 'status') ? ($this->status($data['status']) ?? StudentStatus::Active) : ($creating ? StudentStatus::Active : $student->status);
-        $email = $this->text($data, 'email');
-
         $student->fill([
             'first_name' => Str::upper((string) $this->text($data, 'first_name')),
             'last_name' => Str::upper((string) $this->text($data, 'last_name')),
             'second_last_name' => ($value = $this->text($data, 'second_last_name')) === null ? null : Str::upper($value),
             'mobile_phone' => $this->phone($data, 'mobile_phone'),
             'address' => Str::limit((string) $this->text($data, 'address'), 250, '') ?: null,
-            'email' => $email === null ? $student->email : Str::lower($email),
+            'email' => $email ?? $student->email,
             'birth_date' => $this->date($data, 'birth_date'),
             'student_type_id' => $this->filled($data, 'student_type') ? $this->lookup('types', $data['student_type']) : $student->student_type_id,
             'information_source_id' => $this->filled($data, 'information_source') ? $this->lookup('sources', $data['information_source']) : $student->information_source_id,

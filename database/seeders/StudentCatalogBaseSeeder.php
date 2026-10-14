@@ -51,6 +51,7 @@ class StudentCatalogBaseSeeder extends Seeder
         ['Personal', 'Personal', 'Per'],
         ['Propia', 'Personal', 'Per'],
         ['Volante', 'Administrativa', 'Adm'],
+        ['Enlace Digital - Facebook', 'Enlace Digital', 'ED'],
     ];
 
     private const TYPES = [
