@@ -70,7 +70,7 @@ class UserEditor extends Component
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->filter(fn (Role $role) => $actor->can('assignRole', [User::class, $role]))
+            ->filter(fn (Role $role) => $role->id === $this->form->user?->role_id || $actor->can('assignRole', [User::class, $role]))
             ->pluck('name', 'id')
             ->all();
     }

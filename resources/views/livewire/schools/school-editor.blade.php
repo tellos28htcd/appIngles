@@ -11,6 +11,11 @@
                                 :disabled="$ownSchool" :hint="$ownSchool ? __('schools.fields.code_locked') : null" required />
                     <x-ui.input name="form.name" :label="__('schools.fields.name')" :hint="__('schools.fields.name_hint')" wire:model="form.name" maxlength="150" required />
                 </div>
+                <div class="sm:max-w-[180px]">
+                    <x-ui.input name="form.enrollment_prefix" :label="__('schools.fields.enrollment_prefix')" wire:model="form.enrollment_prefix"
+                                maxlength="4" class="font-mono uppercase" :disabled="$ownSchool"
+                                :hint="$ownSchool ? __('schools.fields.enrollment_prefix_locked') : __('schools.fields.enrollment_prefix_hint')" />
+                </div>
             </x-ui.card>
 
             {{-- Contacto y datos fiscales --}}

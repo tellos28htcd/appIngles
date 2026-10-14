@@ -24,8 +24,8 @@ class MenuSeeder extends Seeder
         'agenda' => ['Agenda', 'calendar', null, MenuItemStatus::ComingSoon],
         'teachers' => ['Teachers', 'users', 'teachers.index', MenuItemStatus::Active],
         'students' => ['Alumnos', 'student', null, MenuItemStatus::Active, [
-            'students-records' => ['Expedientes', null, null, MenuItemStatus::ComingSoon],
-            'students-guardians' => ['Tutores', null, null, MenuItemStatus::ComingSoon],
+            'students-records' => ['Expedientes', null, 'students.index', MenuItemStatus::Active],
+            'students-guardians' => ['Tutores', null, 'guardians.index', MenuItemStatus::Active],
         ]],
         'tracking' => ['Seguimiento', 'clipboard', null, MenuItemStatus::Active, [
             'tracking-attendance' => ['Pase de lista', null, null, MenuItemStatus::ComingSoon],
@@ -53,6 +53,7 @@ class MenuSeeder extends Seeder
             'settings-school' => ['Mi escuela', null, 'my-school.edit', MenuItemStatus::Active],
             'settings-users' => ['Usuarios', null, 'users.index', MenuItemStatus::Active],
             'settings-catalogs' => ['Catálogos académicos', null, 'catalogs.index', MenuItemStatus::Active],
+            'settings-student-catalogs' => ['Catálogos de alumnos', null, 'student-catalogs.index', MenuItemStatus::Active],
             'settings-classrooms' => ['Salones', null, 'classrooms.index', MenuItemStatus::Active],
             'settings-payment-methods' => ['Métodos de pago', null, 'payment-methods.index', MenuItemStatus::Active],
             'settings-charge-concepts' => ['Conceptos de cobro', null, 'charge-concepts.index', MenuItemStatus::Active],

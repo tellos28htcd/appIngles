@@ -54,6 +54,9 @@ return [
     'fields' => [
         'code' => 'Clave del instituto',
         'code_locked' => 'La clave solo la cambia el administrador de la plataforma.',
+        'enrollment_prefix' => 'Prefijo de matrícula',
+        'enrollment_prefix_hint' => '4 letras; por defecto, las primeras de la primera palabra del nombre. Ej. QRON26080506.',
+        'enrollment_prefix_locked' => 'El prefijo solo lo cambia el administrador de la plataforma.',
         'name' => 'Descripción',
         'name_hint' => 'Nombre con el que se identifica el plantel, p. ej. QUERÉTARO NORTE.',
         'street' => 'Calle',
@@ -121,6 +124,7 @@ return [
     ],
 
     'validation' => [
+        'enrollment_prefix' => 'El prefijo de matrícula son exactamente 4 letras (A–Z).',
         'municipality_state' => 'El municipio no pertenece a la entidad seleccionada.',
         'rfc' => 'El RFC debe tener 12 caracteres (persona moral) o 13 (persona física).',
         'color' => 'Usa un color en formato hexadecimal, p. ej. #4361EE.',

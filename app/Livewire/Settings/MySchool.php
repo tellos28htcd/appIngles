@@ -35,6 +35,7 @@ class MySchool extends SchoolEditor
         // La clave no se cambia desde aquí, aunque alguien la altere en el navegador.
         abort_unless($this->form->school?->is($school), 403);
         $this->form->code = $school->code;
+        $this->form->enrollment_prefix = (string) $school->enrollment_prefix;
 
         $this->form->save();
 

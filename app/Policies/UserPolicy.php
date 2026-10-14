@@ -50,9 +50,16 @@ class UserPolicy
         return $this->update($actor, $user) && ! $user->hasPassword() && $user->isActive();
     }
 
-    /** El administrador de escuela solo asigna roles de escuela. */
+    /**
+     * El administrador de escuela solo asigna roles de escuela. Alumno y Padre/Tutor
+     * no se asignan aquí: nacen en sus módulos (Alumnos y Tutores) con su expediente.
+     */
     public function assignRole(User $actor, Role $role): bool
     {
+        if (in_array($role->slug, Role::MANAGED_BY_MODULES, true)) {
+            return false;
+        }
+
         return $actor->isPlatformAdmin()
             || ($this->create($actor) && $role->scope === RoleScope::School);
     }

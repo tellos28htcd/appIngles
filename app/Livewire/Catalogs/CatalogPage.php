@@ -30,6 +30,12 @@ abstract class CatalogPage extends Component
         return self::TABS;
     }
 
+    /** Catálogos cuyas novedades de la base se ofrecen en esta página. @return list<string> */
+    protected function updateCatalogs(): array
+    {
+        return self::ACADEMIC_CATALOGS;
+    }
+
     #[Locked]
     public ?int $schoolId = null;
 
@@ -51,7 +57,7 @@ abstract class CatalogPage extends Component
     public function updatedTab(): void
     {
         if (! in_array($this->tab, $this->tabs(), true)) {
-            $this->tab = 'horarios';
+            $this->tab = $this->tabs()[0];
         }
     }
 
@@ -69,7 +75,7 @@ abstract class CatalogPage extends Component
     {
         $this->authorizeSchool();
 
-        $selection = collect(self::ACADEMIC_CATALOGS)
+        $selection = collect($this->updateCatalogs())
             ->mapWithKeys(fn (string $catalog) => [$catalog => array_map('intval', $this->selectedUpdates[$catalog] ?? [])])
             ->all();
 
@@ -94,7 +100,7 @@ abstract class CatalogPage extends Component
         $school = School::findOrFail($this->schoolId);
 
         return collect(CopyBaseCatalogs::CATALOGS)
-            ->only(self::ACADEMIC_CATALOGS)
+            ->only($this->updateCatalogs())
             ->map(fn (string $model) => CopyBaseCatalogs::pending($school, $model))
             ->filter(fn ($items) => $items->isNotEmpty())
             ->all();

@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             InegiCatalogSeeder::class,
             CatalogBaseSeeder::class,
+            StudentCatalogBaseSeeder::class,
             RoleSeeder::class,
             MenuSeeder::class,
             SuperAdminSeeder::class,

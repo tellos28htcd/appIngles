@@ -14,12 +14,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Escuela = plantel = tenant. Todo dato transaccional lleva school_id.
  */
 #[Fillable([
-    'code', 'name',
+    'code', 'enrollment_prefix', 'name',
     'street', 'exterior_number', 'interior_number', 'neighborhood', 'postal_code', 'state_id', 'municipality_id',
     'phone', 'rfc', 'legal_name',
     'last_folio_series_a', 'last_folio_series_b',
@@ -53,7 +54,16 @@ class School extends Model
             'club_min_lesson_number' => 'integer',
             'last_folio_series_a' => 'integer',
             'last_folio_series_b' => 'integer',
+            'last_enrollment_sequence' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (School $school): void {
+            $prefix = Str::upper(trim((string) $school->enrollment_prefix));
+            $school->enrollment_prefix = $prefix !== '' ? $prefix : self::suggestEnrollmentPrefix((string) $school->name);
+        });
     }
 
     /** @return HasMany<User, $this> */
@@ -89,12 +99,20 @@ class School extends Model
     /** Los consecutivos de folio avanzan con cada recibo; no son un cambio de configuración. */
     protected function auditExcept(): array
     {
-        return ['last_folio_series_a', 'last_folio_series_b'];
+        return ['last_folio_series_a', 'last_folio_series_b', 'last_enrollment_sequence'];
     }
 
     public function isActive(): bool
     {
         return $this->status === SchoolStatus::Active;
+    }
+
+    /** Prefijo de matrícula sugerido: 4 letras de la primera palabra del nombre (sin acentos). */
+    public static function suggestEnrollmentPrefix(string $name): string
+    {
+        $firstWord = Str::of(Str::ascii($name))->upper()->explode(' ')->first(fn (string $word) => trim($word) !== '') ?? '';
+
+        return Str::of((string) preg_replace('/[^A-Z]/', '', $firstWord))->padRight(4, 'X')->substr(0, 4)->toString();
     }
 
     public function logoUrl(): ?string

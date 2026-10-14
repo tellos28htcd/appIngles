@@ -64,7 +64,14 @@ class UserForm extends Form
             'role_id' => [
                 'required', 'integer', Rule::exists('roles', 'id')->where('is_active', true),
                 function (string $attribute, mixed $value, Closure $fail) use ($actor, $role): void {
-                    if ($role && $actor->cannot('assignRole', [User::class, $role])) {
+                    $keepsRole = $this->user !== null && (int) $value === $this->user->role_id;
+
+                    // Un alumno o tutor conserva su rol: su usuario depende de su expediente.
+                    if (! $keepsRole && in_array($this->user?->loadMissing('role')->role?->slug, Role::MANAGED_BY_MODULES, true)) {
+                        $fail(__('users.validation.role_managed'));
+                    }
+
+                    if ($role && ! $keepsRole && $actor->cannot('assignRole', [User::class, $role])) {
                         $fail(__('users.validation.role_forbidden'));
                     }
 

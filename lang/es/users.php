@@ -97,6 +97,7 @@ return [
         'school_required' => 'Elige la escuela a la que pertenece el usuario.',
         'school_forbidden' => 'El Administrador plataforma no puede pertenecer a una escuela.',
         'role_forbidden' => 'No puedes asignar este rol.',
+        'role_managed' => 'Este usuario pertenece a un alumno o tutor; su rol no se cambia desde aquí.',
         'own_role' => 'No puedes cambiar tu propio rol.',
         'email_taken' => 'Este correo ya está registrado en la plataforma. Cada usuario necesita un correo distinto.',
     ],

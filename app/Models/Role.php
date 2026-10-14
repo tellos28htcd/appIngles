@@ -34,6 +34,9 @@ class Role extends Model
 
     public const STUDENT = 'student';
 
+    /** Roles cuyos usuarios se crean desde su módulo (expediente), no desde Usuarios. */
+    public const MANAGED_BY_MODULES = [self::STUDENT, self::GUARDIAN];
+
     protected function casts(): array
     {
         return [

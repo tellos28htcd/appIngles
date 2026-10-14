@@ -4,17 +4,22 @@ namespace App\Actions\Catalogs;
 
 use App\Enums\HolidayType;
 use App\Models\Activity;
+use App\Models\AdvisorPosition;
 use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\ChargeConcept;
 use App\Models\Classroom;
 use App\Models\Club;
 use App\Models\Holiday;
+use App\Models\InformationSource;
 use App\Models\Lesson;
 use App\Models\PaymentMethod;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Shift;
+use App\Models\StudentPlan;
+use App\Models\StudentType;
+use App\Models\SurveyQuestion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -39,10 +44,24 @@ final class CopyBaseCatalogs
         'payment_methods' => PaymentMethod::class,
         'charge_concepts' => ChargeConcept::class,
         'holidays' => Holiday::class,
+        'student_plans' => StudentPlan::class,
+        'information_sources' => InformationSource::class,
+        'student_types' => StudentType::class,
+        'advisor_positions' => AdvisorPosition::class,
+        'survey_questions' => SurveyQuestion::class,
     ];
 
-    /** Catálogos donde el nombre es único por escuela: si ya existe uno igual, se vincula en vez de duplicar. */
-    private const UNIQUE_BY_NAME = [Classroom::class, PaymentMethod::class, ChargeConcept::class];
+    /** Catálogos con un campo único por escuela: si ya existe uno igual, se vincula en vez de duplicar. */
+    private const UNIQUE_BY = [
+        Classroom::class => 'name',
+        PaymentMethod::class => 'name',
+        ChargeConcept::class => 'name',
+        StudentPlan::class => 'code',
+        InformationSource::class => 'name',
+        StudentType::class => 'code',
+        AdvisorPosition::class => 'name',
+        SurveyQuestion::class => 'question',
+    ];
 
     /**
      * @param  array<string, list<int>>|null  $only  catálogo => IDs base a copiar (null = todo lo pendiente)
@@ -128,10 +147,11 @@ final class CopyBaseCatalogs
             }
         }
 
-        if (in_array($base::class, self::UNIQUE_BY_NAME, true)) {
+        if (isset(self::UNIQUE_BY[$base::class])) {
+            $column = self::UNIQUE_BY[$base::class];
             $existing = $base::withoutGlobalScope('school')
                 ->where('school_id', $school->id)
-                ->where('name', $base->getAttribute('name'))
+                ->where($column, $base->getAttribute($column))
                 ->first();
 
             if ($existing !== null) {

@@ -23,6 +23,8 @@ class SchoolForm extends Form
 
     public string $code = '';
 
+    public string $enrollment_prefix = '';
+
     public string $name = '';
 
     public string $street = '';
@@ -90,7 +92,7 @@ class SchoolForm extends Form
 
         $this->fill([
             ...$school->only([
-                'code', 'name', 'state_id', 'municipality_id', 'last_folio_series_a', 'last_folio_series_b',
+                'code', 'enrollment_prefix', 'name', 'state_id', 'municipality_id', 'last_folio_series_a', 'last_folio_series_b',
                 'brand_primary', 'session_capacity', 'timezone', 'currency', 'max_sessions', 'club_min_lesson_number',
                 'works_sundays', 'schedules_classrooms', 'books_without_classroom', 'hybrid_clubs', 'requires_progress',
             ]),
@@ -111,6 +113,7 @@ class SchoolForm extends Form
 
         return [
             'code' => ['required', 'string', 'max:20', 'alpha_dash:ascii', Rule::unique('schools', 'code')->ignore($this->school)],
+            'enrollment_prefix' => ['nullable', 'string', 'size:4', 'regex:/^[A-Z]{4}$/'],
             'name' => ['required', 'string', 'max:150'],
             'street' => ['nullable', 'string', 'max:150'],
             'exterior_number' => ['nullable', 'string', 'max:20'],
@@ -155,6 +158,8 @@ class SchoolForm extends Form
             'brand_primary.regex' => __('schools.validation.color'),
             'brand_accent.regex' => __('schools.validation.color'),
             'postal_code.digits' => __('schools.validation.postal_code'),
+            'enrollment_prefix.regex' => __('schools.validation.enrollment_prefix'),
+            'enrollment_prefix.size' => __('schools.validation.enrollment_prefix'),
         ];
     }
 
@@ -170,6 +175,7 @@ class SchoolForm extends Form
     {
         $this->rfc = Str::upper(trim($this->rfc));
         $this->code = Str::upper(trim($this->code));
+        $this->enrollment_prefix = Str::upper(trim($this->enrollment_prefix));
         $this->brand_primary = Str::upper($this->brand_primary);
         $this->brand_accent = Str::upper($this->brand_accent);
 

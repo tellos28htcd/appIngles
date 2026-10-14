@@ -5,6 +5,8 @@ return [
     'base_subtitle' => 'Lo que recibe cada escuela al darse de alta: catálogos académicos y de configuración. Los cambios aquí no modifican lo que cada escuela ya ajustó; le llegan como novedades.',
     'school_title' => 'Catálogos académicos',
     'school_subtitle' => 'Turnos, horarios, libros, lecciones, actividades y clubes de tu escuela. Puedes ajustarlos sin afectar a otras escuelas.',
+    'student_title' => 'Catálogos de alumnos',
+    'student_subtitle' => 'Asesores de ventas, planes, origen de la información, tipos de alumno, puestos y la encuesta del alumno de tu escuela.',
     'empty' => 'Aún no hay registros',
 
     'tabs' => [
@@ -16,6 +18,12 @@ return [
         'metodos' => 'Métodos de pago',
         'conceptos' => 'Conceptos de cobro',
         'dias' => 'Días sin clase',
+        'asesores' => 'Asesores de ventas',
+        'planes' => 'Planes',
+        'origenes' => 'Origen de la información',
+        'tipos' => 'Tipos de alumno',
+        'puestos' => 'Puestos de asesor',
+        'encuesta' => 'Encuesta',
     ],
 
     'shifts' => [
@@ -147,6 +155,50 @@ return [
             'payment_methods' => 'Métodos de pago',
             'charge_concepts' => 'Conceptos de cobro',
             'holidays' => 'Días sin clase',
+            'student_plans' => 'Planes',
+            'information_sources' => 'Origen de la información',
+            'student_types' => 'Tipos de alumno',
+            'advisor_positions' => 'Puestos de asesor',
+            'survey_questions' => 'Preguntas de la encuesta',
+        ],
+    ],
+
+    'student' => [
+        'fields' => [
+            'code' => 'Clave',
+            'name' => 'Nombre',
+            'installments' => 'Mensualidades',
+            'channel' => 'Origen',
+            'short_name' => 'Nombre corto',
+            'rank' => 'Jerarquía',
+        ],
+        'hints' => [
+            'planes' => ['code' => 'Letra o clave del plan (p. ej. A, F, CONTADO).', 'installments' => 'Número de mensualidades del plan; se propone al elegirlo en la inscripción.'],
+            'origenes' => ['channel' => 'Agrupa el origen: Enlace Digital, Administrativa, Información ganada, Personal…'],
+            'tipos' => ['code' => 'Clave corta en mayúsculas (p. ej. ALUMN, TRASP).'],
+            'puestos' => ['rank' => '1 = el puesto más alto.'],
+        ],
+        'planes' => ['title' => 'Planes', 'description' => 'Planes de pago de la inscripción y su número de mensualidades.', 'add' => 'Nuevo plan', 'edit' => 'Editar plan'],
+        'origenes' => ['title' => 'Origen de la información', 'description' => 'Cómo se enteró el alumno de la escuela.', 'add' => 'Nuevo origen', 'edit' => 'Editar origen'],
+        'tipos' => ['title' => 'Tipos de alumno', 'description' => 'Alumno nuevo, traspaso, colaborador, reasignado…', 'add' => 'Nuevo tipo', 'edit' => 'Editar tipo'],
+        'puestos' => ['title' => 'Puestos de asesor', 'description' => 'Puestos de los asesores de ventas y su orden de jerarquía.', 'add' => 'Nuevo puesto', 'edit' => 'Editar puesto'],
+        'advisors' => [
+            'title' => 'Asesores de ventas',
+            'description' => 'Quién inscribe a cada alumno. Desactiva al asesor que deja la escuela para conservar su historial.',
+            'add' => 'Nuevo asesor',
+            'edit' => 'Editar asesor',
+            'no_position' => 'Sin puesto',
+            'since' => 'desde :date',
+            'until' => 'hasta :date',
+            'fields' => ['name' => 'Nombre', 'position' => 'Puesto', 'hired_on' => 'Fecha de ingreso', 'left_on' => 'Fecha de baja'],
+        ],
+        'survey' => [
+            'title' => 'Encuesta del alumno',
+            'description' => 'Preguntas que se hacen al alumno al inscribirse, por sección. Desactiva una pregunta para dejar de hacerla sin perder las respuestas.',
+            'add' => 'Nueva pregunta',
+            'edit' => 'Editar pregunta',
+            'options_hint' => 'Una opción por renglón.',
+            'fields' => ['section' => 'Sección', 'question' => 'Pregunta', 'type' => 'Tipo de respuesta', 'options' => 'Opciones', 'sort_order' => 'Orden'],
         ],
     ],
 

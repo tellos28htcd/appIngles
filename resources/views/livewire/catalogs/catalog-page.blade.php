@@ -51,6 +51,18 @@
             @case('dias')
                 <livewire:settings.holiday-index :school-id="$schoolId" :embedded="true" wire:key="holidays-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
+            @case('asesores')
+                <livewire:catalogs.sales-advisors-tab :school-id="$schoolId" wire:key="advisors-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
+            @case('planes')
+            @case('origenes')
+            @case('tipos')
+            @case('puestos')
+                <livewire:catalogs.student-catalog-tab :school-id="$schoolId" :catalog="$tab" wire:key="student-{{ $tab }}-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
+            @case('encuesta')
+                <livewire:catalogs.survey-questions-tab :school-id="$schoolId" wire:key="survey-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
             @default
                 <livewire:catalogs.shifts-tab :school-id="$schoolId" wire:key="shifts-{{ $schoolId ?? 'base' }}-{{ $version }}" />
         @endswitch
@@ -70,6 +82,8 @@
                                 @case('schedule_slots') {{ $item->number }} · {{ $item->range() }} @break
                                 @case('lessons') {{ $item->name }} <span class="text-xs text-ink-500">({{ __('catalogs.fields.activity_number') }} {{ $item->number }})</span> @break
                                 @case('activities') <span class="font-mono font-bold">{{ $item->code }}</span> · {{ $item->description }} @break
+                                @case('survey_questions') {{ $item->question }} @break
+                                @case('student_plans') @case('student_types') <span class="font-mono font-bold">{{ $item->code }}</span> · {{ $item->name }} @break
                                 @default {{ $item->name }}
                             @endswitch
                         </span>
