@@ -9,3 +9,27 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+# Lo que no se empaca para el servidor (git archive): solo viaja lo necesario para funcionar.
+# El .env nunca está en Git, así que nunca se empaca ni reemplaza el del servidor.
+/.agents export-ignore
+/.claude export-ignore
+/.editorconfig export-ignore
+/.env.example export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.mcp.json export-ignore
+/.npmrc export-ignore
+/AGENTS.md export-ignore
+/CLAUDE.md export-ignore
+/README.md export-ignore
+/boost.json export-ignore
+/docs export-ignore
+/opencode.json export-ignore
+/package-lock.json export-ignore
+/package.json export-ignore
+/phpunit.xml export-ignore
+/resources/css export-ignore
+/resources/js export-ignore
+/tests export-ignore
+/vite.config.js export-ignore

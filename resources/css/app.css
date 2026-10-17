@@ -85,6 +85,17 @@
   --color-info-600: #6938EF;
   --color-info-700: #5925DC;
 
+  /* Panel de disponibilidad: color de cada aula / número de teacher (1–9, como el Excel) */
+  --color-room-1: #6B4EA2;
+  --color-room-2: #B5651D;
+  --color-room-3: #1F6FB2;
+  --color-room-4: #1E8E3E;
+  --color-room-5: #D61ACB;
+  --color-room-6: #7BC63C;
+  --color-room-7: #A2507F;
+  --color-room-8: #6E7F8F;
+  --color-room-9: #A86BE0;
+
   /* Tipografía (Google Fonts: Plus Jakarta Sans, Figtree, JetBrains Mono) */
   --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;

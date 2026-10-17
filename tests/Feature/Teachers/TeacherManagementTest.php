@@ -82,6 +82,47 @@ class TeacherManagementTest extends TestCase
         Notification::assertSentTo($user, UserInvitation::class);
     }
 
+    public function test_teacher_without_email_has_no_access_until_one_is_captured(): void
+    {
+        Notification::fake();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        $this->fillTeacher(Livewire::test(TeacherEditor::class))
+            ->set('form.email', '')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $teacher = Teacher::sole();
+        $this->assertNull($teacher->user_id);
+        Notification::assertNothingSent();
+        $this->get(route('teachers.index'))->assertSee('Sin acceso');
+
+        Livewire::test(TeacherEditor::class, ['teacher' => $teacher])
+            ->set('form.email', 'maria.perez@appingles.com')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $user = $teacher->fresh()->user;
+        $this->assertSame(Role::TEACHER, $user->role->slug);
+        Notification::assertSentTo($user, UserInvitation::class);
+
+        // Ya con acceso, el correo no se puede quitar.
+        Livewire::test(TeacherEditor::class, ['teacher' => $teacher->fresh()])
+            ->set('form.email', '')
+            ->call('save')
+            ->assertHasErrors('form.email');
+    }
+
+    public function test_teacher_without_user_can_be_deleted(): void
+    {
+        $teacher = Teacher::factory()->create(['school_id' => $this->schoolA->id, 'user_id' => null]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        Livewire::test(TeacherIndex::class)->call('confirmDeletion', $teacher->id)->call('delete');
+
+        $this->assertModelMissing($teacher);
+    }
+
     public function test_weekly_hours_follow_the_contract_type(): void
     {
         Notification::fake();

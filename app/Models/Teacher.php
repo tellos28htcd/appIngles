@@ -8,9 +8,11 @@ use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\TeacherFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /** Teacher de una escuela; entra al sistema con su usuario (rol Teacher). */
@@ -18,6 +20,7 @@ use Illuminate\Support\Str;
     'school_id', 'user_id',
     'first_name', 'last_name', 'second_last_name', 'curp', 'rfc', 'photo_path',
     'street', 'exterior_number', 'interior_number', 'neighborhood', 'postal_code', 'state_id', 'municipality_id',
+    'short_name', 'panel_number', 'is_waitlist',
     'contract_type', 'weekly_hours', 'status',
 ])]
 class Teacher extends Model
@@ -31,6 +34,8 @@ class Teacher extends Model
             'contract_type' => ContractType::class,
             'weekly_hours' => 'integer',
             'status' => TeacherStatus::class,
+            'panel_number' => 'integer',
+            'is_waitlist' => 'boolean',
         ];
     }
 
@@ -38,6 +43,34 @@ class Teacher extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** @return HasMany<TeacherScheduleBlock, $this> */
+    public function scheduleBlocks(): HasMany
+    {
+        return $this->hasMany(TeacherScheduleBlock::class);
+    }
+
+    /** @return HasMany<TeacherIncident, $this> */
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(TeacherIncident::class);
+    }
+
+    /**
+     * Teachers que aparecen en el panel de disponibilidad: activos y con número de panel.
+     *
+     * @param  Builder<Teacher>  $query
+     */
+    public function scopeInPanel(Builder $query): void
+    {
+        $query->whereNotNull('panel_number')->where('status', TeacherStatus::Active)->orderBy('panel_number');
+    }
+
+    /** Nombre corto para el panel (o el primer nombre si no tiene). */
+    public function panelName(): string
+    {
+        return $this->short_name ?: Str::upper(Str::before($this->first_name.' ', ' '));
     }
 
     /** @return BelongsTo<State, $this> */

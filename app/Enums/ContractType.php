@@ -20,6 +20,15 @@ enum ContractType: string
         };
     }
 
+    /** Horas por día de referencia: tiempo completo 8, medio tiempo 4, hora clase hasta 8. */
+    public function dailyHours(): int
+    {
+        return match ($this) {
+            self::FullTime, self::Hourly => 8,
+            self::PartTime => 4,
+        };
+    }
+
     public function hasFixedHours(): bool
     {
         return $this !== self::Hourly;

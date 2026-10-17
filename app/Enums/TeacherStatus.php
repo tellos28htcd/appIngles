@@ -8,6 +8,7 @@ enum TeacherStatus: string
     case Leave = 'leave';
     case PaidLeave = 'paid_leave';
     case UnpaidLeave = 'unpaid_leave';
+    case Inactive = 'inactive';
     case Terminated = 'terminated';
 
     public function label(): string
@@ -27,7 +28,7 @@ enum TeacherStatus: string
         return match ($this) {
             self::Active => 'success',
             self::Leave, self::PaidLeave, self::UnpaidLeave => 'warning',
-            self::Terminated => 'neutral',
+            self::Inactive, self::Terminated => 'neutral',
         };
     }
 }

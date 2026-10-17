@@ -41,7 +41,7 @@
                                 @include('livewire.teachers.partials.avatar', ['teacher' => $teacher, 'size' => 'size-11'])
                                 <div class="flex min-w-0 flex-col">
                                     <span class="font-bold leading-snug [overflow-wrap:anywhere]">{{ $teacher->fullName() }}</span>
-                                    <span class="truncate text-sm text-ink-500">{{ $teacher->user?->email }}</span>
+                                    <span class="truncate text-sm text-ink-500">{{ $teacher->user?->email ?? __('teachers.no_email') }}</span>
                                     @if ($isPlatform)
                                         <span class="text-xs text-ink-500"><span class="font-mono">{{ $teacher->school->code }}</span> · {{ $teacher->school->name }}</span>
                                     @endif
@@ -59,7 +59,9 @@
                             </div>
                             <div class="flex flex-wrap items-center gap-2 md:w-48 md:flex-none">
                                 <x-ui.badge :variant="$teacher->status->badge()">{{ $teacher->status->label() }}</x-ui.badge>
-                                @if ($teacher->status->canWork() && ! $teacher->user?->hasPassword())
+                                @if ($teacher->user === null)
+                                    <x-ui.badge variant="neutral">{{ __('teachers.no_access') }}</x-ui.badge>
+                                @elseif ($teacher->status->canWork() && ! $teacher->user->hasPassword())
                                     <x-ui.badge variant="info">{{ __('users.pending_password') }}</x-ui.badge>
                                 @endif
                             </div>

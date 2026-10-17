@@ -44,6 +44,7 @@ class TeacherPolicy
     {
         return $this->update($actor, $teacher)
             && $teacher->status->canWork()
+            && $teacher->user !== null
             && ! $teacher->user->hasPassword();
     }
 }

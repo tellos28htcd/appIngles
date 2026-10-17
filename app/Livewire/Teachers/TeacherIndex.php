@@ -69,7 +69,8 @@ class TeacherIndex extends Component
         $teacher = Teacher::with('user')->findOrFail($this->confirmingDeletionId);
         $this->authorize('delete', $teacher);
 
-        $teacher->user->delete();
+        // Al borrar su usuario se borra el teacher (en cascada); sin usuario, se borra directo.
+        $teacher->user ? $teacher->user->delete() : $teacher->delete();
         $this->confirmingDeletionId = null;
 
         $this->dispatch('toast', type: 'success', message: __('teachers.messages.deleted'));

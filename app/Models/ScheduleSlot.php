@@ -28,9 +28,12 @@ class ScheduleSlot extends Model
         return $this->belongsTo(Shift::class);
     }
 
+    /** Si ya se usa en horarios de teachers, en el panel o en incidencias, solo se desactiva. */
     public function canBeDeleted(): bool
     {
-        return true;
+        return ! TeacherScheduleBlock::withoutGlobalScope('school')->where('schedule_slot_id', $this->id)->exists()
+            && ! TeacherAvailability::withoutGlobalScope('school')->where('schedule_slot_id', $this->id)->exists()
+            && ! TeacherIncident::withoutGlobalScope('school')->where('from_slot_id', $this->id)->orWhere('to_slot_id', $this->id)->exists();
     }
 
     public function range(): string

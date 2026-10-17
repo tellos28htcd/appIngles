@@ -22,7 +22,11 @@ class MenuSeeder extends Seeder
     private const TREE = [
         'dashboard' => ['Inicio', 'home', 'dashboard', MenuItemStatus::Active],
         'agenda' => ['Agenda', 'calendar', null, MenuItemStatus::ComingSoon],
-        'teachers' => ['Teachers', 'users', 'teachers.index', MenuItemStatus::Active],
+        'teachers' => ['Teachers', 'users', null, MenuItemStatus::Active, [
+            'teachers-list' => ['Teachers', null, 'teachers.index', MenuItemStatus::Active],
+            'teachers-availability' => ['Disponibilidad de horarios', null, 'availability.index', MenuItemStatus::Active],
+            'teachers-incidents' => ['Incidencias', null, 'teacher-incidents.index', MenuItemStatus::Active],
+        ]],
         'students' => ['Alumnos', 'student', null, MenuItemStatus::Active, [
             'students-records' => ['Expedientes', null, 'students.index', MenuItemStatus::Active],
             'students-guardians' => ['Tutores', null, 'guardians.index', MenuItemStatus::Active],
@@ -54,7 +58,7 @@ class MenuSeeder extends Seeder
             'settings-users' => ['Usuarios', null, 'users.index', MenuItemStatus::Active],
             'settings-catalogs' => ['Catálogos académicos', null, 'catalogs.index', MenuItemStatus::Active],
             'settings-student-catalogs' => ['Catálogos de alumnos', null, 'student-catalogs.index', MenuItemStatus::Active],
-            'settings-classrooms' => ['Salones', null, 'classrooms.index', MenuItemStatus::Active],
+            'settings-classrooms' => ['Aulas', null, 'classrooms.index', MenuItemStatus::Active],
             'settings-payment-methods' => ['Métodos de pago', null, 'payment-methods.index', MenuItemStatus::Active],
             'settings-charge-concepts' => ['Conceptos de cobro', null, 'charge-concepts.index', MenuItemStatus::Active],
             'settings-holidays' => ['Días festivos', null, 'holidays.index', MenuItemStatus::Active],
@@ -84,7 +88,7 @@ class MenuSeeder extends Seeder
             'billing-statements', 'billing-payments', 'billing-actions', 'reports',
         ],
         Role::ACADEMIC_COORDINATOR => [
-            'dashboard', 'agenda', 'teachers', 'students-records', 'students-guardians',
+            'dashboard', 'agenda', 'teachers-list', 'teachers-availability', 'teachers-incidents', 'students-records', 'students-guardians',
             'tracking-attendance', 'tracking-evaluations', 'tracking-risk', 'reports',
         ],
         Role::TEACHER => ['dashboard', 'agenda', 'tracking-attendance', 'tracking-evaluations'],

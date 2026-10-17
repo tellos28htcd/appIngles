@@ -64,6 +64,14 @@ class TeacherForm extends Form
 
     public string $status = 'active';
 
+    /** Nombre corto para el panel de disponibilidad (p. ej. MELISSA). */
+    public string $short_name = '';
+
+    /** Número de columna en el panel; sin número no aparece en el panel. */
+    public ?int $panel_number = null;
+
+    public bool $is_waitlist = false;
+
     /** Resultado del envío de la invitación en el último alta (null si no hubo alta). */
     public ?bool $invitationSent = null;
 
@@ -83,6 +91,9 @@ class TeacherForm extends Form
             'contract_type' => $teacher->contract_type?->value ?? ContractType::FullTime->value,
             'weekly_hours' => $teacher->weekly_hours ?? ContractType::FullTime->maxWeeklyHours(),
             'status' => $teacher->status->value,
+            'short_name' => (string) $teacher->short_name,
+            'panel_number' => $teacher->panel_number,
+            'is_waitlist' => (bool) $teacher->is_waitlist,
         ]);
     }
 
@@ -112,7 +123,11 @@ class TeacherForm extends Form
                 'nullable', 'string', 'regex:/^[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}$/',
                 Rule::unique('teachers', 'rfc')->where('school_id', $this->school_id)->ignore($this->teacher),
             ],
-            'email' => ['required', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($this->teacher?->user_id)],
+            'email' => [
+                // Opcional: sin correo el teacher queda sin acceso. Si ya tiene usuario, su correo no se quita.
+                Rule::requiredIf(fn () => $this->teacher?->user_id !== null),
+                'nullable', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($this->teacher?->user_id),
+            ],
             'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'street' => ['nullable', 'string', 'max:150'],
             'exterior_number' => ['nullable', 'string', 'max:20'],
@@ -127,6 +142,9 @@ class TeacherForm extends Form
             'contract_type' => ['required', Rule::enum(ContractType::class)],
             'weekly_hours' => ['required', 'integer', 'min:1', 'max:'.ContractType::MAX_WEEKLY_HOURS],
             'status' => ['required', Rule::enum(TeacherStatus::class)],
+            'short_name' => ['nullable', 'string', 'max:20'],
+            'panel_number' => ['nullable', 'integer', 'min:1', 'max:99', Rule::unique('teachers', 'panel_number')->where('school_id', $this->school_id)->ignore($this->teacher)],
+            'is_waitlist' => ['boolean'],
         ];
     }
 
@@ -134,6 +152,7 @@ class TeacherForm extends Form
     protected function messages(): array
     {
         return [
+            'panel_number.unique' => __('teachers.validation.panel_number'),
             'curp.regex' => __('teachers.validation.curp'),
             'curp.size' => __('teachers.validation.curp'),
             'rfc.regex' => __('teachers.validation.rfc'),
@@ -156,6 +175,7 @@ class TeacherForm extends Form
     {
         $this->email = Str::lower(trim($this->email));
         $this->curp = Str::upper(trim($this->curp));
+        $this->short_name = Str::upper(trim($this->short_name));
         $this->rfc = Str::upper(trim($this->rfc));
 
         $actor = auth()->user();
@@ -171,32 +191,39 @@ class TeacherForm extends Form
         $data = array_map(fn ($value) => $value === '' ? null : $value, $data);
         $creating = $this->teacher === null;
 
-        $teacher = DB::transaction(function () use ($data): Teacher {
-            $status = TeacherStatus::from($data['status']);
-            $user = $this->teacher?->user ?? new User;
+        $userCreated = false;
 
-            $user->fill([
-                'role_id' => $user->role_id ?? Role::where('slug', Role::TEACHER)->value('id'),
-                'school_id' => $data['school_id'],
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'second_last_name' => $data['second_last_name'],
-                'email' => $data['email'],
-                // Solo un teacher activo entra al sistema.
-                'status' => $status->canWork() ? UserStatus::Active : UserStatus::Inactive,
-            ])->save();
+        $teacher = DB::transaction(function () use ($data, &$userCreated): Teacher {
+            $status = TeacherStatus::from($data['status']);
+            $user = $this->teacher?->user;
+
+            // Sin correo no hay usuario; se crea cuando se captura el correo.
+            if ($data['email'] !== null) {
+                $user ??= new User;
+                $userCreated = ! $user->exists;
+
+                $user->fill([
+                    'role_id' => $user->role_id ?? Role::where('slug', Role::TEACHER)->value('id'),
+                    'school_id' => $data['school_id'],
+                    'first_name' => $data['first_name'],
+                    'last_name' => $data['last_name'],
+                    'second_last_name' => $data['second_last_name'],
+                    'email' => $data['email'],
+                    // Solo un teacher activo entra al sistema.
+                    'status' => $status->canWork() ? UserStatus::Active : UserStatus::Inactive,
+                ])->save();
+            }
 
             $teacher = $this->teacher ?? new Teacher;
-            $teacher->fill([...collect($data)->except('email')->all(), 'user_id' => $user->id])->save();
+            $teacher->fill([...collect($data)->except('email')->all(), 'user_id' => $user?->id])->save();
 
             return $teacher;
         });
 
         $this->syncPhoto($teacher, $photo);
 
-        if ($creating) {
-            $this->invitationSent = $sendInvitation->handle($teacher->user);
-        }
+        // Al crearse su acceso (en el alta o al capturar después su correo) recibe la invitación.
+        $this->invitationSent = $userCreated ? $sendInvitation->handle($teacher->load('user')->user) : null;
 
         $this->setTeacher($teacher->refresh());
         $this->reset('photo', 'remove_photo');

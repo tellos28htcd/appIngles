@@ -99,7 +99,7 @@ return [
         'lesson' => 'Lecciones',
         'activity' => 'Actividades',
         'club' => 'Clubes',
-        'classroom' => 'Salones',
+        'classroom' => 'Aulas',
         'payment_method' => 'Métodos de pago',
         'charge_concept' => 'Conceptos de cobro',
         'holiday' => 'Días festivos',

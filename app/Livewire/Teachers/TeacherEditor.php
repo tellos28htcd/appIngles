@@ -52,13 +52,15 @@ class TeacherEditor extends Component
             : $this->authorize('create', Teacher::class);
 
         $created = $this->form->save($sendInvitation);
-        $mailFailed = $created && $this->form->invitationSent === false;
+        $mailFailed = $this->form->invitationSent === false;
 
         session()->flash('toast', [
             'type' => $mailFailed ? 'warning' : 'success',
             'message' => __(match (true) {
                 $mailFailed => 'teachers.messages.created_mail_failed',
+                $created && $this->form->invitationSent === null => 'teachers.messages.created_without_access',
                 $created => 'teachers.messages.created',
+                $this->form->invitationSent === true => 'teachers.messages.access_created',
                 default => 'teachers.messages.updated',
             }),
         ]);

@@ -1,0 +1,247 @@
+<?php
+
+namespace Tests\Feature\Teachers;
+
+use App\Actions\Teachers\AvailabilityPlanner;
+use App\Enums\HolidayType;
+use App\Enums\TeacherStatus;
+use App\Livewire\Teachers\AvailabilityPanel;
+use App\Livewire\Teachers\TeacherIncidentIndex;
+use App\Livewire\Teachers\TeacherSchedule;
+use App\Models\Classroom;
+use App\Models\Holiday;
+use App\Models\Role;
+use App\Models\ScheduleSlot;
+use App\Models\School;
+use App\Models\Shift;
+use App\Models\Teacher;
+use App\Models\TeacherAvailability;
+use App\Models\TeacherIncident;
+use App\Models\TeacherScheduleBlock;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+use Database\Seeders\MenuSeeder;
+use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class TeacherAvailabilityTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private School $school;
+
+    private School $otherSchool;
+
+    /** @var array<int, ScheduleSlot> hora => bloque */
+    private array $slots = [];
+
+    /** @var array<string, Classroom> nombre => aula */
+    private array $rooms = [];
+
+    private CarbonImmutable $monday;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed([RoleSeeder::class, MenuSeeder::class]);
+        $this->school = School::factory()->create();
+        $this->otherSchool = School::factory()->create();
+        $this->monday = CarbonImmutable::parse('2026-07-27');
+
+        $shift = Shift::create(['school_id' => $this->school->id, 'name' => 'Matutino', 'sort_order' => 1, 'is_active' => true]);
+        foreach (range(7, 20) as $number => $hour) {
+            $this->slots[$hour] = ScheduleSlot::create([
+                'school_id' => $this->school->id, 'shift_id' => $shift->id, 'number' => $number + 1,
+                'starts_at' => sprintf('%02d:00:00', $hour), 'ends_at' => sprintf('%02d:00:00', $hour + 1), 'is_active' => true,
+            ]);
+        }
+        foreach (range(1, 9) as $number) {
+            $this->rooms[(string) $number] = Classroom::create(['school_id' => $this->school->id, 'name' => (string) $number, 'capacity' => 5, 'is_active' => true]);
+        }
+    }
+
+    private function user(string $roleSlug, ?School $school = null): User
+    {
+        return User::factory()->create(['role_id' => Role::where('slug', $roleSlug)->value('id'), 'school_id' => ($school ?? $this->school)->id]);
+    }
+
+    /** @param array<int, list<int>> $hours día (1 = lunes) => horas */
+    private function teacher(string $short, int $number, array $hours, array $attributes = []): Teacher
+    {
+        $teacher = Teacher::factory()->create([
+            'school_id' => $this->school->id, 'user_id' => null, 'first_name' => ucfirst(strtolower($short)),
+            'short_name' => $short, 'panel_number' => $number, 'weekly_hours' => 48, ...$attributes,
+        ]);
+
+        foreach ($hours as $weekday => $list) {
+            foreach ($list as $hour) {
+                TeacherScheduleBlock::create(['school_id' => $this->school->id, 'teacher_id' => $teacher->id, 'weekday' => $weekday, 'schedule_slot_id' => $this->slots[$hour]->id]);
+            }
+        }
+
+        return $teacher;
+    }
+
+    private function cell(Teacher $teacher, CarbonImmutable $date, int $hour): ?TeacherAvailability
+    {
+        return TeacherAvailability::withoutGlobalScope('school')->where('teacher_id', $teacher->id)->where('is_absent', false)
+            ->whereDate('date', $date->toDateString())->where('schedule_slot_id', $this->slots[$hour]->id)->first();
+    }
+
+    private function planner(): AvailabilityPlanner
+    {
+        return app(AvailabilityPlanner::class);
+    }
+
+    public function test_a_week_is_built_from_the_base_schedule_and_keeps_last_weeks_classrooms(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10, 11]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+
+        $cell = $this->cell($melissa, $this->monday, 9);
+        $this->assertNotNull($cell);
+        $this->assertNull($cell->classroom_id);
+        $this->assertNull($this->cell($melissa, $this->monday->addDay(), 9));
+
+        $this->planner()->setClassroom($cell, $this->rooms['3']->id);
+        $this->planner()->generateWeek($this->school, $this->monday->addWeek());
+
+        $this->assertSame($this->rooms['3']->id, $this->cell($melissa, $this->monday->addWeek(), 9)->classroom_id);
+        $this->assertNull($this->cell($melissa, $this->monday->addWeek(), 10)->classroom_id);
+    }
+
+    public function test_a_classroom_cannot_have_two_teachers_at_the_same_hour(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
+        $alfonso = $this->teacher('ALFONSO', 2, [1 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->planner()->setClassroom($this->cell($melissa, $this->monday, 9), $this->rooms['4']->id);
+
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        Livewire::test(AvailabilityPanel::class)
+            ->call('setClassroom', $this->cell($alfonso, $this->monday, 9)->id, $this->rooms['4']->id)
+            ->assertDispatched('toast', type: 'error');
+
+        $this->assertNull($this->cell($alfonso, $this->monday, 9)->classroom_id);
+    }
+
+    public function test_vacation_empties_the_hours_and_covers_moves_them_with_the_same_classroom(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10, 11, 12, 13]]);
+        $dulce = $this->teacher('DULCE', 4, [1 => [15, 16]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        foreach ([9, 10, 11, 12, 13] as $hour) {
+            $this->planner()->setClassroom($this->cell($melissa, $this->monday, $hour), $this->rooms['3']->id);
+        }
+
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+        Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $melissa->id)->set('incidentType', 'vacation')
+            ->set('startsOn', '2026-07-27')->set('endsOn', '2026-07-27')->set('allDay', false)
+            ->set('fromSlotId', $this->slots[9]->id)->set('toSlotId', $this->slots[13]->id)->set('reason', 'Vacaciones')
+            ->call('save')->assertHasNoErrors();
+
+        $this->assertNull($this->cell($melissa, $this->monday, 9));
+
+        Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $dulce->id)->set('incidentType', 'covers')->set('coveredTeacherId', $melissa->id)
+            ->set('startsOn', '2026-07-27')->set('endsOn', '2026-07-27')->set('allDay', false)
+            ->set('fromSlotId', $this->slots[9]->id)->set('toSlotId', $this->slots[13]->id)->set('reason', 'Cubre vacaciones')
+            ->call('save')->assertHasNoErrors();
+
+        $covered = $this->cell($dulce, $this->monday, 9);
+        $this->assertSame($this->rooms['3']->id, $covered->classroom_id);
+        $this->assertSame($melissa->id, $covered->covered_teacher_id);
+        $this->assertSame(7, $this->planner()->weeklyHours($dulce, $this->monday));
+    }
+
+    public function test_deleting_an_incident_restores_the_hours_and_classroom(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->planner()->setClassroom($this->cell($melissa, $this->monday, 9), $this->rooms['3']->id);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+
+        $index = Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $melissa->id)->set('incidentType', 'absence')
+            ->set('startsOn', '2026-07-27')->set('endsOn', '2026-07-27')->set('reason', 'No llegó')
+            ->call('save')->assertHasNoErrors();
+        $this->assertNull($this->cell($melissa, $this->monday, 9));
+
+        $incident = TeacherIncident::sole();
+        $index->call('confirmDeletion', $incident->id)->call('delete');
+
+        // La hora vuelve con el aula que tenía.
+        $this->assertSame($this->rooms['3']->id, $this->cell($melissa, $this->monday, 9)?->classroom_id);
+    }
+
+    public function test_covering_requires_a_free_teacher_and_respects_48_hours(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10]]);
+        $alfonso = $this->teacher('ALFONSO', 2, [1 => [9]]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+
+        Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $alfonso->id)->set('incidentType', 'covers')->set('coveredTeacherId', $melissa->id)
+            ->set('startsOn', '2026-07-27')->set('endsOn', '2026-07-27')->set('reason', 'Cubre')
+            ->call('save')->assertHasErrors('coveredTeacherId');
+
+        $full = $this->teacher('LEONARDO', 6, collect(range(1, 6))->mapWithKeys(fn ($day) => [$day => range(11, 18)])->all());
+        Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $full->id)->set('incidentType', 'covers')->set('coveredTeacherId', $melissa->id)
+            ->set('startsOn', '2026-07-27')->set('endsOn', '2026-07-27')->set('reason', 'Cubre')
+            ->call('save')->assertHasErrors('coveredTeacherId');
+    }
+
+    public function test_holidays_have_no_availability_and_inactive_teachers_are_not_in_the_panel(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9], 2 => [9]]);
+        $renata = $this->teacher('RENATA', 8, [1 => [9]], ['status' => TeacherStatus::Inactive]);
+        Holiday::create(['school_id' => $this->school->id, 'starts_on' => '2026-07-27', 'ends_on' => '2026-07-27', 'name' => 'Festivo', 'type' => HolidayType::School, 'is_active' => true]);
+
+        $this->planner()->generateWeek($this->school, $this->monday);
+
+        $this->assertNull($this->cell($melissa, $this->monday, 9));
+        $this->assertNotNull($this->cell($melissa, $this->monday->addDay(), 9));
+        $this->assertSame(0, $this->planner()->weeklyHours($renata, $this->monday));
+    }
+
+    public function test_base_schedule_cannot_pass_48_hours_except_waitlist(): void
+    {
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $teacher = $this->teacher('MELISSA', 1, []);
+        $all = collect(range(1, 6))->flatMap(fn ($day) => collect(range(7, 15))->map(fn ($hour) => $day.'-'.$this->slots[$hour]->id))
+            ->mapWithKeys(fn ($key) => [$key => true])->all();
+
+        Livewire::test(TeacherSchedule::class, ['teacher' => $teacher])->set('selected', $all)->call('save')->assertHasErrors('selected');
+
+        $waitlist = $this->teacher('LISTA_ESP', 7, [], ['is_waitlist' => true]);
+        Livewire::test(TeacherSchedule::class, ['teacher' => $waitlist])->set('selected', $all)->call('save')->assertHasNoErrors();
+        $this->assertSame(54, $waitlist->scheduleBlocks()->count());
+    }
+
+    public function test_panel_permissions_and_isolation(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $this->get(route('availability.index', ['mes' => '2026-07', 'semana' => '2026-07-27']))->assertOk()->assertSee('MELISSA');
+
+        $this->flushSession();
+        $this->actingAs($this->user(Role::RECEPTION));
+        $this->get(route('availability.index'))->assertForbidden();
+
+        $this->flushSession();
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+        $this->get(route('availability.index', ['mes' => '2026-07', 'semana' => '2026-07-27']))->assertOk();
+
+        // Otra escuela no ve ni toca las celdas de esta.
+        $this->flushSession();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->otherSchool));
+        Livewire::test(AvailabilityPanel::class)->call('setClassroom', $this->cell($melissa, $this->monday, 9)->id, null)->assertNotFound();
+    }
+}

@@ -332,7 +332,7 @@ class CatalogManagementTest extends TestCase
         $this->actingAs($this->superAdmin)
             ->get(route('base-catalogs.index', ['pestana' => 'salones']))
             ->assertOk()
-            ->assertSee('Nuevo salón');
+            ->assertSee('Nueva aula');
 
         Livewire::test(ClassroomIndex::class, ['schoolId' => null, 'embedded' => true])
             ->call('edit')

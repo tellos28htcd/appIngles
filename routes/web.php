@@ -28,8 +28,11 @@ use App\Livewire\Students\StudentEditor;
 use App\Livewire\Students\StudentImport;
 use App\Livewire\Students\StudentIndex;
 use App\Livewire\Students\StudentShow;
+use App\Livewire\Teachers\AvailabilityPanel;
 use App\Livewire\Teachers\TeacherEditor;
+use App\Livewire\Teachers\TeacherIncidentIndex;
 use App\Livewire\Teachers\TeacherIndex;
+use App\Livewire\Teachers\TeacherSchedule;
 use App\Livewire\Users\UserEditor;
 use App\Livewire\Users\UserIndex;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +77,9 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
     Route::livewire('/teachers', TeacherIndex::class)->name('teachers.index');
     Route::livewire('/teachers/nuevo', TeacherEditor::class)->name('teachers.create');
     Route::livewire('/teachers/{teacher}/editar', TeacherEditor::class)->name('teachers.edit');
+    Route::livewire('/teachers/{teacher}/horario', TeacherSchedule::class)->name('teachers.schedule');
+    Route::livewire('/disponibilidad-de-horarios', AvailabilityPanel::class)->name('availability.index');
+    Route::livewire('/incidencias-de-teachers', TeacherIncidentIndex::class)->name('teacher-incidents.index');
 
     Route::livewire('/alumnos', StudentIndex::class)->name('students.index');
     Route::livewire('/alumnos/nuevo', StudentEditor::class)->name('students.create');

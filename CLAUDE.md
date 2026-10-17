@@ -23,9 +23,9 @@ Verifica las versiones reales en composer.json y package.json.
   laravel-livewire-fullstack (references/convenciones-codigo.md).
 
 ## Estado
-Módulos terminados: acceso (login, menú dinámico), escuelas (tenants), usuarios, roles y permisos, menú (Plataforma), catálogos académicos (base + copia por escuela), configuración de la escuela (mi escuela, salones, métodos de pago, conceptos de cobro, días festivos; con base en Plataforma), rol Alumno (portal pendiente), teachers, bitácora/auditoría (Plataforma y Configuración), alumnos (expediente, tutores, catálogos de alumnos, encuesta e importación desde Excel).
+Módulos terminados: acceso (login, menú dinámico), escuelas (tenants), usuarios, roles y permisos, menú (Plataforma), catálogos académicos (base + copia por escuela), configuración de la escuela (mi escuela, salones, métodos de pago, conceptos de cobro, días festivos; con base en Plataforma), rol Alumno (portal pendiente), teachers (con horario base, incidencias y panel de disponibilidad de horarios), bitácora/auditoría (Plataforma y Configuración), alumnos (expediente, tutores, catálogos de alumnos, encuesta e importación desde Excel).
 Seguridad: ver docs/seguridad.md (controles y pasos obligatorios de producción).
-Siguiente: por definir (agenda, seguimiento o cobranza). Portales "Mi aprendizaje" (alumno) y "Mis alumnos" (tutor) pendientes de esos módulos.
+Siguiente: por definir (clubs semanales, agenda, seguimiento o cobranza). Portales "Mi aprendizaje" (alumno) y "Mis alumnos" (tutor) pendientes de esos módulos.
 
 <laravel-boost-guidelines>
 === foundation rules ===

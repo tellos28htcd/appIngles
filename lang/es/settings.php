@@ -25,12 +25,12 @@ return [
     ],
 
     'classrooms' => [
-        'title' => 'Salones',
+        'title' => 'Aulas',
         'subtitle' => 'Aulas del plantel donde se imparten las sesiones',
-        'add' => 'Nuevo salón',
-        'edit' => 'Editar salón',
-        'empty' => 'Aún no hay salones',
-        'empty_hint' => 'Registra las aulas de tu plantel para asignarlas a las sesiones de la agenda.',
+        'add' => 'Nueva aula',
+        'edit' => 'Editar aula',
+        'empty' => 'Aún no hay aulas',
+        'empty_hint' => 'Registra las aulas de tu plantel (1, 2, 3…); se asignan en el panel de disponibilidad y en la agenda.',
         'people' => '{1} 1 persona|[2,*] :count personas',
         'capacity_hint' => 'Cuántas personas caben. El cupo de cada sesión será el menor entre este y el cupo de la escuela.',
         'description_hint' => 'Opcional: piso, ubicación o equipo (proyector, pizarrón…).',

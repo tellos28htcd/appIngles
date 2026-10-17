@@ -79,11 +79,28 @@
                                  :placeholder="__('users.fields.select_school')" wire:model="form.school_id" required />
                 @endif
                 <x-ui.input name="form.email" type="email" :label="__('teachers.fields.email')" wire:model="form.email"
-                            autocomplete="email" inputmode="email" maxlength="255" required />
+                            autocomplete="email" inputmode="email" maxlength="255" />
                 <x-ui.select name="form.status" :label="__('teachers.fields.status')" :options="$statuses"
                              :hint="__('teachers.fields.status_hint')" wire:model="form.status" required />
             </x-ui.card>
         </div>
+
+        {{-- Panel de disponibilidad --}}
+        <x-ui.card :title="__('teachers.sections.panel')" :description="__('teachers.sections.panel_hint')">
+            <div class="grid gap-4 md:grid-cols-3">
+                <x-ui.input name="form.short_name" :label="__('teachers.fields.short_name')" :hint="__('teachers.fields.short_name_hint')" wire:model="form.short_name" maxlength="20" class="uppercase" />
+                <x-ui.input name="form.panel_number" type="number" :label="__('teachers.fields.panel_number')" :hint="__('teachers.fields.panel_number_hint')" wire:model="form.panel_number" min="1" max="99" class="tabular-nums" />
+                <div class="md:pt-7">
+                    <x-ui.toggle name="form.is_waitlist" :label="__('teachers.fields.is_waitlist')" :description="__('teachers.fields.is_waitlist_hint')" wire:model="form.is_waitlist" />
+                </div>
+            </div>
+            @if ($editing)
+                <a href="{{ route('teachers.schedule', $form->teacher) }}" wire:navigate
+                   class="inline-flex h-10 w-fit items-center gap-2 rounded-md px-4 text-sm font-bold text-primary-700 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
+                    <x-ui.icon name="calendar" class="size-4" />{{ __('teachers.actions.schedule') }}
+                </a>
+            @endif
+        </x-ui.card>
 
         <div class="sticky bottom-20 z-20 -mx-4 flex flex-col-reverse gap-2.5 border-t border-line bg-white/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:flex-row md:justify-end md:border-0 md:bg-transparent md:p-0">
             <a href="{{ route('teachers.index') }}" wire:navigate

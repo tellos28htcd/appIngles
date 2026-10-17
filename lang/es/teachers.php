@@ -12,6 +12,8 @@ return [
     'empty' => 'Aún no hay teachers',
     'empty_hint' => 'Da de alta a los profesores de tu escuela; cada uno recibirá su acceso por correo.',
     'incomplete' => 'Datos incompletos',
+    'no_email' => 'Sin correo',
+    'no_access' => 'Sin acceso',
     'hours_per_week' => '{1} 1 h por semana|[2,*] :count h por semana',
     'hours_max' => '{1} máx. 1 h/sem|[2,*] máx. :count h/sem',
     'hours_assigned' => 'horas asignadas (máx. 48 h/sem)',
@@ -21,6 +23,7 @@ return [
         'leave' => 'Licencia',
         'paid_leave' => 'Permiso con goce',
         'unpaid_leave' => 'Permiso sin goce',
+        'inactive' => 'Inactivo',
         'terminated' => 'Baja',
     ],
 
@@ -36,8 +39,10 @@ return [
         'contract' => 'Contratación',
         'contract_hint' => 'El tope de horas por semana nunca se podrá rebasar al asignarle clases en la agenda.',
         'access' => 'Acceso al sistema',
-        'access_hint' => 'Con este correo entrará al sistema. Al guardar recibirá un enlace para crear su contraseña.',
-        'access_hint_edit' => 'Si cambias el correo, con el nuevo inicia sesión. Solo un teacher Activo puede entrar.',
+        'access_hint' => 'Opcional. Con correo se crea su acceso y recibe un enlace para crear su contraseña; sin correo queda registrado sin acceso.',
+        'access_hint_edit' => 'Si aún no tiene correo, al capturarlo se crea su acceso y recibe la invitación. Solo un teacher Activo puede entrar.',
+        'panel' => 'Panel de disponibilidad',
+        'panel_hint' => 'Con número de panel el teacher aparece como columna en Disponibilidad de horarios (en ese orden). Sin número no aparece.',
     ],
 
     'fields' => [
@@ -66,6 +71,12 @@ return [
         'weekly_hours_hint' => 'Horas asignadas; nunca más de 48 por semana.',
         'status' => 'Estatus',
         'status_hint' => 'Solo un teacher Activo inicia sesión y recibe clases.',
+        'short_name' => 'Nombre corto',
+        'short_name_hint' => 'Como aparece en el panel (p. ej. MELISSA).',
+        'panel_number' => 'Número en el panel',
+        'panel_number_hint' => 'Orden de su columna (1, 2, 3…). Vacío = no aparece.',
+        'is_waitlist' => 'Es Lista de espera',
+        'is_waitlist_hint' => 'Columna para alumnos en espera: no cuenta para límites de horas.',
     ],
 
     'actions' => [
@@ -73,6 +84,7 @@ return [
         'cancel' => 'Cancelar',
         'edit' => 'Editar a :name',
         'edit_short' => 'Editar',
+        'schedule' => 'Horario base',
         'delete' => 'Eliminar a :name',
         'delete_short' => 'Eliminar',
     ],
@@ -80,6 +92,8 @@ return [
     'messages' => [
         'created' => 'Teacher registrado. Le enviamos un correo para crear su contraseña.',
         'created_mail_failed' => 'Teacher registrado, pero no se pudo enviar el correo. Revisa la configuración de correo y usa "Reenviar invitación".',
+        'created_without_access' => 'Teacher registrado sin acceso. Cuando tengas su correo, captúralo para enviarle la invitación.',
+        'access_created' => 'Teacher actualizado. Le enviamos un correo para crear su contraseña.',
         'updated' => 'Teacher actualizado.',
         'deleted' => 'Teacher eliminado.',
     ],
@@ -94,5 +108,6 @@ return [
         'curp' => 'La CURP debe tener 18 caracteres con el formato oficial (p. ej. GOMA850101HQTRRN09).',
         'rfc' => 'El RFC de persona física tiene 13 caracteres (p. ej. GOMA850101AB1).',
         'weekly_hours' => 'Un teacher nunca puede tener más de 48 horas por semana.',
+        'panel_number' => 'Ese número de panel ya lo tiene otro teacher de la escuela.',
     ],
 ];
