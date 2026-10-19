@@ -19,6 +19,7 @@ return [
     'no_teachers_hint' => 'Asigna a cada teacher su número de panel y su horario base en Teachers.',
     'classroom' => 'Aula',
     'no_classroom' => 'sin aula asignada',
+    'holiday' => 'Día festivo: :name',
     'choose_classroom' => 'Asignar aula',
     'clear_classroom' => 'Quitar aula',
     'legend' => 'Teachers de la semana',

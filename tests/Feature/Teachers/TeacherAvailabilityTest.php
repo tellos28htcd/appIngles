@@ -4,6 +4,7 @@ namespace Tests\Feature\Teachers;
 
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\HolidayType;
+use App\Enums\TeacherIncidentType;
 use App\Enums\TeacherStatus;
 use App\Livewire\Teachers\AvailabilityPanel;
 use App\Livewire\Teachers\TeacherIncidentIndex;
@@ -207,6 +208,82 @@ class TeacherAvailabilityTest extends TestCase
         $this->assertNull($this->cell($melissa, $this->monday, 9));
         $this->assertNotNull($this->cell($melissa, $this->monday->addDay(), 9));
         $this->assertSame(0, $this->planner()->weeklyHours($renata, $this->monday));
+    }
+
+    public function test_classrooms_come_from_the_last_armed_week_even_if_one_was_skipped(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->planner()->setClassroom($this->cell($melissa, $this->monday, 9), $this->rooms['3']->id);
+
+        $this->planner()->generateWeek($this->school, $this->monday->addWeeks(2));
+
+        $this->assertSame($this->rooms['3']->id, $this->cell($melissa, $this->monday->addWeeks(2), 9)->classroom_id);
+    }
+
+    public function test_arming_a_week_adds_the_official_holidays_and_labels_them(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9], 2 => [9]]);
+        $revolution = CarbonImmutable::parse('2026-11-16');
+
+        $this->planner()->generateWeek($this->school, $revolution);
+
+        $this->assertTrue(Holiday::withoutGlobalScope('school')->where('school_id', $this->school->id)->whereDate('starts_on', '2026-11-16')->exists());
+        $this->assertNull($this->cell($melissa, $revolution, 9));
+        $this->assertNotNull($this->cell($melissa, $revolution->addDay(), 9));
+
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $this->get(route('availability.index', ['mes' => '2026-11', 'semana' => '2026-11-16']))->assertOk()->assertSee('Día festivo: Día de la Revolución');
+    }
+
+    public function test_adding_or_removing_a_holiday_updates_armed_weeks(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [2 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->planner()->setClassroom($this->cell($melissa, $this->monday->addDay(), 9), $this->rooms['3']->id);
+
+        $holiday = Holiday::create(['school_id' => $this->school->id, 'starts_on' => '2026-07-28', 'ends_on' => '2026-07-28', 'name' => 'Aniversario', 'type' => HolidayType::School, 'is_active' => true]);
+        $this->assertNull($this->cell($melissa, $this->monday->addDay(), 9));
+
+        $holiday->update(['is_active' => false]);
+        $this->assertSame($this->rooms['3']->id, $this->cell($melissa, $this->monday->addDay(), 9)?->classroom_id);
+    }
+
+    public function test_incidents_still_apply_when_recalculating_from_the_school_timezone(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [2 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        TeacherIncident::create([
+            'school_id' => $this->school->id, 'teacher_id' => $melissa->id, 'type' => TeacherIncidentType::Vacation,
+            'starts_on' => '2026-07-28', 'ends_on' => '2026-07-28', 'reason' => 'Vacaciones',
+        ]);
+
+        // "Hoy" con la hora de México (como lo calcula el horario base al guardar).
+        $this->planner()->rebuildRange($this->school, CarbonImmutable::parse('2026-07-27', 'America/Mexico_City'), CarbonImmutable::parse('2026-08-01', 'America/Mexico_City'));
+
+        $this->assertNull($this->cell($melissa, $this->monday->addDay(), 9));
+    }
+
+    public function test_recalculating_keeps_each_hour_id_for_future_bookings(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10]]);
+        $dulce = $this->teacher('DULCE', 4, [1 => [11]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->planner()->setClassroom($this->cell($melissa, $this->monday, 9), $this->rooms['3']->id);
+        $this->planner()->setClassroom($this->cell($dulce, $this->monday, 11), $this->rooms['3']->id);
+        $nine = $this->cell($melissa, $this->monday, 9)->id;
+        $eleven = $this->cell($dulce, $this->monday, 11)->id;
+
+        TeacherIncident::create([
+            'school_id' => $this->school->id, 'teacher_id' => $melissa->id, 'type' => TeacherIncidentType::Absence,
+            'starts_on' => '2026-07-27', 'ends_on' => '2026-07-27', 'from_slot_id' => $this->slots[10]->id, 'to_slot_id' => $this->slots[10]->id, 'reason' => 'No llegó',
+        ]);
+        $this->planner()->rebuildRange($this->school, $this->monday, $this->monday);
+
+        $this->assertSame($nine, $this->cell($melissa, $this->monday, 9)->id);
+        $this->assertSame($this->rooms['3']->id, $this->cell($melissa, $this->monday, 9)->classroom_id);
+        $this->assertSame($eleven, $this->cell($dulce, $this->monday, 11)->id);
+        $this->assertNull($this->cell($melissa, $this->monday, 10));
     }
 
     public function test_base_schedule_cannot_pass_48_hours_except_waitlist(): void

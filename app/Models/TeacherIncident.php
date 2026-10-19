@@ -61,7 +61,10 @@ class TeacherIncident extends Model
     /** ¿La incidencia cubre esa fecha y ese bloque de horario? */
     public function covers(CarbonInterface $date, ScheduleSlot $slot): bool
     {
-        if ($date->lt($this->starts_on) || $date->gt($this->ends_on)) {
+        // Se comparan solo las fechas: la hora y la zona horaria de $date no deben influir.
+        $day = $date->toDateString();
+
+        if ($day < $this->starts_on->toDateString() || $day > $this->ends_on->toDateString()) {
             return false;
         }
 

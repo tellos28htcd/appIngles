@@ -2,6 +2,7 @@
 
 namespace App\Actions\Teachers;
 
+use App\Actions\Settings\EnsureOfficialHolidays;
 use App\Enums\ContractType;
 use App\Models\AvailabilityWeek;
 use App\Models\Classroom;
@@ -30,6 +31,15 @@ use Illuminate\Validation\ValidationException;
  */
 final class AvailabilityPlanner
 {
+    /**
+     * Fecha de calendario (sin hora ni zona horaria): "hoy" puede llegar con la
+     * hora de la escuela (America/Mexico_City) y las fechas guardadas están en UTC.
+     */
+    private static function day(CarbonInterface|string $value): CarbonImmutable
+    {
+        return CarbonImmutable::parse(CarbonImmutable::parse($value)->toDateString());
+    }
+
     /** Bloques de horario activos de la escuela, en orden. @return Collection<int, ScheduleSlot> */
     public function slots(School $school): Collection
     {
@@ -40,10 +50,28 @@ final class AvailabilityPlanner
     /** Días que se muestran en la semana: lunes a sábado, y domingo si la escuela trabaja domingos. @return list<CarbonImmutable> */
     public function days(School $school, CarbonInterface $monday): array
     {
-        $monday = CarbonImmutable::parse($monday)->startOfWeek(CarbonInterface::MONDAY);
+        $monday = self::day($monday)->startOfWeek(CarbonInterface::MONDAY);
         $count = $school->works_sundays ? 7 : 6;
 
         return array_map(fn (int $offset) => $monday->addDays($offset), range(0, $count - 1));
+    }
+
+    /** Días sin clase de la semana: fecha => nombre del festivo. @param list<CarbonImmutable> $days @return array<string, string> */
+    public function holidays(School $school, array $days): array
+    {
+        $names = [];
+        $holidays = Holiday::withoutGlobalScope('school')->where('school_id', $school->id)->where('is_active', true)
+            ->whereDate('starts_on', '<=', end($days)->toDateString())->whereDate('ends_on', '>=', $days[0]->toDateString())->get();
+
+        foreach ($days as $day) {
+            $holiday = $holidays->first(fn (Holiday $holiday) => $day->betweenIncluded($holiday->starts_on, $holiday->ends_on));
+
+            if ($holiday !== null) {
+                $names[$day->toDateString()] = $holiday->name;
+            }
+        }
+
+        return $names;
     }
 
     /** Teachers del panel de la escuela (activos y con número). @return Collection<int, Teacher> */
@@ -61,7 +89,12 @@ final class AvailabilityPlanner
     /** Arma la semana (si no existe): horario base + aulas de la semana anterior − incidencias. */
     public function generateWeek(School $school, CarbonInterface $monday, ?int $userId = null): void
     {
-        $monday = CarbonImmutable::parse($monday)->startOfWeek(CarbonInterface::MONDAY);
+        $monday = self::day($monday)->startOfWeek(CarbonInterface::MONDAY);
+
+        // Los festivos oficiales del año (LFT) se generan si la escuela aún no los tiene.
+        foreach (array_unique([$monday->year, $monday->addDays(6)->year]) as $year) {
+            app(EnsureOfficialHolidays::class)->handle($school, $year);
+        }
 
         DB::transaction(function () use ($school, $monday, $userId): void {
             if ($this->isGenerated($school, $monday)) {
@@ -81,8 +114,8 @@ final class AvailabilityPlanner
     /** Vuelve a calcular las semanas ya armadas que tocan esas fechas (al guardar o borrar una incidencia). */
     public function rebuildRange(School $school, CarbonInterface $from, CarbonInterface $to): void
     {
-        $day = CarbonImmutable::parse($from)->startOfDay();
-        $last = CarbonImmutable::parse($to)->startOfDay();
+        $day = self::day($from);
+        $last = self::day($to);
 
         DB::transaction(function () use ($school, $day, $last): void {
             for (; $day->lte($last); $day = $day->addDay()) {
@@ -99,7 +132,7 @@ final class AvailabilityPlanner
      */
     public function rebuildDay(School $school, CarbonInterface $date): void
     {
-        $date = CarbonImmutable::parse($date)->startOfDay();
+        $date = self::day($date);
         $day = $date->toDateString();
         $cells = TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id);
 
@@ -107,13 +140,13 @@ final class AvailabilityPlanner
         $classroomMap = fn (string $date) => (clone $cells)->whereDate('date', $date)->whereNull('covered_teacher_id')->get()
             ->mapWithKeys(fn (TeacherAvailability $cell) => [$cell->teacher_id.'|'.$cell->schedule_slot_id => $cell->classroom_id ?? $cell->held_classroom_id]);
         $existing = $classroomMap($day);
-        $previous = $classroomMap($date->subWeek()->toDateString());
+        // Aulas del mismo día de la última semana armada (aunque no sea la inmediata anterior).
+        $lastSameWeekday = (clone $cells)->whereDate('date', '<', $day)
+            ->whereRaw('MOD(DATEDIFF(?, `date`), 7) = 0', [$day])->max('date');
+        $previous = $lastSameWeekday === null ? collect() : $classroomMap(CarbonImmutable::parse($lastSameWeekday)->toDateString());
 
-        (clone $cells)->whereDate('date', $day)->delete();
-
-        if (Holiday::withoutGlobalScope('school')->where('school_id', $school->id)->covering($day)->exists()) {
-            return;
-        }
+        // Día festivo: sin disponibilidad; las horas quedan ocultas con su aula por si se quita el festivo.
+        $isHoliday = Holiday::withoutGlobalScope('school')->where('school_id', $school->id)->covering($day)->exists();
 
         $slots = $this->slots($school)->keyBy('id');
         $teachers = $this->teachers($school)->load('scheduleBlocks');
@@ -147,7 +180,7 @@ final class AvailabilityPlanner
             ];
         };
         // Hora con incidencia: queda oculta y guarda su aula (la usa quien cubre; regresa si se borra la incidencia).
-        $absent = function (int $teacherId, int $slotId, ?int $heldClassroomId, int $incidentId) use (&$rows, $school, $day, $now): void {
+        $absent = function (int $teacherId, int $slotId, ?int $heldClassroomId, ?int $incidentId) use (&$rows, $school, $day, $now): void {
             $rows[$teacherId.'|'.$slotId] = [
                 'school_id' => $school->id, 'teacher_id' => $teacherId, 'date' => $day, 'schedule_slot_id' => $slotId,
                 'classroom_id' => null, 'is_absent' => true, 'held_classroom_id' => $heldClassroomId,
@@ -165,9 +198,9 @@ final class AvailabilityPlanner
                     $scheduled[$teacher->id][$slot->id] = true;
 
                     $absence = $absenceOf($teacher->id, $slot);
-                    $absence === null
-                        ? $add($teacher->id, $slot->id, $classroomOf($teacher->id, $slot->id))
-                        : $absent($teacher->id, $slot->id, $classroomOf($teacher->id, $slot->id), $absence->id);
+                    $isHoliday || $absence !== null
+                        ? $absent($teacher->id, $slot->id, $classroomOf($teacher->id, $slot->id), $absence?->id)
+                        : $add($teacher->id, $slot->id, $classroomOf($teacher->id, $slot->id));
                 }
             }
         }
@@ -175,7 +208,7 @@ final class AvailabilityPlanner
         // "Cubre horas": las horas (que el cubierto tenía en su horario) pasan a quien cubre, en la misma aula.
         foreach ($incidents->filter(fn (TeacherIncident $incident) => $incident->type->isCoverage()) as $incident) {
             foreach ($slots as $slot) {
-                if (! $incident->covers($date, $slot) || ! isset($scheduled[$incident->covered_teacher_id][$slot->id])
+                if ($isHoliday || ! $incident->covers($date, $slot) || ! isset($scheduled[$incident->covered_teacher_id][$slot->id])
                     || isset($rows[$incident->teacher_id.'|'.$slot->id])) {
                     continue;
                 }
@@ -184,8 +217,38 @@ final class AvailabilityPlanner
             }
         }
 
-        if ($rows !== []) {
-            TeacherAvailability::withoutGlobalScope('school')->insert(array_values($rows));
+        $this->syncDay($school, $day, $rows);
+    }
+
+    /**
+     * Guarda el día actualizando las horas que ya existían (conservan su id, al
+     * que se ligarán las reservaciones de la agenda), creando las nuevas y
+     * quitando las que ya no aplican.
+     *
+     * @param  array<string, array<string, mixed>>  $rows  "teacher|bloque" => valores
+     */
+    private function syncDay(School $school, string $day, array $rows): void
+    {
+        $query = fn () => TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $day);
+        $current = $query()->get()->keyBy(fn (TeacherAvailability $cell) => $cell->teacher_id.'|'.$cell->schedule_slot_id);
+
+        // Primero se liberan las aulas del día para que el intercambio de aulas no choque con la regla "un aula, un teacher".
+        $query()->whereNotNull('classroom_id')->update(['classroom_id' => null]);
+
+        $query()->whereKey($current->keys()->diff(array_keys($rows))->map(fn (string $key) => $current[$key]->id)->values()->all())->delete();
+
+        $new = [];
+        foreach ($rows as $key => $values) {
+            if (isset($current[$key])) {
+                TeacherAvailability::withoutGlobalScope('school')->whereKey($current[$key]->id)
+                    ->update(collect($values)->except(['created_at'])->all());
+            } else {
+                $new[] = $values;
+            }
+        }
+
+        if ($new !== []) {
+            TeacherAvailability::withoutGlobalScope('school')->insert($new);
         }
     }
 
@@ -216,7 +279,7 @@ final class AvailabilityPlanner
     /** Horas del teacher en la semana (celdas del panel). */
     public function weeklyHours(Teacher $teacher, CarbonInterface $monday): int
     {
-        $monday = CarbonImmutable::parse($monday)->startOfWeek(CarbonInterface::MONDAY);
+        $monday = self::day($monday)->startOfWeek(CarbonInterface::MONDAY);
 
         return TeacherAvailability::withoutGlobalScope('school')->where('teacher_id', $teacher->id)->where('is_absent', false)
             ->whereBetween('date', [$monday->toDateString(), $monday->addDays(6)->toDateString()])->count();

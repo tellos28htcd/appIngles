@@ -117,6 +117,7 @@ return [
             'contract_number' => 'No. de contrato',
             'sales_advisor_id' => 'Asesor de ventas',
             'student_plan_id' => 'Plan',
+            'information_source_id' => 'Origen de la información',
             'installments' => 'Mensualidades',
             'registered_on' => 'Fecha de la ficha',
             'starts_on' => 'Inicio del curso',

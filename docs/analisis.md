@@ -226,6 +226,8 @@ Cada escuela parte de esa base y **puede ajustarla** para su plantel sin afectar
 | RN-24 | Un usuario solo se puede **eliminar** si no tiene registros en ningún módulo (haber iniciado sesión no cuenta); si los tiene, solo se puede desactivar. |
 | RN-25 | Al dar de alta un usuario nadie captura su contraseña: el sistema le envía por correo un enlace para crearla. **Excepción:** al alumno (alta o importación) nunca se le envía correo al darlo de alta; su acceso se manda solo cuando la escuela presiona "Enviar acceso". El tutor recibe acceso solo cuando lo solicita. |
 | RN-26 | Domicilio de la escuela con entidad federativa y municipio del catálogo oficial del INEGI. |
+| RN-27 | La agenda reserva sobre el panel de disponibilidad ya calculado (`teacher_availabilities`: horas disponibles con aula, ya con incidencias y días festivos aplicados); no vuelve a consultar incidencias ni festivos. Solo se reserva en **semanas armadas** y con al menos **24 horas de anticipación**. |
+| RN-28 | Si una incidencia quita horas de un teacher que ya tiene alumnos reservados, esas reservaciones pasan **automáticamente** al teacher que cubre ("Cubre horas"), en la misma aula. |
 
 Niveles de idioma: la propuesta menciona niveles **CEFR (A1–C2)** para el control de niveles, y también usa "básico / medio / avanzado" para los grupos. Hay que definir cómo se relacionan (ver sección 12).
 

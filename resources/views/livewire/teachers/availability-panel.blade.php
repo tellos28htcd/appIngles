@@ -55,8 +55,16 @@
                     </tr>
                     <tr>
                         @foreach ($days as $day)
-                            <th colspan="{{ $teachers->count() }}" class="bg-primary-600 py-1 text-xs font-bold text-on-primary">
+                            @php($holiday = $holidays[$day->toDateString()] ?? null)
+                            <th colspan="{{ $teachers->count() }}" @class([
+                                'py-1 text-xs font-bold',
+                                'bg-primary-600 text-on-primary' => $holiday === null,
+                                'bg-warning-500 text-white' => $holiday !== null,
+                            ]) @if ($holiday) title="{{ __('availability.holiday', ['name' => $holiday]) }}" @endif>
                                 {{ $day->translatedFormat('l j') }}
+                                @if ($holiday)
+                                    <span class="block truncate px-1 text-[11px] font-semibold">{{ __('availability.holiday', ['name' => $holiday]) }}</span>
+                                @endif
                             </th>
                             <th></th>
                         @endforeach

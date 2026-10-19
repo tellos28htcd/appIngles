@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\HolidayType;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
@@ -24,6 +25,32 @@ class Holiday extends Model
             'type' => HolidayType::class,
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Al agregar, cambiar, activar/desactivar o quitar un día sin clase de una
+     * escuela, las semanas ya armadas del panel de disponibilidad se recalculan.
+     */
+    protected static function booted(): void
+    {
+        $rebuild = function (Holiday $holiday, bool $includeOriginal): void {
+            if ($holiday->school_id === null || ($school = School::find($holiday->school_id)) === null) {
+                return;
+            }
+
+            $ranges = [[$holiday->starts_on, $holiday->ends_on]];
+
+            if ($includeOriginal && $holiday->getOriginal('starts_on') !== null) {
+                $ranges[] = [$holiday->getOriginal('starts_on'), $holiday->getOriginal('ends_on')];
+            }
+
+            foreach ($ranges as [$from, $to]) {
+                app(AvailabilityPlanner::class)->rebuildRange($school, $from, $to);
+            }
+        };
+
+        static::saved(fn (Holiday $holiday) => $rebuild($holiday, true));
+        static::deleted(fn (Holiday $holiday) => $rebuild($holiday, false));
     }
 
     public function isOfficial(): bool

@@ -21,9 +21,12 @@ el Excel tiene días de 9 y 10 horas, por eso no bloquean. Al guardar, las seman
 Igual a la hoja "H de Teacher": por día una columna por teacher (número y nombre corto), por hora el **número de aula**
 con su color (paleta `--color-room-1…9`, como el Excel), horas por día, leyenda (asignadas / a cumplir) y gráfica del
 promedio de teachers por hora de lunes a viernes (x̄T). Selector de mes y semana = histórico.
-- La primera semana se arma con el horario base; las siguientes, con las aulas de la semana anterior.
+- Cada semana se arma con el botón **Armar semana**: horario base + aulas de la **última semana armada** (aunque se haya
+  saltado alguna). El listado de semanas del mes se forma solo; el contenido, solo con el botón.
 - El aula se asigna o cambia con un clic en la celda. Un aula no tiene dos teachers a la misma hora (RN-05).
-- Domingo solo si la escuela trabaja domingos. Los días festivos no tienen disponibilidad (RN-22).
+- Domingo solo si la escuela trabaja domingos. Los días festivos no tienen disponibilidad (RN-22) y su encabezado dice
+  "Día festivo: …". Al armar una semana se generan los festivos oficiales del año si faltan. Si se agrega, cambia,
+  desactiva o borra un festivo, las semanas ya armadas se recalculan solas (las horas se conservan ocultas con su aula).
 
 ## Incidencias
 Tipos: Permiso con goce, Permiso sin goce, Vacaciones, Incapacidad, Falta (no llegó), Evento imprevisto y **Cubre horas**.
@@ -36,3 +39,12 @@ y no pasar de 48 h en la semana (por día sí puede pasar de 8). Al guardar o bo
 `teacher_availabilities` (celdas: teacher, fecha, bloque, aula; `is_absent` + `held_classroom_id` para incidencias;
 `covered_teacher_id` si cubre). Campos nuevos en `teachers`: `short_name`, `panel_number`, `is_waitlist`.
 El catálogo "Salones" se llama ahora **Aulas**.
+
+## Para la agenda (reservaciones)
+- La agenda lee directo `teacher_availabilities` (filas con `is_absent = 0` y aula): ahí ya están aplicadas las
+  incidencias y los días festivos. No debe volver a consultarlos.
+- Al recalcular (incidencia, festivo u horario base) cada hora **conserva su id**: se actualiza, no se borra y se vuelve
+  a crear. Las reservaciones se pueden ligar a esa fila.
+- Solo se reserva en semanas armadas y con al menos 24 h de anticipación (RN-27).
+- Si una incidencia quita horas con alumnos reservados, las reservaciones pasan automáticamente a quien cubre, en la
+  misma aula (RN-28).

@@ -48,7 +48,6 @@
                         'mobile_phone' => $student->mobile_phone ?? '—',
                         'birth_date' => $student->birth_date ? $date($student->birth_date).' · '.trans_choice('students.age', $student->age()) : '—',
                         'student_type_id' => $student->type?->name ?? '—',
-                        'information_source_id' => $student->informationSource?->name ?? '—',
                         'learning_style' => collect(['visual', 'auditory', 'kinesthetic'])->filter(fn ($style) => $student->{'learns_'.$style})->map(fn ($style) => __("students.fields.learns_$style"))->implode(', ') ?: '—',
                     ] as $field => $value)
                         <div class="flex min-w-0 flex-col">
@@ -95,16 +94,18 @@
                                 </button>
                             @endif
                         </div>
+                        {{-- 3 columnas: el origen queda arriba de "Inicio del curso" y "Fin del curso" debajo. --}}
                         <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
                             @foreach ([
                                 'sales_advisor_id' => $record->salesAdvisor?->name ?? '—',
                                 'student_plan_id' => $record->plan ? $record->plan->name.' · '.trans_choice('students.enrollment.installments_count', $record->installments ?? $record->plan->installments) : '—',
-                                'starts_on' => $date($record->starts_on),
-                                'ends_on' => $date($record->ends_on),
+                                'information_source_id' => $student->informationSource?->name ?? '—',
                                 'material_serial' => $record->material_serial ?? '—',
                                 'start_point' => collect([$record->startBook?->name, $record->startLesson?->name, $record->startActivity?->code])->filter()->implode(' · ') ?: '—',
+                                'starts_on' => $date($record->starts_on),
                                 'services' => collect($record->services())->map(fn ($service) => __("students.enrollment.services.$service"))->implode(', ') ?: '—',
                                 'reenrolled_on' => $date($record->reenrolled_on),
+                                'ends_on' => $date($record->ends_on),
                                 'graduated_on' => $date($record->graduated_on),
                                 'withdrawn_on' => $date($record->withdrawn_on),
                             ] as $field => $value)

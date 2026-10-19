@@ -173,6 +173,7 @@ class AvailabilityPanel extends Component
             'average' => $average,
             'maxAverage' => max(1, (float) $average->max()),
             'generated' => $generated,
+            'holidays' => $planner->holidays($school, $days),
             'canManage' => auth()->user()->can('manage', AvailabilityWeek::class),
             'classrooms' => $classrooms,
             'classroomNumbers' => $this->classroomNumbers($classrooms),
