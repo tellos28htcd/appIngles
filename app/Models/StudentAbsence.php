@@ -22,6 +22,12 @@ class StudentAbsence extends Model
         ];
     }
 
+    /** Días naturales autorizados (incluye sábados y domingos; cuenta inicio y fin). */
+    public function days(): int
+    {
+        return $this->ends_on === null ? 1 : (int) $this->starts_on->diffInDays($this->ends_on) + 1;
+    }
+
     /** @return BelongsTo<Student, $this> */
     public function student(): BelongsTo
     {

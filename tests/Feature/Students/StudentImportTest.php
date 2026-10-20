@@ -7,9 +7,11 @@ use App\Enums\StudentStatus;
 use App\Jobs\DownloadStudentPhoto;
 use App\Livewire\Students\StudentImport;
 use App\Models\Guardian;
+use App\Models\Municipality;
 use App\Models\Role;
 use App\Models\SalesAdvisor;
 use App\Models\School;
+use App\Models\State;
 use App\Models\Student;
 use App\Models\StudentSurveyAnswer;
 use App\Models\SurveyQuestion;
@@ -35,12 +37,19 @@ class StudentImportTest extends TestCase
 
     private School $school;
 
+    private Municipality $queretaro;
+
+    private Municipality $corregidora;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->seed([RoleSeeder::class, MenuSeeder::class, CatalogBaseSeeder::class]);
-        $this->school = School::factory()->create(['enrollment_prefix' => 'QRON']);
+        $state = State::create(['code' => '22', 'name' => 'Querétaro']);
+        $this->queretaro = Municipality::create(['state_id' => $state->id, 'code' => '014', 'name' => 'Querétaro']);
+        $this->corregidora = Municipality::create(['state_id' => $state->id, 'code' => '006', 'name' => 'Corregidora']);
+        $this->school = School::factory()->create(['enrollment_prefix' => 'QRON', 'state_id' => $state->id]);
         $this->seed(StudentCatalogBaseSeeder::class);
         $this->actingAs(User::factory()->create([
             'role_id' => Role::where('slug', Role::SCHOOL_ADMIN)->value('id'),
@@ -84,7 +93,9 @@ class StudentImportTest extends TestCase
         return [
             [
                 'Matrícula' => 'QRON23040001', 'Nombre(s)' => 'María Isela', 'Primer apellido' => 'Amado', 'Segundo apellido' => 'Reyes',
-                'Celular' => 4461180095, 'Correo electrónico' => 'isela@appingles.com', 'Fecha de nacimiento' => 30805,
+                'Celular' => 4461180095, 'Teléfono fijo' => '4422150000', 'Correo electrónico' => 'isela@appingles.com', 'Fecha de nacimiento' => 30805,
+                'Domicilio' => 'AV. DE LA LUZ NO. 1500, INT. 15, COL. PUESTA DEL SOL, QRO. C.P. 76100',
+                'Fecha de inicio del curso' => '03/04/2023', 'Días de ampliación de plazo' => 30, 'Tipo de material (F/C)' => 'f',
                 'Tipo de alumno (clave)' => 'ALUMN', 'Origen de la información' => 'info pres-adm', 'Estatus' => 'Activo',
                 'Foto (enlace)' => 'https://drive.google.com/uc?id=abc123', 'No. de contrato' => '2',
                 'Asesor de ventas' => 'GIANCARLO HERNANDEZ', 'Plan (clave)' => 'F', 'Fecha de la ficha de inscripción' => '01/04/2023',
@@ -95,6 +106,7 @@ class StudentImportTest extends TestCase
             [
                 'Nombre(s)' => 'Juan', 'Primer apellido' => 'Pérez', 'Estatus' => 'Baja', 'Motivo del estatus' => 'Devolvió el material',
                 'Fecha de baja' => '15/05/2025', 'Tutor: nombre' => 'ROSA REYES', 'Tutor: celular' => '4420000000',
+                'Calle' => 'Pino', 'Núm. ext.' => '12', 'Colonia' => 'Centro', 'Ciudad / municipio' => 'corregidora', 'C.P.' => '76900',
             ],
             ['Nombre(s)' => 'Sin apellido', 'Correo electrónico' => 'isela@appingles.com'],
         ];
@@ -133,8 +145,15 @@ class StudentImportTest extends TestCase
         $enrollment = $isela->enrollments->sole();
         $this->assertSame('F', $enrollment->plan->code);
         $this->assertSame(10, $enrollment->installments);
-        $this->assertNull($enrollment->withdrawn_on);
+        $this->assertNull($isela->withdrawn_on);
+        $this->assertSame('2023-04-03', $isela->course_starts_on->toDateString());
+        $this->assertSame('2024-05-02', $isela->courseEndsOn()->toDateString()); // 365 + 30 días de ampliación
+        $this->assertSame('4422150000', $isela->landline_phone);
+        $this->assertSame(['AV. DE LA LUZ', '1500', '15', 'PUESTA DEL SOL', '76100', $this->queretaro->id, false],
+            [$isela->street, $isela->exterior_number, $isela->interior_number, $isela->neighborhood, $isela->postal_code, $isela->municipality_id, $isela->address_needs_review]);
         $this->assertTrue($enrollment->includes_toefl);
+        $this->assertSame([true, 30], [$enrollment->includes_term_extension, $enrollment->extension_days]);
+        $this->assertSame([true, 'F'], [$enrollment->material_assigned, $enrollment->material_type]);
         $this->assertSame('Gerente', $enrollment->salesAdvisor->position->name);
         $this->assertSame(['academic_record', 'payments'], $isela->guardians->sole()->receives);
         $this->assertSame('Mi papá', StudentSurveyAnswer::where('student_id', $isela->id)->value('answer'));
@@ -144,6 +163,9 @@ class StudentImportTest extends TestCase
         $this->assertNull($juan->user_id);
         $this->assertSame('Devolvió el material', $juan->statusChanges->sole()->reason);
         $this->assertSame('2025-05-15', $juan->statusChanges->sole()->changed_on->toDateString());
+        $this->assertSame('2025-05-15', $juan->withdrawn_on->toDateString());
+        $this->assertSame(['PINO', '12', 'CENTRO', '76900', $this->corregidora->id, $this->school->state_id],
+            [$juan->street, $juan->exterior_number, $juan->neighborhood, $juan->postal_code, $juan->municipality_id, $juan->state_id]);
         $this->assertMatchesRegularExpression('/^QRON\d{4}0002$/', $juan->enrollment_number);
 
         // El mismo tutor (nombre y celular) se registra una sola vez para ambos alumnos.

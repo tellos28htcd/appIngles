@@ -3,14 +3,17 @@
 Decisiones del 13-oct-2026 a partir de *IQN4 AA Concentrado Alumnos V5.0-okCLA.xlsx*.
 
 ## Tablas (todas con `school_id`)
-- `students`: matrícula, nombre(s), apellidos, celular, domicilio, correo (opcional), fecha de nacimiento, tipo de
-  alumno, origen de la información, acepta publicidad, estilo de aprendizaje (visual, auditivo, kinestésico), foto
-  privada, estatus, observaciones, `user_id` (nulo mientras no tenga correo).
-- `student_enrollments`: inscripción o contrato; un alumno puede tener varias (reinscripción, convenio de extensión).
-  Número de contrato, asesor, plan y mensualidades, fechas (ficha, inicio, fin, baja, reinscripción, graduación),
-  servicios (ampliación de plazo, TOEFL, tarjeta dorada), serie del material, aplica material o comisión, y libro,
-  lección y actividad de inicio. **Los datos de cobro van en Cobranza.**
-- `student_absences`: solicitudes de ausencia (pausa) con su motivo.
+- `students`: matrícula, nombre(s), apellidos, celular, teléfono fijo, domicilio por partes (calle, núm. ext., núm.
+  int., colonia, municipio y estado del INEGI, C.P.; `address` conserva la línea original y `address_needs_review`
+  marca los que no se pudieron separar), correo (opcional), fecha de nacimiento, tipo de alumno, origen de la
+  información, acepta publicidad, estilo de aprendizaje (visual, auditivo, kinestésico), foto privada, estatus,
+  fechas del curso (inicio, baja, graduación), observaciones, `user_id` (nulo mientras no tenga correo).
+- `student_enrollments`: ficha de inscripción; un alumno puede tener varias (reinscripción, convenio de extensión).
+  Número de contrato, asesor y si aplica comisión, plan y mensualidades, fechas de la ficha y de reinscripción,
+  servicios (ampliación de plazo con sus días, Preparación TOEFL, tarjeta dorada), aplica material con su serie y
+  tipo (F = Financiero, C = Contable), y libro, lección y actividad de inicio. Las columnas antiguas `starts_on`,
+  `ends_on`, `withdrawn_on` y `graduated_on` ya no se usan.
+- `student_absences`: solicitudes de ausencia (fecha inicial y final, días naturales) con su motivo; se imprimen.
 - `student_status_changes`: histórico de estatus (solo inserción) con fecha, usuario y motivo. Aquí quedan las bajas
   con su motivo (p. ej. "devolvió el material"; antes en la pestaña *Serie reasignada*).
 - `guardians` + `guardian_student`: un tutor puede tener varios alumnos de la escuela. No todos los alumnos tienen tutor.
@@ -34,6 +37,13 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
 - Alumno y Padre/Tutor no se asignan desde Usuarios.
 - Un alumno con inscripciones no se elimina: se da de baja con su motivo.
 - La contraseña de la plataforma externa (columna CAP del Excel) no se importa.
+- **Ciclo del programa:** 365 días desde la última reinscripción o, si no hay, desde el inicio del curso.
+  Fin del curso = inicio del ciclo + 365 + días de ampliación de plazo (de la ficha vigente). Las ausencias no lo recorren.
+- **Solicitud de ausencia:** máximo 60 días naturales por ciclo; el conteo se reinicia con cada reinscripción.
+  Datos generales muestra los días del ciclo y el acumulado.
+- **Planes:** A = Contado; se quitó "Contado – 1 mensualidad"; se agregaron C 4 y 5 meses, D 7 meses, F 9 y 11 meses.
+- Domicilios históricos: `php artisan students:split-addresses [--school=] [--dry-run]` separa la línea en partes
+  (solo los que aún no tienen calle); los dudosos quedan marcados "Revisar domicilio" y se limpian al guardar el alumno.
 
 ## Permisos
 - Alta, edición, cambio de estatus, tutores, importación y envío de acceso: Administrador de escuela y Servicios escolares.

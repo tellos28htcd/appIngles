@@ -21,6 +21,7 @@ use App\Models\StudentSurveyAnswer;
 use App\Models\StudentType;
 use App\Models\SurveyQuestion;
 use App\Models\User;
+use App\Support\AddressParser;
 use App\Support\StudentTemplate;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -50,6 +51,8 @@ final class ImportStudents
 
     /** @var array<string, array<string, int>> catálogo => valor normalizado => id */
     private array $lookups = [];
+
+    private ?AddressParser $addressParser = null;
 
     public function __construct(
         private EnrollmentNumbers $numbers,
@@ -268,7 +271,7 @@ final class ImportStudents
             $seenEmails[$email] = $line;
         }
 
-        foreach (['birth_date', 'status_date', 'registered_on', 'starts_on', 'ends_on', 'withdrawn_on', 'reenrolled_on', 'graduated_on', 'absence_from', 'absence_to'] as $field) {
+        foreach (['birth_date', 'status_date', 'registered_on', 'course_starts_on', 'withdrawn_on', 'reenrolled_on', 'graduated_on', 'absence_from', 'absence_to'] as $field) {
             if ($this->filled($data, $field) && $this->date($data, $field) === null && ! $this->isPlaceholderDate($data[$field])) {
                 $warnings[] = __('students.import.warnings.date', ['field' => StudentTemplate::COLUMNS[$field][0], 'value' => $this->display($data[$field])]);
             }
@@ -359,7 +362,7 @@ final class ImportStudents
             'last_name' => Str::upper((string) $this->text($data, 'last_name')),
             'second_last_name' => ($value = $this->text($data, 'second_last_name')) === null ? null : Str::upper($value),
             'mobile_phone' => $this->phone($data, 'mobile_phone'),
-            'address' => Str::limit((string) $this->text($data, 'address'), 250, '') ?: null,
+            'landline_phone' => $this->phone($data, 'landline_phone') ?? $student->landline_phone,
             'email' => $email ?? $student->email,
             'birth_date' => $this->date($data, 'birth_date'),
             'student_type_id' => $this->filled($data, 'student_type') ? $this->lookup('types', $data['student_type']) : $student->student_type_id,
@@ -370,7 +373,10 @@ final class ImportStudents
             'learns_kinesthetic' => $this->bool($data, 'learns_kinesthetic'),
             'photo_source_url' => $this->photoUrl($data) ?? $student->photo_source_url,
             'notes' => $this->text($data, 'notes') ?? $student->notes,
-        ])->save();
+            'course_starts_on' => $this->date($data, 'course_starts_on') ?? $student->course_starts_on,
+            'withdrawn_on' => $this->date($data, 'withdrawn_on') ?? $student->withdrawn_on,
+            'graduated_on' => $this->date($data, 'graduated_on') ?? $student->graduated_on,
+        ])->fill($this->address($data))->save();
 
         $this->importEnrollment($student, $data);
 
@@ -392,8 +398,8 @@ final class ImportStudents
     /** @param array<string, mixed> $data */
     private function importEnrollment(Student $student, array $data): void
     {
-        $fields = ['contract_number', 'sales_advisor', 'plan', 'installments', 'registered_on', 'starts_on', 'ends_on', 'withdrawn_on',
-            'material_serial', 'start_book', 'start_lesson', 'start_activity', 'reenrolled_on', 'graduated_on'];
+        $fields = ['contract_number', 'sales_advisor', 'plan', 'installments', 'registered_on', 'extension_days',
+            'material_serial', 'material_type', 'start_book', 'start_lesson', 'start_activity', 'reenrolled_on'];
 
         if (collect($fields)->every(fn (string $field) => ! $this->filled($data, $field))) {
             return;
@@ -409,6 +415,9 @@ final class ImportStudents
         $planId = $this->filled($data, 'plan') ? $this->lookup('plans', $data['plan']) : $enrollment->student_plan_id;
         $bookId = $this->filled($data, 'start_book') ? $this->bookId($data['start_book']) : $enrollment->start_book_id;
         $installments = $this->filled($data, 'installments') && is_numeric($data['installments']) ? (int) $data['installments'] : null;
+        $extensionDays = $this->filled($data, 'extension_days') && is_numeric($data['extension_days']) ? max(0, min(730, (int) $data['extension_days'])) : 0;
+        $extension = $this->bool($data, 'includes_term_extension') || $extensionDays > 0;
+        $material = $this->bool($data, 'material_assigned');
 
         $enrollment->fill([
             'contract_number' => $contract ?? $enrollment->contract_number,
@@ -416,21 +425,43 @@ final class ImportStudents
             'student_plan_id' => $planId,
             'installments' => $installments ?? ($planId ? StudentPlan::find($planId)?->installments : null),
             'registered_on' => $this->date($data, 'registered_on'),
-            'starts_on' => $this->date($data, 'starts_on'),
-            'ends_on' => $this->date($data, 'ends_on'),
-            'withdrawn_on' => $this->date($data, 'withdrawn_on'),
-            'includes_term_extension' => $this->bool($data, 'includes_term_extension'),
+            'includes_term_extension' => $extension,
+            'extension_days' => $extension && $extensionDays > 0 ? $extensionDays : null,
             'includes_toefl' => $this->bool($data, 'includes_toefl'),
             'includes_gold_card' => $this->bool($data, 'includes_gold_card'),
-            'material_serial' => ($serial = $this->text($data, 'material_serial')) === null ? null : Str::upper(Str::limit($serial, 40, '')),
-            'material_assigned' => $this->bool($data, 'material_assigned'),
+            'material_serial' => $material && ($serial = $this->text($data, 'material_serial')) !== null ? Str::upper(Str::limit($serial, 40, '')) : null,
+            'material_type' => $material && in_array($type = Str::upper(Str::substr((string) $this->text($data, 'material_type'), 0, 1)), ['F', 'C'], true) ? $type : null,
+            'material_assigned' => $material,
             'commission_applies' => $this->bool($data, 'commission_applies'),
             'start_book_id' => $bookId,
             'start_lesson_id' => $this->filled($data, 'start_lesson') && $bookId ? $this->lessonId($bookId, $data['start_lesson']) : $enrollment->start_lesson_id,
             'start_activity_id' => $this->filled($data, 'start_activity') ? $this->activityId($data['start_activity']) : $enrollment->start_activity_id,
             'reenrolled_on' => $this->date($data, 'reenrolled_on'),
-            'graduated_on' => $this->date($data, 'graduated_on'),
         ])->save();
+    }
+
+    /**
+     * Domicilio por partes (columnas separadas) o, si solo viene en una línea, separado con AddressParser.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function address(array $data): array
+    {
+        $this->addressParser ??= new AddressParser($this->school->state_id);
+        $parts = ['street', 'exterior_number', 'interior_number', 'neighborhood', 'postal_code'];
+        $line = Str::limit((string) $this->text($data, 'address'), 250, '') ?: null;
+
+        if (collect([...$parts, 'municipality', 'state'])->contains(fn (string $field) => $this->filled($data, $field))) {
+            return [
+                ...collect($parts)->mapWithKeys(fn (string $field) => [$field => ($value = $this->text($data, $field)) === null ? null : Str::upper(Str::limit($value, $field === 'postal_code' ? 5 : 150, ''))])->all(),
+                ...$this->addressParser->locate($this->text($data, 'municipality'), $this->text($data, 'state')),
+                'address' => $line,
+                'address_needs_review' => false,
+            ];
+        }
+
+        return $line === null ? [] : ['address' => $line, ...$this->addressParser->parse($line)];
     }
 
     /** @param array<string, mixed> $data */

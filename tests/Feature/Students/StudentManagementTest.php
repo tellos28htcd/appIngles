@@ -281,7 +281,7 @@ class StudentManagementTest extends TestCase
         $this->get(route('students.index'))->assertOk()->assertSee($student->enrollment_number);
         $this->assertSame('QRON26080001', $student->enrollment_number);
         $this->get(route('students.create'))->assertOk()->assertSee('QRON26080002');
-        $this->get(route('students.show', $student))->assertOk()->assertSee('Contrato C-1')->assertSee('ROSA')->assertSee('Viaje');
+        $this->get(route('students.show', $student))->assertOk()->assertSee('Ficha de inscripción C-1')->assertSee('ROSA')->assertSee('Viaje');
         $this->get(route('students.edit', $student))->assertOk()->assertSee('¿Quién cubre el pago de tu curso?');
         $this->get(route('students.import'))->assertOk();
         $this->get(route('guardians.index'))->assertOk()->assertSee('ROSA')->assertSee($student->enrollment_number);
@@ -294,6 +294,80 @@ class StudentManagementTest extends TestCase
             ->call('editEnrollment', $student->enrollments()->value('id'))->assertSet('editingEnrollment', true)
             ->call('editAbsence')->assertSet('addingAbsence', true)
             ->call('linkGuardian')->assertSet('linkingGuardian', true);
+    }
+
+    public function test_course_end_counts_365_days_from_the_last_reenrollment_plus_the_extension(): void
+    {
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        $this->newStudent()
+            ->set('form.course_starts_on', '2025-01-10')
+            ->set('enrollment.includes_term_extension', true)
+            ->call('save')
+            ->assertHasErrors('enrollment.extension_days');
+
+        $this->newStudent()
+            ->set('form.course_starts_on', '2025-01-10')
+            ->set('enrollment.includes_term_extension', true)
+            ->set('enrollment.extension_days', 20)
+            ->set('enrollment.material_serial', 'ABC-1')
+            ->set('enrollment.material_type', 'F')
+            ->set('enrollment.material_assigned', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $student = Student::with('enrollments')->sole();
+        $this->assertSame('2026-01-30', $student->courseEndsOn()->toDateString());
+        // Sin "Aplica material" no se guardan la serie ni el tipo.
+        $this->assertSame([null, null], [$student->enrollments->sole()->material_serial, $student->enrollments->sole()->material_type]);
+
+        $student->enrollments->sole()->update(['reenrolled_on' => '2026-02-01', 'includes_term_extension' => false]);
+        $this->assertSame('2027-02-01', $student->fresh('enrollments')->courseEndsOn()->toDateString());
+    }
+
+    public function test_absence_requests_are_limited_to_60_days_per_cycle_and_can_be_printed(): void
+    {
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        $this->newStudent()->set('form.course_starts_on', '2026-01-05')->call('save');
+        $student = Student::sole();
+
+        $show = Livewire::test(StudentShow::class, ['student' => $student])
+            ->call('editAbsence')->set('absenceFrom', '2026-03-01')->set('absenceTo', '2026-04-14')->call('saveAbsence')->assertHasNoErrors()
+            ->call('editAbsence')->set('absenceFrom', '2026-06-01')->set('absenceTo', '2026-06-20')->call('saveAbsence')
+            ->assertHasErrors('absenceTo');
+
+        $show->set('absenceTo', '2026-06-15')->call('saveAbsence')->assertHasNoErrors();
+        $student = $student->fresh(['absences', 'enrollments']);
+        $this->assertSame([60, 60], [$student->absenceDaysInCycle(), $student->absenceDaysTotal()]);
+        // Las ausencias no recorren el fin del curso.
+        $this->assertSame('2027-01-05', $student->courseEndsOn()->toDateString());
+
+        // La reinscripción abre un ciclo nuevo y el conteo vuelve a empezar.
+        $student->enrollments()->create(['school_id' => $this->schoolA->id, 'reenrolled_on' => '2027-01-05']);
+        $this->assertSame([0, 60], [$student->fresh(['absences', 'enrollments'])->absenceDaysInCycle(), $student->absenceDaysTotal()]);
+
+        $absence = $student->absences->first();
+        $this->get(route('students.absence-print', [$student, $absence]))->assertOk()
+            ->assertSee('Solicitud de ausencia')->assertSee($student->enrollment_number);
+
+        $other = Student::factory()->create(['school_id' => $this->schoolA->id]);
+        $this->get(route('students.absence-print', [$other, $absence]))->assertNotFound();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolB))
+            ->get(route('students.absence-print', [$student, $absence]))->assertNotFound();
+    }
+
+    public function test_saving_the_address_by_parts_clears_the_review_flag(): void
+    {
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        $student = Student::factory()->create(['school_id' => $this->schoolA->id, 'address' => 'CERRADA 5', 'address_needs_review' => true])->refresh();
+
+        Livewire::test(StudentEditor::class, ['student' => $student])
+            ->set('form.street', 'Pino')->set('form.exterior_number', '12')->set('form.neighborhood', 'Centro')->set('form.postal_code', '76000')
+            ->set('form.landline_phone', '4422150000')
+            ->call('save')->assertHasNoErrors();
+
+        $student->refresh();
+        $this->assertFalse($student->address_needs_review);
+        $this->assertSame(['PINO', '12', '4422150000'], [$student->street, $student->exterior_number, $student->landline_phone]);
     }
 
     public function test_photo_is_private_to_the_school_and_the_student(): void

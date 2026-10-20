@@ -46,9 +46,16 @@
                     @foreach ([
                         'email' => $student->email ?? __('students.no_email'),
                         'mobile_phone' => $student->mobile_phone ?? '—',
+                        'landline_phone' => $student->landline_phone ?? '—',
                         'birth_date' => $student->birth_date ? $date($student->birth_date).' · '.trans_choice('students.age', $student->age()) : '—',
                         'student_type_id' => $student->type?->name ?? '—',
                         'learning_style' => collect(['visual', 'auditory', 'kinesthetic'])->filter(fn ($style) => $student->{'learns_'.$style})->map(fn ($style) => __("students.fields.learns_$style"))->implode(', ') ?: '—',
+                        'course_starts_on' => $date($student->course_starts_on),
+                        'course_ends_on' => $date($student->courseEndsOn()),
+                        'extension' => trans_choice('students.fields.extension_days', $student->extensionDays()),
+                        'withdrawn_on' => $date($student->withdrawn_on),
+                        'graduated_on' => $date($student->graduated_on),
+                        'absence_days' => __('students.fields.absence_days_value', ['cycle' => $student->absenceDaysInCycle(), 'max' => \App\Models\Student::MAX_ABSENCE_DAYS, 'total' => $student->absenceDaysTotal()]),
                     ] as $field => $value)
                         <div class="flex min-w-0 flex-col">
                             <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">{{ __("students.fields.$field") }}</dt>
@@ -57,7 +64,12 @@
                     @endforeach
                     <div class="flex min-w-0 flex-col sm:col-span-2">
                         <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">{{ __('students.fields.address') }}</dt>
-                        <dd class="[overflow-wrap:anywhere]">{{ $student->address ?? '—' }}</dd>
+                        <dd class="[overflow-wrap:anywhere]">
+                            {{ $student->formattedAddress() ?? '—' }}
+                            @if ($student->address_needs_review)
+                                <x-ui.badge variant="warning" class="ml-1">{{ __('students.address_review_badge') }}</x-ui.badge>
+                            @endif
+                        </dd>
                     </div>
                     <div class="flex min-w-0 flex-col">
                         <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">{{ __('students.fields.advertising_consent') }}</dt>
@@ -94,20 +106,18 @@
                                 </button>
                             @endif
                         </div>
-                        {{-- 3 columnas: el origen queda arriba de "Inicio del curso" y "Fin del curso" debajo. --}}
                         <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
                             @foreach ([
                                 'sales_advisor_id' => $record->salesAdvisor?->name ?? '—',
-                                'student_plan_id' => $record->plan ? $record->plan->name.' · '.trans_choice('students.enrollment.installments_count', $record->installments ?? $record->plan->installments) : '—',
+                                'commission_applies' => __($record->commission_applies ? 'audit.yes' : 'audit.no'),
                                 'information_source_id' => $student->informationSource?->name ?? '—',
-                                'material_serial' => $record->material_serial ?? '—',
+                                'student_plan_id' => $record->plan ? $record->plan->name.' · '.trans_choice('students.enrollment.installments_count', $record->installments ?? $record->plan->installments) : '—',
                                 'start_point' => collect([$record->startBook?->name, $record->startLesson?->name, $record->startActivity?->code])->filter()->implode(' · ') ?: '—',
-                                'starts_on' => $date($record->starts_on),
-                                'services' => collect($record->services())->map(fn ($service) => __("students.enrollment.services.$service"))->implode(', ') ?: '—',
                                 'reenrolled_on' => $date($record->reenrolled_on),
-                                'ends_on' => $date($record->ends_on),
-                                'graduated_on' => $date($record->graduated_on),
-                                'withdrawn_on' => $date($record->withdrawn_on),
+                                'services' => collect($record->services())->map(fn ($service) => __("students.enrollment.services.$service").($service === 'term_extension' && $record->extension_days ? ' ('.trans_choice('students.fields.extension_days', $record->extension_days).')' : ''))->implode(', ') ?: '—',
+                                'material_assigned' => $record->material_assigned
+                                    ? collect([$record->material_serial, $record->material_type ? __('students.enrollment.material_types.'.$record->material_type) : null])->filter()->implode(' · ') ?: __('audit.yes')
+                                    : __('audit.no'),
                             ] as $field => $value)
                                 <div class="flex min-w-0 flex-col">
                                     <dt class="text-xs font-semibold text-ink-500">{{ __("students.enrollment.fields.$field") }}</dt>
@@ -188,15 +198,22 @@
             </x-ui.card>
 
             {{-- Ausencias --}}
-            <x-ui.card :title="__('students.sections.absences')">
+            <x-ui.card :title="__('students.sections.absences')"
+                       :description="__('students.fields.absence_days_value', ['cycle' => $student->absenceDaysInCycle(), 'max' => \App\Models\Student::MAX_ABSENCE_DAYS, 'total' => $student->absenceDaysTotal()])">
                 @forelse ($student->absences as $absence)
                     <div wire:key="absence-{{ $absence->id }}" class="flex items-start gap-3">
                         <div class="flex min-w-0 flex-1 flex-col">
                             <span class="font-semibold tabular-nums">{{ $date($absence->starts_on) }} – {{ $absence->ends_on ? $date($absence->ends_on) : __('students.absences.open') }}</span>
+                            <span class="text-sm font-semibold text-primary-700">{{ trans_choice('students.absences.days', $absence->days()) }}</span>
                             @if ($absence->reason)
                                 <span class="text-sm text-ink-500 [overflow-wrap:anywhere]">{{ $absence->reason }}</span>
                             @endif
                         </div>
+                        <a href="{{ route('students.absence-print', [$student, $absence]) }}" target="_blank" rel="noopener"
+                           class="flex size-9 flex-none items-center justify-center rounded-[10px] text-ink-700 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+                           aria-label="{{ __('students.absences.print') }}" title="{{ __('students.absences.print') }}">
+                            <x-ui.icon name="download" class="size-4" />
+                        </a>
                         @if ($canUpdate)
                             <button type="button" wire:click="editAbsence({{ $absence->id }})"
                                     class="flex size-9 flex-none items-center justify-center rounded-[10px] text-primary-700 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"

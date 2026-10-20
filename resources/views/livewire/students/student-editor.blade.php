@@ -39,8 +39,9 @@
                                 class="font-mono uppercase" :disabled="$editing"
                                 :placeholder="$editing ? null : $this->nextNumber"
                                 :hint="$editing ? __('students.fields.enrollment_number_locked') : __('students.fields.enrollment_number_hint', ['next' => $this->nextNumber])" />
-                    <x-ui.input name="form.mobile_phone" type="tel" :label="__('students.fields.mobile_phone')" wire:model="form.mobile_phone" inputmode="tel" maxlength="20" />
                     <x-ui.input name="form.birth_date" type="date" :label="__('students.fields.birth_date')" wire:model="form.birth_date" />
+                    <x-ui.input name="form.mobile_phone" type="tel" :label="__('students.fields.mobile_phone')" wire:model="form.mobile_phone" inputmode="tel" maxlength="20" />
+                    <x-ui.input name="form.landline_phone" type="tel" :label="__('students.fields.landline_phone')" wire:model="form.landline_phone" inputmode="tel" maxlength="20" />
 
                     <div class="md:col-span-2">
                         <x-ui.input name="form.email" type="email" :label="__('students.fields.email')" wire:model="form.email" inputmode="email" maxlength="255"
@@ -50,16 +51,45 @@
                         <x-ui.select name="form.status" :label="__('students.fields.status')" :options="$statuses" wire:model="form.status" required />
                     @endunless
 
-                    <div class="md:col-span-3">
-                        <x-ui.input name="form.address" :label="__('students.fields.address')" wire:model="form.address" maxlength="255" autocomplete="street-address" />
-                    </div>
-
                     <x-ui.select name="form.student_type_id" :label="__('students.fields.student_type_id')" :options="$this->typeOptions"
                                  :placeholder="__('students.select')" wire:model="form.student_type_id" />
                     <x-ui.select name="form.information_source_id" :label="__('students.fields.information_source_id')" :options="$this->sourceOptions"
                                  :placeholder="__('students.select')" wire:model="form.information_source_id" />
                 </div>
             </div>
+
+            {{-- Fechas del curso (el fin del curso se calcula) --}}
+            <div class="grid gap-4 border-t border-line pt-4 md:grid-cols-3">
+                <x-ui.input name="form.course_starts_on" type="date" :label="__('students.fields.course_starts_on')" :hint="__('students.fields.course_starts_on_hint')" wire:model="form.course_starts_on" />
+                <x-ui.input name="form.withdrawn_on" type="date" :label="__('students.fields.withdrawn_on')" wire:model="form.withdrawn_on" />
+                <x-ui.input name="form.graduated_on" type="date" :label="__('students.fields.graduated_on')" wire:model="form.graduated_on" />
+            </div>
+
+            {{-- Domicilio --}}
+            <fieldset class="flex flex-col gap-4 border-t border-line pt-4">
+                <legend class="sr-only">{{ __('students.fields.address') }}</legend>
+                @if ($form->student?->address_needs_review)
+                    <p role="status" class="rounded-lg border border-warning-200 bg-warning-50 p-3 text-sm text-warning-700">
+                        {{ __('students.fields.address_review', ['address' => $form->student->address]) }}
+                    </p>
+                @endif
+                <div class="grid gap-4 md:grid-cols-6">
+                    <div class="md:col-span-3"><x-ui.input name="form.street" :label="__('students.fields.street')" wire:model="form.street" maxlength="150" class="uppercase" autocomplete="address-line1" /></div>
+                    <div class="md:col-span-1"><x-ui.input name="form.exterior_number" :label="__('students.fields.exterior_number')" wire:model="form.exterior_number" maxlength="20" class="uppercase" /></div>
+                    <div class="md:col-span-1"><x-ui.input name="form.interior_number" :label="__('students.fields.interior_number')" wire:model="form.interior_number" maxlength="20" class="uppercase" /></div>
+                    <div class="md:col-span-1"><x-ui.input name="form.postal_code" :label="__('students.fields.postal_code')" wire:model="form.postal_code" inputmode="numeric" maxlength="5" autocomplete="postal-code" /></div>
+                    <div class="md:col-span-2"><x-ui.input name="form.neighborhood" :label="__('students.fields.neighborhood')" wire:model="form.neighborhood" maxlength="120" class="uppercase" /></div>
+                    <div class="md:col-span-2">
+                        <x-ui.select name="form.state_id" :label="__('students.fields.state_id')" :options="$this->states"
+                                     :placeholder="__('schools.fields.select_state')" wire:model.live="form.state_id" />
+                    </div>
+                    <div class="md:col-span-2">
+                        <x-ui.select name="form.municipality_id" :label="__('students.fields.municipality_id')" :options="$this->municipalities"
+                                     :placeholder="__($form->state_id ? 'schools.fields.select_municipality' : 'schools.fields.select_state_first')"
+                                     wire:model="form.municipality_id" wire:key="student-municipalities-{{ $form->state_id }}" :disabled="! $form->state_id" />
+                    </div>
+                </div>
+            </fieldset>
 
             <div class="grid gap-x-6 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-4">
                 <x-ui.toggle name="form.learns_visual" :label="__('students.fields.learns_visual')" wire:model="form.learns_visual" />

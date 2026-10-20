@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\StudentAbsencePrintController;
 use App\Http\Controllers\StudentImportTemplateController;
 use App\Http\Controllers\StudentPhotoController;
 use App\Http\Controllers\TeacherPhotoController;
@@ -87,6 +88,7 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
     Route::get('/alumnos/plantilla', StudentImportTemplateController::class)->name('students.template');
     Route::livewire('/alumnos/{student}', StudentShow::class)->name('students.show');
     Route::livewire('/alumnos/{student}/editar', StudentEditor::class)->name('students.edit');
+    Route::get('/alumnos/{student}/ausencias/{absence}/imprimir', StudentAbsencePrintController::class)->name('students.absence-print');
     Route::livewire('/tutores', GuardianIndex::class)->name('guardians.index');
 
     Route::livewire('/usuarios', UserIndex::class)->name('users.index');

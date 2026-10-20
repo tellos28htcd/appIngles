@@ -13,6 +13,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -80,7 +81,7 @@ class StudentShow extends Component
     {
         return Student::query()->where('school_id', auth()->user()->school_id)
             ->with([
-                'user', 'type', 'informationSource',
+                'user', 'type', 'informationSource', 'state', 'municipality',
                 'enrollments' => fn ($query) => $query->latest('registered_on')->latest('id'),
                 'enrollments.salesAdvisor', 'enrollments.plan', 'enrollments.startBook', 'enrollments.startLesson', 'enrollments.startActivity',
                 'statusChanges' => fn ($query) => $query->latest('changed_on')->latest('id'),
@@ -191,13 +192,23 @@ class StudentShow extends Component
 
         $data = $this->validate([
             'absenceFrom' => ['required', 'date'],
-            'absenceTo' => ['nullable', 'date', 'after_or_equal:absenceFrom'],
+            'absenceTo' => ['required', 'date', 'after_or_equal:absenceFrom'],
             'absenceReason' => ['nullable', 'string', 'max:255'],
         ], attributes: [
             'absenceFrom' => Str::lower(__('students.absences.from')),
             'absenceTo' => Str::lower(__('students.absences.to')),
             'absenceReason' => Str::lower(__('students.absences.reason')),
         ]);
+
+        // Hasta 60 días naturales por ciclo del programa (se reinician al reinscribirse).
+        $requested = (int) Carbon::parse($data['absenceFrom'])->diffInDays(Carbon::parse($data['absenceTo'])) + 1;
+        $used = $student->absenceDaysInCycle($this->absenceId);
+
+        if ($used + $requested > Student::MAX_ABSENCE_DAYS) {
+            throw ValidationException::withMessages(['absenceTo' => __('students.absences.limit', [
+                'requested' => $requested, 'used' => $used, 'max' => Student::MAX_ABSENCE_DAYS, 'left' => max(0, Student::MAX_ABSENCE_DAYS - $used),
+            ])]);
+        }
 
         $absence = $this->absenceId
             ? $student->absences->firstWhere('id', $this->absenceId) ?? abort(404)

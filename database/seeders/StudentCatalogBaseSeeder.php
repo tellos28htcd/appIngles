@@ -21,15 +21,19 @@ use Illuminate\Support\Facades\DB;
  */
 class StudentCatalogBaseSeeder extends Seeder
 {
-    /** clave => [nombre, mensualidades] */
+    /** clave => [nombre, mensualidades]; el Plan A es de contado (0 mensualidades). */
     private const PLANS = [
-        'CONTADO' => ['Contado', 1],
         'A' => ['Plan A', 0],
         'B' => ['Plan B', 1],
         'C' => ['Plan C', 3],
+        'C4' => ['Plan C', 4],
+        'C5' => ['Plan C', 5],
         'D' => ['Plan D', 6],
+        'D7' => ['Plan D', 7],
         'E' => ['Plan E', 8],
+        'F9' => ['Plan F', 9],
         'F' => ['Plan F', 10],
+        'F11' => ['Plan F', 11],
         'X' => ['Plan X', 12],
     ];
 

@@ -10,6 +10,7 @@ use App\Livewire\Forms\EnrollmentForm;
 use App\Livewire\Forms\StudentForm;
 use App\Models\InformationSource;
 use App\Models\School;
+use App\Models\State;
 use App\Models\Student;
 use App\Models\StudentType;
 use Illuminate\Contracts\View\View;
@@ -43,7 +44,30 @@ class StudentEditor extends Component
             $this->authorize('create', Student::class);
             $this->enrollment->setEnrollment(null);
             $this->form->student_type_id = StudentType::query()->ofCatalog(auth()->user()->school_id)->where('code', 'ALUMN')->value('id');
+            // Por defecto, el estado y municipio de la escuela.
+            $school = School::findOrFail(auth()->user()->school_id);
+            $this->form->state_id = $school->state_id;
+            $this->form->municipality_id = $school->municipality_id;
         }
+    }
+
+    public function updatedFormStateId(): void
+    {
+        $this->form->municipality_id = null;
+    }
+
+    /** @return array<int, string> */
+    #[Computed]
+    public function states(): array
+    {
+        return State::orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** @return array<int, string> */
+    #[Computed]
+    public function municipalities(): array
+    {
+        return $this->form->municipalityOptions();
     }
 
     public function updatedEnrollmentStudentPlanId(): void

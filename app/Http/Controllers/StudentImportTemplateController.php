@@ -49,6 +49,7 @@ class StudentImportTemplateController extends Controller
             'advisors' => SalesAdvisor::query()->where('school_id', $schoolId)->orderBy('name')->pluck('name')->all(),
             'plans' => StudentPlan::query()->ofCatalog($schoolId)->where('is_active', true)->orderBy('code')->pluck('code')->all(),
             'positions' => AdvisorPosition::query()->ofCatalog($schoolId)->where('is_active', true)->orderBy('rank')->pluck('name')->all(),
+            'material_types' => ['F', 'C'],
             'bool' => [__('audit.yes'), __('audit.no')],
         ];
 

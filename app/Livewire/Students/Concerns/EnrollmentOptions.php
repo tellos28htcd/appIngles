@@ -28,7 +28,7 @@ trait EnrollmentOptions
     #[Computed]
     public function planOptions(): array
     {
-        return StudentPlan::query()->ofCatalog(auth()->user()->school_id)->where('is_active', true)->orderBy('code')->get()
+        return StudentPlan::query()->ofCatalog(auth()->user()->school_id)->where('is_active', true)->orderBy('name')->orderBy('installments')->get()
             ->mapWithKeys(fn (StudentPlan $plan) => [$plan->id => $plan->name.' · '.trans_choice('students.enrollment.installments_count', $plan->installments)])
             ->all();
     }

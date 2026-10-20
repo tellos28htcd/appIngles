@@ -23,7 +23,9 @@ use Illuminate\Support\Str;
  */
 #[Fillable([
     'school_id', 'user_id', 'enrollment_number',
-    'first_name', 'last_name', 'second_last_name', 'mobile_phone', 'address', 'email', 'birth_date',
+    'first_name', 'last_name', 'second_last_name', 'mobile_phone', 'landline_phone', 'email', 'birth_date',
+    'address', 'street', 'exterior_number', 'interior_number', 'neighborhood', 'state_id', 'municipality_id', 'postal_code', 'address_needs_review',
+    'course_starts_on', 'withdrawn_on', 'graduated_on',
     'student_type_id', 'information_source_id', 'advertising_consent',
     'learns_visual', 'learns_auditory', 'learns_kinesthetic',
     'photo_path', 'photo_source_url', 'status', 'notes',
@@ -37,6 +39,10 @@ class Student extends Model
     {
         return [
             'birth_date' => 'date',
+            'course_starts_on' => 'date',
+            'withdrawn_on' => 'date',
+            'graduated_on' => 'date',
+            'address_needs_review' => 'boolean',
             'advertising_consent' => 'boolean',
             'learns_visual' => 'boolean',
             'learns_auditory' => 'boolean',
@@ -125,6 +131,83 @@ class Student extends Model
             ->orWhere('email', 'like', "%{$term}%")
             ->orWhere('mobile_phone', 'like', "%{$term}%")
             ->orWhereRaw("concat_ws(' ', first_name, last_name, second_last_name) like ?", ["%{$term}%"]));
+    }
+
+    /** @return BelongsTo<State, $this> */
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(State::class);
+    }
+
+    /** @return BelongsTo<Municipality, $this> */
+    public function municipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class);
+    }
+
+    /** Días del programa (1 año); cada reinscripción inicia otro ciclo de 365 días. */
+    public const PROGRAM_DAYS = 365;
+
+    /** Días de solicitud de ausencia que se pueden autorizar por ciclo del programa. */
+    public const MAX_ABSENCE_DAYS = 60;
+
+    /** Inicio del ciclo vigente: la última reinscripción o, si no hay, el inicio del curso. */
+    public function cycleStartsOn(): ?Carbon
+    {
+        $lastReenrollment = $this->enrollments->max('reenrolled_on');
+
+        return $lastReenrollment ? Carbon::parse($lastReenrollment) : $this->course_starts_on?->copy();
+    }
+
+    /** Inscripción del ciclo vigente (la más reciente). */
+    public function currentEnrollment(): ?StudentEnrollment
+    {
+        return $this->enrollments->sortBy([['reenrolled_on', 'desc'], ['registered_on', 'desc'], ['id', 'desc']])->first();
+    }
+
+    /** Días de ampliación de plazo del ciclo vigente. */
+    public function extensionDays(): int
+    {
+        $enrollment = $this->currentEnrollment();
+
+        return $enrollment?->includes_term_extension ? (int) $enrollment->extension_days : 0;
+    }
+
+    /** Fin del curso: inicio del ciclo vigente + 365 días + días de ampliación de plazo. */
+    public function courseEndsOn(): ?Carbon
+    {
+        return $this->cycleStartsOn()?->addDays(self::PROGRAM_DAYS + $this->extensionDays());
+    }
+
+    /** Días de solicitud de ausencia acumulados (todos los ciclos). */
+    public function absenceDaysTotal(): int
+    {
+        return (int) $this->absences->sum(fn (StudentAbsence $absence) => $absence->days());
+    }
+
+    /** Días de solicitud de ausencia del ciclo vigente (máximo 60). */
+    public function absenceDaysInCycle(?int $exceptAbsenceId = null): int
+    {
+        $start = $this->cycleStartsOn();
+
+        return (int) $this->absences
+            ->reject(fn (StudentAbsence $absence) => $absence->id === $exceptAbsenceId)
+            ->filter(fn (StudentAbsence $absence) => $start === null || $absence->starts_on->gte($start))
+            ->sum(fn (StudentAbsence $absence) => $absence->days());
+    }
+
+    /** Domicilio en una línea, a partir de sus campos. */
+    public function formattedAddress(): ?string
+    {
+        if ($this->street === null) {
+            return $this->address;
+        }
+
+        $line = trim($this->street.' '.($this->exterior_number ? 'No. '.$this->exterior_number : ''));
+        $line .= $this->interior_number ? ' Int. '.$this->interior_number : '';
+
+        return collect([$line, $this->neighborhood ? 'Col. '.$this->neighborhood : null, $this->municipality?->name, $this->state?->name,
+            $this->postal_code ? 'C.P. '.$this->postal_code : null])->filter()->implode(', ');
     }
 
     public function fullName(): string

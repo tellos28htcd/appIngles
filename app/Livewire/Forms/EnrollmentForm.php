@@ -27,19 +27,19 @@ class EnrollmentForm extends Form
 
     public string $registered_on = '';
 
-    public string $starts_on = '';
-
-    public string $ends_on = '';
-
-    public string $withdrawn_on = '';
-
     public bool $includes_term_extension = false;
+
+    /** Días de ampliación de plazo (recorren el fin del curso). */
+    public ?int $extension_days = null;
 
     public bool $includes_toefl = false;
 
     public bool $includes_gold_card = false;
 
     public string $material_serial = '';
+
+    /** F = Financiero, C = Contable. */
+    public string $material_type = '';
 
     public bool $material_assigned = true;
 
@@ -53,9 +53,10 @@ class EnrollmentForm extends Form
 
     public string $reenrolled_on = '';
 
-    public string $graduated_on = '';
+    /** Inicio del curso, fecha de baja y de graduación se capturan en datos generales del alumno. */
+    private const DATES = ['registered_on', 'reenrolled_on'];
 
-    private const DATES = ['registered_on', 'starts_on', 'ends_on', 'withdrawn_on', 'reenrolled_on', 'graduated_on'];
+    public const MATERIAL_TYPES = ['F', 'C'];
 
     public function setEnrollment(?StudentEnrollment $enrollment): void
     {
@@ -71,8 +72,9 @@ class EnrollmentForm extends Form
         $this->fill([
             'contract_number' => (string) $enrollment->contract_number,
             'material_serial' => (string) $enrollment->material_serial,
+            'material_type' => (string) $enrollment->material_type,
             ...$enrollment->only([
-                'sales_advisor_id', 'student_plan_id', 'installments', 'start_book_id', 'start_lesson_id', 'start_activity_id',
+                'sales_advisor_id', 'student_plan_id', 'installments', 'extension_days', 'start_book_id', 'start_lesson_id', 'start_activity_id',
                 'includes_term_extension', 'includes_toefl', 'includes_gold_card', 'material_assigned', 'commission_applies',
             ]),
             ...collect(self::DATES)->mapWithKeys(fn (string $field) => [$field => (string) $enrollment->{$field}?->toDateString()])->all(),
@@ -101,20 +103,18 @@ class EnrollmentForm extends Form
             'student_plan_id' => ['nullable', 'integer', $inSchool('student_plans')],
             'installments' => ['nullable', 'integer', 'min:0', 'max:60'],
             'registered_on' => ['nullable', 'date'],
-            'starts_on' => ['nullable', 'date'],
-            'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
-            'withdrawn_on' => ['nullable', 'date'],
             'includes_term_extension' => ['boolean'],
+            'extension_days' => [Rule::requiredIf($this->includes_term_extension), 'nullable', 'integer', 'min:1', 'max:730'],
             'includes_toefl' => ['boolean'],
             'includes_gold_card' => ['boolean'],
             'material_serial' => ['nullable', 'string', 'max:40'],
+            'material_type' => ['nullable', Rule::in(self::MATERIAL_TYPES)],
             'material_assigned' => ['boolean'],
             'commission_applies' => ['boolean'],
             'start_book_id' => ['nullable', 'integer', $inSchool('books')],
             'start_lesson_id' => ['nullable', 'integer', Rule::exists('lessons', 'id')->where('school_id', $schoolId)->where('book_id', $this->start_book_id)],
             'start_activity_id' => ['nullable', 'integer', $inSchool('activities')],
             'reenrolled_on' => ['nullable', 'date'],
-            'graduated_on' => ['nullable', 'date'],
         ];
     }
 
@@ -137,6 +137,12 @@ class EnrollmentForm extends Form
         $data = $this->validate();
         $data = array_map(fn ($value) => $value === '' ? null : $value, $data);
         $data['contract_number'] = $data['contract_number'] === null ? null : Str::upper(trim($data['contract_number']));
+        // Sin ampliación no hay días; sin material no hay serie ni tipo.
+        $data['extension_days'] = $data['includes_term_extension'] ? $data['extension_days'] : null;
+        if (! $data['material_assigned']) {
+            $data['material_serial'] = null;
+            $data['material_type'] = null;
+        }
 
         $enrollment = $this->enrollment ?? new StudentEnrollment(['school_id' => $student->school_id, 'student_id' => $student->id]);
         $enrollment->fill($data)->save();

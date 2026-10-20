@@ -7,6 +7,7 @@ use App\Actions\Students\EnrollmentNumbers;
 use App\Actions\Students\SyncStudentUser;
 use App\Enums\StudentStatus;
 use App\Enums\SurveyQuestionType;
+use App\Models\Municipality;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentSurveyAnswer;
@@ -39,7 +40,27 @@ class StudentForm extends Form
 
     public string $mobile_phone = '';
 
-    public string $address = '';
+    public string $landline_phone = '';
+
+    public string $street = '';
+
+    public string $exterior_number = '';
+
+    public string $interior_number = '';
+
+    public string $neighborhood = '';
+
+    public ?int $state_id = null;
+
+    public ?int $municipality_id = null;
+
+    public string $postal_code = '';
+
+    public string $course_starts_on = '';
+
+    public string $withdrawn_on = '';
+
+    public string $graduated_on = '';
 
     public string $email = '';
 
@@ -76,9 +97,15 @@ class StudentForm extends Form
 
         $this->fill([
             ...array_map(fn ($value) => (string) $value, $student->only([
-                'enrollment_number', 'first_name', 'last_name', 'second_last_name', 'mobile_phone', 'address', 'email', 'notes',
+                'enrollment_number', 'first_name', 'last_name', 'second_last_name', 'mobile_phone', 'landline_phone', 'email', 'notes',
+                'street', 'exterior_number', 'interior_number', 'neighborhood', 'postal_code',
             ])),
             'birth_date' => (string) $student->birth_date?->toDateString(),
+            'course_starts_on' => (string) $student->course_starts_on?->toDateString(),
+            'withdrawn_on' => (string) $student->withdrawn_on?->toDateString(),
+            'graduated_on' => (string) $student->graduated_on?->toDateString(),
+            'state_id' => $student->state_id,
+            'municipality_id' => $student->municipality_id,
             ...$student->only([
                 'student_type_id', 'information_source_id', 'advertising_consent', 'learns_visual', 'learns_auditory', 'learns_kinesthetic',
             ]),
@@ -102,7 +129,17 @@ class StudentForm extends Form
             'last_name' => ['required', 'string', 'max:80'],
             'second_last_name' => ['nullable', 'string', 'max:80'],
             'mobile_phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9 +()\-]{7,20}$/'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'landline_phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9 +()\-]{7,20}$/'],
+            'street' => ['nullable', 'string', 'max:150'],
+            'exterior_number' => ['nullable', 'string', 'max:20'],
+            'interior_number' => ['nullable', 'string', 'max:20'],
+            'neighborhood' => ['nullable', 'string', 'max:120'],
+            'state_id' => ['nullable', 'integer', 'exists:states,id'],
+            'municipality_id' => ['nullable', 'integer', Rule::exists('municipalities', 'id')->where('state_id', $this->state_id)],
+            'postal_code' => ['nullable', 'digits:5'],
+            'course_starts_on' => ['nullable', 'date'],
+            'withdrawn_on' => ['nullable', 'date'],
+            'graduated_on' => ['nullable', 'date'],
             'email' => [
                 // Si ya tiene usuario, su correo es su acceso y no se puede quitar.
                 Rule::requiredIf(fn () => $this->student?->user_id !== null),
@@ -148,6 +185,14 @@ class StudentForm extends Form
         };
     }
 
+    /** Municipios del estado elegido (catálogo del INEGI). @return array<int, string> */
+    public function municipalityOptions(): array
+    {
+        return $this->state_id
+            ? Municipality::where('state_id', $this->state_id)->orderBy('name')->pluck('name', 'id')->all()
+            : [];
+    }
+
     /** @return Collection<int, SurveyQuestion> */
     public function questions(): Collection
     {
@@ -164,6 +209,9 @@ class StudentForm extends Form
             'enrollment_number.unique' => __('students.validation.enrollment_number_taken'),
             'enrollment_number.regex' => __('students.validation.enrollment_number_format'),
             'mobile_phone.regex' => __('students.validation.phone'),
+            'landline_phone.regex' => __('students.validation.phone'),
+            'postal_code.digits' => __('schools.validation.postal_code'),
+            'municipality_id.exists' => __('schools.validation.municipality_state'),
         ];
     }
 
@@ -183,6 +231,10 @@ class StudentForm extends Form
         $this->first_name = Str::upper(trim($this->first_name));
         $this->last_name = Str::upper(trim($this->last_name));
         $this->second_last_name = Str::upper(trim($this->second_last_name));
+
+        foreach (['street', 'exterior_number', 'interior_number', 'neighborhood'] as $field) {
+            $this->{$field} = Str::upper(trim($this->{$field}));
+        }
     }
 
     /** Valida sin guardar (el alta valida alumno e inscripción antes de escribir). */
@@ -222,7 +274,8 @@ class StudentForm extends Form
             }
 
             $student = $this->student ?? new Student(['school_id' => $school->id, 'status' => $status]);
-            $student->fill($data)->save();
+            // Al guardar desde la pantalla, el domicilio ya quedó revisado.
+            $student->fill([...$data, 'address_needs_review' => false])->save();
 
             $creating
                 ? $changeStatus->handle($student, $status)
