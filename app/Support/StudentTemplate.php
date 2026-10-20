@@ -63,7 +63,7 @@ final class StudentTemplate
         'course_starts_on' => ['Fecha de inicio del curso', 'date'],
         'withdrawn_on' => ['Fecha de baja', 'date'],
         'includes_term_extension' => ['Ampliación de plazo', 'bool'],
-        'extension_days' => ['Días de ampliación de plazo', 'number'],
+        'extension_days' => ['Días de extensión de tiempo', 'number'],
         'includes_toefl' => ['Preparación TOEFL', 'bool'],
         'includes_gold_card' => ['Tarjeta dorada', 'bool'],
         'material_serial' => ['Número de serie del material', 'text'],
@@ -94,7 +94,7 @@ final class StudentTemplate
     public const REQUIRED = ['first_name', 'last_name'];
 
     /** Encabezados de versiones anteriores de la plantilla que se siguen aceptando. */
-    private const ALIASES = ['toefl' => 'includes_toefl', 'domicilio' => 'address'];
+    private const ALIASES = ['toefl' => 'includes_toefl', 'domicilio' => 'address', 'dias de ampliacion de plazo' => 'extension_days'];
 
     /** Encabezados normalizados (sin acentos ni mayúsculas) para reconocer las columnas aunque cambien ligeramente. */
     public static function normalize(string $text): string

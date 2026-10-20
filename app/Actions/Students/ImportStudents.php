@@ -3,6 +3,7 @@
 namespace App\Actions\Students;
 
 use App\Enums\StudentStatus;
+use App\Enums\StudentTermMovementType;
 use App\Enums\SurveyQuestionType;
 use App\Jobs\DownloadStudentPhoto;
 use App\Models\Activity;
@@ -18,6 +19,7 @@ use App\Models\StudentAbsence;
 use App\Models\StudentEnrollment;
 use App\Models\StudentPlan;
 use App\Models\StudentSurveyAnswer;
+use App\Models\StudentTermMovement;
 use App\Models\StudentType;
 use App\Models\SurveyQuestion;
 use App\Models\User;
@@ -379,6 +381,7 @@ final class ImportStudents
         ])->fill($this->address($data))->save();
 
         $this->importEnrollment($student, $data);
+        $this->importExtension($student, $data);
 
         $statusDate = $this->date($data, 'status_date') ?? ($status === StudentStatus::Withdrawn ? $this->date($data, 'withdrawn_on') : null);
 
@@ -398,7 +401,7 @@ final class ImportStudents
     /** @param array<string, mixed> $data */
     private function importEnrollment(Student $student, array $data): void
     {
-        $fields = ['contract_number', 'sales_advisor', 'plan', 'installments', 'registered_on', 'extension_days',
+        $fields = ['contract_number', 'sales_advisor', 'plan', 'installments', 'registered_on',
             'material_serial', 'material_type', 'start_book', 'start_lesson', 'start_activity', 'reenrolled_on'];
 
         if (collect($fields)->every(fn (string $field) => ! $this->filled($data, $field))) {
@@ -415,8 +418,6 @@ final class ImportStudents
         $planId = $this->filled($data, 'plan') ? $this->lookup('plans', $data['plan']) : $enrollment->student_plan_id;
         $bookId = $this->filled($data, 'start_book') ? $this->bookId($data['start_book']) : $enrollment->start_book_id;
         $installments = $this->filled($data, 'installments') && is_numeric($data['installments']) ? (int) $data['installments'] : null;
-        $extensionDays = $this->filled($data, 'extension_days') && is_numeric($data['extension_days']) ? max(0, min(730, (int) $data['extension_days'])) : 0;
-        $extension = $this->bool($data, 'includes_term_extension') || $extensionDays > 0;
         $material = $this->bool($data, 'material_assigned');
 
         $enrollment->fill([
@@ -425,8 +426,6 @@ final class ImportStudents
             'student_plan_id' => $planId,
             'installments' => $installments ?? ($planId ? StudentPlan::find($planId)?->installments : null),
             'registered_on' => $this->date($data, 'registered_on'),
-            'includes_term_extension' => $extension,
-            'extension_days' => $extension && $extensionDays > 0 ? $extensionDays : null,
             'includes_toefl' => $this->bool($data, 'includes_toefl'),
             'includes_gold_card' => $this->bool($data, 'includes_gold_card'),
             'material_serial' => $material && ($serial = $this->text($data, 'material_serial')) !== null ? Str::upper(Str::limit($serial, 40, '')) : null,
@@ -438,6 +437,28 @@ final class ImportStudents
             'start_activity_id' => $this->filled($data, 'start_activity') ? $this->activityId($data['start_activity']) : $enrollment->start_activity_id,
             'reenrolled_on' => $this->date($data, 'reenrolled_on'),
         ])->save();
+    }
+
+    /**
+     * Días de ampliación de plazo → movimiento "Extensión de tiempo" (hasta 120 días). Se reconoce por su
+     * fecha para que volver a importar no lo duplique.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function importExtension(Student $student, array $data): void
+    {
+        $days = $this->filled($data, 'extension_days') && is_numeric($data['extension_days']) ? (int) $data['extension_days'] : 0;
+
+        if ($days < 1) {
+            return;
+        }
+
+        $occurredOn = $this->date($data, 'reenrolled_on') ?? $this->date($data, 'registered_on') ?? $student->course_starts_on ?? now(config('appingles.timezone'));
+
+        StudentTermMovement::withoutGlobalScope('school')->updateOrCreate(
+            ['school_id' => $student->school_id, 'student_id' => $student->id, 'type' => StudentTermMovementType::Extension, 'occurred_on' => $occurredOn->toDateString()],
+            ['days' => min(StudentTermMovementType::Extension->maxDays(), $days), 'user_id' => auth()->id()],
+        );
     }
 
     /**

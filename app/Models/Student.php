@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\StudentStatus;
+use App\Enums\StudentTermMovementType;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\StudentFactory;
@@ -89,6 +90,12 @@ class Student extends Model
         return $this->hasOne(StudentEnrollment::class)->latestOfMany();
     }
 
+    /** @return HasMany<StudentTermMovement, $this> */
+    public function termMovements(): HasMany
+    {
+        return $this->hasMany(StudentTermMovement::class)->orderBy('occurred_on')->orderBy('id');
+    }
+
     /** @return HasMany<StudentAbsence, $this> */
     public function absences(): HasMany
     {
@@ -151,32 +158,42 @@ class Student extends Model
     /** Días de solicitud de ausencia que se pueden autorizar por ciclo del programa. */
     public const MAX_ABSENCE_DAYS = 60;
 
-    /** Inicio del ciclo vigente: la última reinscripción o, si no hay, el inicio del curso. */
+    /** Inicio del ciclo vigente (para las ausencias): la última reinscripción o, si no hay, el inicio del curso. */
     public function cycleStartsOn(): ?Carbon
     {
-        $lastReenrollment = $this->enrollments->max('reenrolled_on');
+        $lastReenrollment = $this->termMovements->where('type', StudentTermMovementType::Reenrollment)->max('occurred_on');
 
         return $lastReenrollment ? Carbon::parse($lastReenrollment) : $this->course_starts_on?->copy();
     }
 
-    /** Inscripción del ciclo vigente (la más reciente). */
-    public function currentEnrollment(): ?StudentEnrollment
-    {
-        return $this->enrollments->sortBy([['reenrolled_on', 'desc'], ['registered_on', 'desc'], ['id', 'desc']])->first();
-    }
-
-    /** Días de ampliación de plazo del ciclo vigente. */
+    /** Días de extensión de tiempo acumulados. */
     public function extensionDays(): int
     {
-        $enrollment = $this->currentEnrollment();
-
-        return $enrollment?->includes_term_extension ? (int) $enrollment->extension_days : 0;
+        return (int) $this->termMovements->where('type', StudentTermMovementType::Extension)->sum('days');
     }
 
-    /** Fin del curso: inicio del ciclo vigente + 365 días + días de ampliación de plazo. */
+    /**
+     * Fin del curso: inicio del curso + 365 días + los días de los movimientos del plazo
+     * (reinscripción, extensión, ajuste, mensualidad abierta). Las ausencias no lo recorren.
+     */
     public function courseEndsOn(): ?Carbon
     {
-        return $this->cycleStartsOn()?->addDays(self::PROGRAM_DAYS + $this->extensionDays());
+        return $this->course_starts_on?->copy()->addDays(self::PROGRAM_DAYS + (int) $this->termMovements->sum('days'));
+    }
+
+    /** Fin del curso antes de un movimiento (inicio + 365 + los movimientos anteriores a él). */
+    public function courseEndsBefore(StudentTermMovement $movement): ?Carbon
+    {
+        $previous = $this->termMovements->filter(fn (StudentTermMovement $item) => $item->occurred_on->lt($movement->occurred_on)
+            || ($item->occurred_on->eq($movement->occurred_on) && $item->id < $movement->id));
+
+        return $this->course_starts_on?->copy()->addDays(self::PROGRAM_DAYS + (int) $previous->sum('days'));
+    }
+
+    /** Mensualidad abierta sin cerrar (el fin del curso es estimado mientras exista). */
+    public function openMonthly(): ?StudentTermMovement
+    {
+        return $this->termMovements->first(fn (StudentTermMovement $movement) => $movement->isOpen());
     }
 
     /** Días de solicitud de ausencia acumulados (todos los ciclos). */

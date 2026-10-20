@@ -5,10 +5,12 @@ namespace App\Livewire\Students;
 use App\Actions\Students\ChangeStudentStatus;
 use App\Actions\Users\SendInvitation;
 use App\Enums\StudentStatus;
+use App\Enums\StudentTermMovementType;
 use App\Livewire\Forms\EnrollmentForm;
 use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\StudentAbsence;
+use App\Models\StudentTermMovement;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -21,7 +23,7 @@ use Livewire\Component;
 
 /**
  * Expediente del alumno: datos, inscripciones, histórico de estatus (con
- * motivo), ausencias, tutores y encuesta. Consultar requiere "Expedientes";
+ * motivo), movimientos del plazo, ausencias, tutores y encuesta. Consultar requiere "Expedientes";
  * modificar, ser administrador de la escuela o Servicios escolares.
  */
 #[Layout('layouts.app')]
@@ -53,6 +55,21 @@ class StudentShow extends Component
     public string $absenceTo = '';
 
     public string $absenceReason = '';
+
+    public ?bool $addingMovement = null;
+
+    public string $movementType = '';
+
+    public string $movementDate = '';
+
+    public ?int $movementDays = null;
+
+    public string $movementReason = '';
+
+    /** Mensualidad abierta que se está cerrando. */
+    public ?int $closingMovementId = null;
+
+    public string $closeDate = '';
 
     public ?bool $linkingGuardian = null;
 
@@ -87,6 +104,7 @@ class StudentShow extends Component
                 'statusChanges' => fn ($query) => $query->latest('changed_on')->latest('id'),
                 'statusChanges.user:id,name',
                 'absences' => fn ($query) => $query->latest('starts_on'),
+                'termMovements.user:id,name',
                 'guardians.user:id,email,password',
                 'surveyAnswers.question',
             ])
@@ -225,6 +243,102 @@ class StudentShow extends Component
         $this->dispatch('toast', type: 'success', message: __('students.messages.absence_saved'));
     }
 
+    // ── Movimientos del plazo ──────────────────────────────────────
+
+    public function addMovement(): void
+    {
+        $this->authorizeUpdate();
+        $this->resetValidation();
+
+        $this->movementType = StudentTermMovementType::Extension->value;
+        $this->movementDate = now(config('appingles.timezone'))->toDateString();
+        $this->movementDays = null;
+        $this->movementReason = '';
+        $this->addingMovement = true;
+    }
+
+    public function saveMovement(): void
+    {
+        $student = $this->authorizeUpdate();
+        $type = StudentTermMovementType::tryFrom($this->movementType);
+
+        $data = $this->validate([
+            'movementType' => ['required', Rule::in(array_keys(StudentTermMovementType::manualOptions()))],
+            'movementDate' => ['required', 'date'],
+            'movementDays' => ['required', 'integer', 'min:1', 'max:'.($type?->maxDays() ?? 1)],
+            'movementReason' => ['nullable', 'string', 'max:255'],
+        ], attributes: [
+            'movementType' => Str::lower(__('students.term.type')),
+            'movementDate' => Str::lower(__('students.term.date')),
+            'movementDays' => Str::lower(__('students.term.days')),
+            'movementReason' => Str::lower(__('students.term.reason')),
+        ]);
+
+        if ($type === StudentTermMovementType::OpenMonthly && $student->openMonthly() !== null) {
+            throw ValidationException::withMessages(['movementType' => __('students.term.already_open')]);
+        }
+
+        StudentTermMovement::create([
+            'school_id' => $student->school_id,
+            'student_id' => $student->id,
+            'type' => $type,
+            'occurred_on' => $data['movementDate'],
+            'days' => $data['movementDays'],
+            'reason' => trim($data['movementReason']) ?: null,
+            'user_id' => auth()->id(),
+        ]);
+
+        $this->addingMovement = null;
+        unset($this->student);
+        $this->dispatch('toast', type: 'success', message: __('students.messages.movement_saved'));
+    }
+
+    /** La reinscripción se quita desde su ficha (borrando la fecha de reinscripción). */
+    public function deleteMovement(int $movementId): void
+    {
+        $student = $this->authorizeUpdate();
+        $movement = $student->termMovements->firstWhere('id', $movementId) ?? abort(404);
+        abort_unless($movement->type->isManual(), 403);
+
+        $movement->delete();
+        unset($this->student);
+        $this->dispatch('toast', type: 'success', message: __('students.messages.movement_deleted'));
+    }
+
+    public function askCloseMovement(int $movementId): void
+    {
+        $student = $this->authorizeUpdate();
+        $movement = $student->termMovements->firstWhere('id', $movementId) ?? abort(404);
+        abort_unless($movement->isOpen(), 404);
+        $this->resetValidation();
+
+        $this->closingMovementId = $movement->id;
+        $this->closeDate = now(config('appingles.timezone'))->toDateString();
+    }
+
+    /** Cierra la mensualidad abierta: sus días pasan de estimados a reales (hasta la fecha de cierre). */
+    public function closeMovement(): void
+    {
+        $student = $this->authorizeUpdate();
+        $movement = $student->termMovements->firstWhere('id', $this->closingMovementId) ?? abort(404);
+        abort_unless($movement->isOpen(), 404);
+        $startsOn = $student->courseEndsBefore($movement);
+
+        $this->validate([
+            'closeDate' => array_filter(['required', 'date', $startsOn ? 'after:'.$startsOn->toDateString() : null]),
+        ], attributes: ['closeDate' => Str::lower(__('students.term.close_date'))]);
+
+        $closedOn = Carbon::parse($this->closeDate);
+        $movement->update([
+            'closed_on' => $closedOn,
+            'days' => $startsOn ? min(StudentTermMovementType::OpenMonthly->maxDays(), (int) $startsOn->diffInDays($closedOn)) : $movement->days,
+        ]);
+
+        $this->closingMovementId = null;
+        unset($this->student);
+        $this->dispatch('toast', type: 'success', message: __('students.messages.movement_closed'));
+    }
+
     // ── Tutores ────────────────────────────────────────────────────
 
     public function linkGuardian(): void
@@ -309,6 +423,7 @@ class StudentShow extends Component
             'statuses' => collect(StudentStatus::cases())->mapWithKeys(fn (StudentStatus $s) => [$s->value => $s->label()])->all(),
             'reports' => collect(Guardian::REPORTS)->mapWithKeys(fn (string $report) => [$report => __("students.guardians.reports.$report")])->all(),
             'timezone' => config('appingles.timezone'),
+            'movementTypes' => StudentTermMovementType::manualOptions(),
         ])->title($this->student->fullName());
     }
 }

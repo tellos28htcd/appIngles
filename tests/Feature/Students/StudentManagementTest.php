@@ -3,6 +3,7 @@
 namespace Tests\Feature\Students;
 
 use App\Enums\StudentStatus;
+use App\Enums\StudentTermMovementType;
 use App\Enums\UserStatus;
 use App\Livewire\Guardians\GuardianIndex;
 use App\Livewire\Students\StudentEditor;
@@ -15,6 +16,7 @@ use App\Models\SalesAdvisor;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentPlan;
+use App\Models\StudentTermMovement;
 use App\Models\StudentType;
 use App\Models\User;
 use App\Notifications\UserInvitation;
@@ -296,32 +298,67 @@ class StudentManagementTest extends TestCase
             ->call('linkGuardian')->assertSet('linkingGuardian', true);
     }
 
-    public function test_course_end_counts_365_days_from_the_last_reenrollment_plus_the_extension(): void
+    public function test_course_end_accumulates_the_term_movements(): void
     {
         $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
         $this->newStudent()
-            ->set('form.course_starts_on', '2025-01-10')
-            ->set('enrollment.includes_term_extension', true)
-            ->call('save')
-            ->assertHasErrors('enrollment.extension_days');
-
-        $this->newStudent()
-            ->set('form.course_starts_on', '2025-01-10')
-            ->set('enrollment.includes_term_extension', true)
-            ->set('enrollment.extension_days', 20)
+            ->set('form.course_starts_on', '2026-01-01')
             ->set('enrollment.material_serial', 'ABC-1')
             ->set('enrollment.material_type', 'F')
             ->set('enrollment.material_assigned', false)
             ->call('save')
             ->assertHasNoErrors();
 
-        $student = Student::with('enrollments')->sole();
-        $this->assertSame('2026-01-30', $student->courseEndsOn()->toDateString());
+        $student = Student::with(['enrollments', 'termMovements'])->sole();
+        $this->assertSame('2027-01-01', $student->courseEndsOn()->toDateString());
         // Sin "Aplica material" no se guardan la serie ni el tipo.
         $this->assertSame([null, null], [$student->enrollments->sole()->material_serial, $student->enrollments->sole()->material_type]);
 
-        $student->enrollments->sole()->update(['reenrolled_on' => '2026-02-01', 'includes_term_extension' => false]);
-        $this->assertSame('2027-02-01', $student->fresh('enrollments')->courseEndsOn()->toDateString());
+        $show = Livewire::test(StudentShow::class, ['student' => $student])
+            ->call('addMovement')->set('movementType', 'extension')->set('movementDays', 121)->call('saveMovement')->assertHasErrors('movementDays')
+            ->set('movementDays', 120)->call('saveMovement')->assertHasNoErrors()
+            ->call('addMovement')->set('movementType', 'adjustment')->set('movementDays', 7)->call('saveMovement')->assertHasNoErrors();
+        $this->assertSame('2027-05-08', $student->fresh('termMovements')->courseEndsOn()->toDateString());
+
+        // 1er caso: la reinscripción (desde la ficha) suma 365 días al fin acumulado, sin perder los que quedaban.
+        $enrollment = $student->enrollments->sole();
+        $show->call('editEnrollment', $enrollment->id)->set('enrollment.reenrolled_on', '2026-10-15')->call('saveEnrollment')->assertHasNoErrors();
+        $student = $student->fresh('termMovements');
+        $this->assertSame('2028-05-07', $student->courseEndsOn()->toDateString());
+        $this->assertSame('2026-10-15', $student->cycleStartsOn()->toDateString());
+
+        // La reinscripción no se quita desde el plazo, sino borrando su fecha en la ficha.
+        $reenrollment = $student->termMovements->firstWhere('type', StudentTermMovementType::Reenrollment);
+        Livewire::test(StudentShow::class, ['student' => $student])->call('deleteMovement', $reenrollment->id)->assertForbidden();
+        $show->call('editEnrollment', $enrollment->id)->set('enrollment.reenrolled_on', '')->call('saveEnrollment');
+        $this->assertSame('2027-05-08', $student->fresh('termMovements')->courseEndsOn()->toDateString());
+
+        // 3er caso: mensualidad abierta con días estimados; al cerrarla cuentan los días reales.
+        $show->call('addMovement')->set('movementType', 'open_monthly')->set('movementDate', '2027-05-01')->set('movementDays', 180)->call('saveMovement')->assertHasNoErrors()
+            ->call('addMovement')->set('movementType', 'open_monthly')->set('movementDays', 90)->call('saveMovement')->assertHasErrors('movementType');
+        $student = $student->fresh('termMovements');
+        $this->assertSame('2027-11-04', $student->courseEndsOn()->toDateString());
+
+        $open = $student->openMonthly();
+        $show->call('askCloseMovement', $open->id)->set('closeDate', '2027-12-15')->call('closeMovement')->assertHasNoErrors();
+        $student = $student->fresh('termMovements');
+        $this->assertNull($student->openMonthly());
+        $this->assertSame('2027-12-15', $student->courseEndsOn()->toDateString());
+
+        $adjustment = $student->termMovements->firstWhere('type', StudentTermMovementType::Adjustment);
+        $show->call('deleteMovement', $adjustment->id);
+        $this->assertSame(2, $student->termMovements()->count());
+    }
+
+    public function test_term_movements_are_isolated_per_school(): void
+    {
+        $student = Student::factory()->create(['school_id' => $this->schoolA->id, 'course_starts_on' => '2026-01-01']);
+        $movement = $student->termMovements()->create(['school_id' => $this->schoolA->id, 'type' => StudentTermMovementType::Adjustment, 'occurred_on' => '2026-02-01', 'days' => 5]);
+
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolB));
+        $this->assertSame(0, StudentTermMovement::count());
+        $this->get(route('students.show', $student))->assertNotFound();
+        $this->assertModelExists($movement);
     }
 
     public function test_absence_requests_are_limited_to_60_days_per_cycle_and_can_be_printed(): void

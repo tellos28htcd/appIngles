@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\StudentTermMovementType;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Inscripción (contrato) del alumno. Puede tener varias: reinscripción o
@@ -22,6 +24,39 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StudentEnrollment extends Model
 {
     use Auditable, BelongsToSchool;
+
+    /** La fecha de reinscripción de la ficha se refleja como movimiento del plazo (+365 días). */
+    protected static function booted(): void
+    {
+        static::saved(function (StudentEnrollment $enrollment): void {
+            if (! $enrollment->wasChanged('reenrolled_on') && ! $enrollment->wasRecentlyCreated) {
+                return;
+            }
+
+            $movement = $enrollment->reenrollmentMovement()->withoutGlobalScope('school')->first();
+
+            if ($enrollment->reenrolled_on === null) {
+                $movement?->delete();
+
+                return;
+            }
+
+            ($movement ?? new StudentTermMovement([
+                'school_id' => $enrollment->school_id,
+                'student_id' => $enrollment->student_id,
+                'student_enrollment_id' => $enrollment->id,
+                'type' => StudentTermMovementType::Reenrollment,
+                'days' => StudentTermMovementType::Reenrollment->maxDays(),
+                'user_id' => auth()->id(),
+            ]))->fill(['occurred_on' => $enrollment->reenrolled_on])->save();
+        });
+    }
+
+    /** @return HasOne<StudentTermMovement, $this> */
+    public function reenrollmentMovement(): HasOne
+    {
+        return $this->hasOne(StudentTermMovement::class);
+    }
 
     protected function casts(): array
     {
@@ -83,11 +118,10 @@ class StudentEnrollment extends Model
         return __('students.enrollment.label', ['number' => $this->contract_number ?? '#'.$this->id]);
     }
 
-    /** @return list<string> Servicios incluidos: term_extension, toefl, gold_card. */
+    /** @return list<string> Servicios incluidos: toefl, gold_card (la ampliación de plazo es un movimiento del plazo). */
     public function services(): array
     {
         return array_keys(array_filter([
-            'term_extension' => $this->includes_term_extension,
             'toefl' => $this->includes_toefl,
             'gold_card' => $this->includes_gold_card,
         ]));

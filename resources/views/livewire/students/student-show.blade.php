@@ -51,7 +51,7 @@
                         'student_type_id' => $student->type?->name ?? '—',
                         'learning_style' => collect(['visual', 'auditory', 'kinesthetic'])->filter(fn ($style) => $student->{'learns_'.$style})->map(fn ($style) => __("students.fields.learns_$style"))->implode(', ') ?: '—',
                         'course_starts_on' => $date($student->course_starts_on),
-                        'course_ends_on' => $date($student->courseEndsOn()),
+                        'course_ends_on' => $date($student->courseEndsOn()).($student->openMonthly() ? ' · '.__('students.term.estimated') : ''),
                         'extension' => trans_choice('students.fields.extension_days', $student->extensionDays()),
                         'withdrawn_on' => $date($student->withdrawn_on),
                         'graduated_on' => $date($student->graduated_on),
@@ -114,7 +114,7 @@
                                 'student_plan_id' => $record->plan ? $record->plan->name.' · '.trans_choice('students.enrollment.installments_count', $record->installments ?? $record->plan->installments) : '—',
                                 'start_point' => collect([$record->startBook?->name, $record->startLesson?->name, $record->startActivity?->code])->filter()->implode(' · ') ?: '—',
                                 'reenrolled_on' => $date($record->reenrolled_on),
-                                'services' => collect($record->services())->map(fn ($service) => __("students.enrollment.services.$service").($service === 'term_extension' && $record->extension_days ? ' ('.trans_choice('students.fields.extension_days', $record->extension_days).')' : ''))->implode(', ') ?: '—',
+                                'services' => collect($record->services())->map(fn ($service) => __("students.enrollment.services.$service"))->implode(', ') ?: '—',
                                 'material_assigned' => $record->material_assigned
                                     ? collect([$record->material_serial, $record->material_type ? __('students.enrollment.material_types.'.$record->material_type) : null])->filter()->implode(' · ') ?: __('audit.yes')
                                     : __('audit.no'),
@@ -197,6 +197,48 @@
                 </ol>
             </x-ui.card>
 
+            {{-- Plazo del curso --}}
+            <x-ui.card :title="__('students.sections.term')"
+                       :description="__('students.term.summary', ['start' => $date($student->course_starts_on), 'end' => $date($student->courseEndsOn())])">
+                @if ($student->course_starts_on === null)
+                    <p class="text-sm text-warning-700">{{ __('students.term.no_start') }}</p>
+                @endif
+                @forelse ($student->termMovements as $movement)
+                    <div wire:key="movement-{{ $movement->id }}" class="flex items-start gap-3">
+                        <div class="flex min-w-0 flex-1 flex-col gap-1">
+                            <span class="flex flex-wrap items-center gap-2">
+                                <x-ui.badge :variant="$movement->type->badge()">{{ $movement->type->label() }}</x-ui.badge>
+                                <span class="text-sm font-semibold tabular-nums text-primary-700">+{{ trans_choice('students.absences.days', $movement->days) }}</span>
+                                @if ($movement->isOpen())
+                                    <span class="text-xs font-semibold text-warning-700">{{ __('students.term.open') }}</span>
+                                @elseif ($movement->closed_on)
+                                    <span class="text-xs text-ink-500">{{ __('students.term.closed_on', ['date' => $date($movement->closed_on)]) }}</span>
+                                @endif
+                            </span>
+                            <span class="text-xs tabular-nums text-ink-500">{{ $date($movement->occurred_on) }} · {{ $movement->user?->name ?? __('audit.system_actor') }}</span>
+                            @if ($movement->reason)
+                                <span class="text-sm text-ink-500 [overflow-wrap:anywhere]">{{ $movement->reason }}</span>
+                            @endif
+                        </div>
+                        @if ($canUpdate && $movement->isOpen())
+                            <x-ui.button variant="secondary" size="sm" wire:click="askCloseMovement({{ $movement->id }})">{{ __('students.term.close') }}</x-ui.button>
+                        @endif
+                        @if ($canUpdate && $movement->type->isManual())
+                            <button type="button" wire:click="deleteMovement({{ $movement->id }})" wire:confirm="{{ __('students.term.confirm_delete') }}"
+                                    class="flex size-9 flex-none items-center justify-center rounded-[10px] text-danger-700 hover:bg-danger-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+                                    aria-label="{{ __('students.term.delete', ['type' => $movement->type->label()]) }}" title="{{ __('students.term.delete_short') }}">
+                                <x-ui.icon name="close" class="size-4" />
+                            </button>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-sm text-ink-500">{{ __('students.term.empty') }}</p>
+                @endforelse
+                @if ($canUpdate)
+                    <x-ui.button variant="secondary" size="sm" wire:click="addMovement"><x-ui.icon name="plus" class="size-4" />{{ __('students.term.add') }}</x-ui.button>
+                @endif
+            </x-ui.card>
+
             {{-- Ausencias --}}
             <x-ui.card :title="__('students.sections.absences')"
                        :description="__('students.fields.absence_days_value', ['cycle' => $student->absenceDaysInCycle(), 'max' => \App\Models\Student::MAX_ABSENCE_DAYS, 'total' => $student->absenceDaysTotal()])">
@@ -265,6 +307,32 @@
             <x-slot:footer>
                 <x-ui.button variant="ghost" x-on:click="open = null">{{ __('students.actions.cancel') }}</x-ui.button>
                 <x-ui.button wire:click="saveAbsence">{{ __('students.actions.save') }}</x-ui.button>
+            </x-slot:footer>
+        </x-ui.modal>
+
+        {{-- Movimiento del plazo --}}
+        <x-ui.modal wire:model="addingMovement" :title="__('students.term.add')">
+            <x-ui.select name="movementType" :label="__('students.term.type')" :options="$movementTypes" wire:model.live="movementType" required />
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-ui.input name="movementDate" type="date" :label="__('students.term.date')" wire:model="movementDate" required />
+                <x-ui.input name="movementDays" type="number" :label="__('students.term.days')" wire:model="movementDays" min="1"
+                            :max="\App\Enums\StudentTermMovementType::tryFrom($movementType)?->maxDays()" class="tabular-nums" required
+                            :hint="$movementType ? __('students.term.hints.'.$movementType) : null" />
+            </div>
+            <x-ui.input name="movementReason" :label="__('students.term.reason')" wire:model="movementReason" maxlength="255" />
+            <x-slot:footer>
+                <x-ui.button variant="ghost" x-on:click="open = null">{{ __('students.actions.cancel') }}</x-ui.button>
+                <x-ui.button wire:click="saveMovement">{{ __('students.actions.save') }}</x-ui.button>
+            </x-slot:footer>
+        </x-ui.modal>
+
+        {{-- Cierre de mensualidad abierta --}}
+        <x-ui.modal wire:model="closingMovementId" :title="__('students.term.close_title')">
+            <p>{{ __('students.term.close_body') }}</p>
+            <x-ui.input name="closeDate" type="date" :label="__('students.term.close_date')" wire:model="closeDate" required />
+            <x-slot:footer>
+                <x-ui.button variant="ghost" x-on:click="open = null">{{ __('students.actions.cancel') }}</x-ui.button>
+                <x-ui.button wire:click="closeMovement">{{ __('students.term.close') }}</x-ui.button>
             </x-slot:footer>
         </x-ui.modal>
 

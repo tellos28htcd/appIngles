@@ -10,7 +10,7 @@ Decisiones del 13-oct-2026 a partir de *IQN4 AA Concentrado Alumnos V5.0-okCLA.x
   fechas del curso (inicio, baja, graduación), observaciones, `user_id` (nulo mientras no tenga correo).
 - `student_enrollments`: ficha de inscripción; un alumno puede tener varias (reinscripción, convenio de extensión).
   Número de contrato, asesor y si aplica comisión, plan y mensualidades, fechas de la ficha y de reinscripción,
-  servicios (ampliación de plazo con sus días, Preparación TOEFL, tarjeta dorada), aplica material con su serie y
+  servicios (Preparación TOEFL, tarjeta dorada; la ampliación de plazo pasó a movimientos del plazo), aplica material con su serie y
   tipo (F = Financiero, C = Contable), y libro, lección y actividad de inicio. Las columnas antiguas `starts_on`,
   `ends_on`, `withdrawn_on` y `graduated_on` ya no se usan.
 - `student_absences`: solicitudes de ausencia (fecha inicial y final, días naturales) con su motivo; se imprimen.
@@ -37,9 +37,12 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
 - Alumno y Padre/Tutor no se asignan desde Usuarios.
 - Un alumno con inscripciones no se elimina: se da de baja con su motivo.
 - La contraseña de la plataforma externa (columna CAP del Excel) no se importa.
-- **Ciclo del programa:** 365 días desde la última reinscripción o, si no hay, desde el inicio del curso.
-  Fin del curso = inicio del ciclo + 365 + días de ampliación de plazo (de la ficha vigente). Las ausencias no lo recorren.
-- **Solicitud de ausencia:** máximo 60 días naturales por ciclo; el conteo se reinicia con cada reinscripción.
+- **Plazo del curso (acumulado):** fin = inicio del curso + 365 + días de los movimientos del plazo
+  (`student_term_movements`): reinscripción (+365, se registra sola desde la fecha de reinscripción de la ficha),
+  extensión de tiempo (hasta 120 días cada una), ajuste de días (solo suma) y mensualidad abierta (días estimados;
+  al cerrarla con la fecha real se cuentan los días reales; Cobranza cobra mientras siga abierta). Ej.: 01/01/2026 →
+  01/01/2027 → +120 = 01/05/2027 → +7 = 08/05/2027 → reinscripción +365 = 07/05/2028. Las ausencias no lo recorren.
+- **Solicitud de ausencia:** máximo 60 días naturales por ciclo; el conteo se reinicia en la fecha de cada reinscripción.
   Datos generales muestra los días del ciclo y el acumulado.
 - **Planes:** A = Contado; se quitó "Contado – 1 mensualidad"; se agregaron C 4 y 5 meses, D 7 meses, F 9 y 11 meses.
 - Domicilios históricos: `php artisan students:split-addresses [--school=] [--dry-run]` separa la línea en partes

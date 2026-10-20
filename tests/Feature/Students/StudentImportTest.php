@@ -4,6 +4,7 @@ namespace Tests\Feature\Students;
 
 use App\Actions\Students\ImportStudents;
 use App\Enums\StudentStatus;
+use App\Enums\StudentTermMovementType;
 use App\Jobs\DownloadStudentPhoto;
 use App\Livewire\Students\StudentImport;
 use App\Models\Guardian;
@@ -152,7 +153,7 @@ class StudentImportTest extends TestCase
         $this->assertSame(['AV. DE LA LUZ', '1500', '15', 'PUESTA DEL SOL', '76100', $this->queretaro->id, false],
             [$isela->street, $isela->exterior_number, $isela->interior_number, $isela->neighborhood, $isela->postal_code, $isela->municipality_id, $isela->address_needs_review]);
         $this->assertTrue($enrollment->includes_toefl);
-        $this->assertSame([true, 30], [$enrollment->includes_term_extension, $enrollment->extension_days]);
+        $this->assertSame([[StudentTermMovementType::Extension, 30]], $isela->termMovements->map(fn ($movement) => [$movement->type, $movement->days])->all());
         $this->assertSame([true, 'F'], [$enrollment->material_assigned, $enrollment->material_type]);
         $this->assertSame('Gerente', $enrollment->salesAdvisor->position->name);
         $this->assertSame(['academic_record', 'payments'], $isela->guardians->sole()->receives);

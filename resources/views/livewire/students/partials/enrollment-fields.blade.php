@@ -27,14 +27,7 @@
 </div>
 
 {{-- Servicios incluidos --}}
-<div class="grid gap-4 md:grid-cols-3">
-    <div class="flex flex-col gap-2">
-        <x-ui.toggle name="enrollment.includes_term_extension" :label="__('students.enrollment.fields.includes_term_extension')" wire:model.live="enrollment.includes_term_extension" />
-        @if ($enrollment->includes_term_extension)
-            <x-ui.input name="enrollment.extension_days" type="number" :label="__('students.enrollment.fields.extension_days')" :hint="__('students.enrollment.extension_days_hint')"
-                        wire:model="enrollment.extension_days" min="1" max="730" class="tabular-nums" required />
-        @endif
-    </div>
+<div class="grid gap-4 md:grid-cols-2">
     <x-ui.toggle name="enrollment.includes_toefl" :label="__('students.enrollment.fields.includes_toefl')" wire:model="enrollment.includes_toefl" />
     <x-ui.toggle name="enrollment.includes_gold_card" :label="__('students.enrollment.fields.includes_gold_card')" wire:model="enrollment.includes_gold_card" />
 </div>

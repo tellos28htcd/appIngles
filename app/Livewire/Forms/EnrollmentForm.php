@@ -27,11 +27,6 @@ class EnrollmentForm extends Form
 
     public string $registered_on = '';
 
-    public bool $includes_term_extension = false;
-
-    /** Días de ampliación de plazo (recorren el fin del curso). */
-    public ?int $extension_days = null;
-
     public bool $includes_toefl = false;
 
     public bool $includes_gold_card = false;
@@ -74,8 +69,8 @@ class EnrollmentForm extends Form
             'material_serial' => (string) $enrollment->material_serial,
             'material_type' => (string) $enrollment->material_type,
             ...$enrollment->only([
-                'sales_advisor_id', 'student_plan_id', 'installments', 'extension_days', 'start_book_id', 'start_lesson_id', 'start_activity_id',
-                'includes_term_extension', 'includes_toefl', 'includes_gold_card', 'material_assigned', 'commission_applies',
+                'sales_advisor_id', 'student_plan_id', 'installments', 'start_book_id', 'start_lesson_id', 'start_activity_id',
+                'includes_toefl', 'includes_gold_card', 'material_assigned', 'commission_applies',
             ]),
             ...collect(self::DATES)->mapWithKeys(fn (string $field) => [$field => (string) $enrollment->{$field}?->toDateString()])->all(),
         ]);
@@ -103,8 +98,6 @@ class EnrollmentForm extends Form
             'student_plan_id' => ['nullable', 'integer', $inSchool('student_plans')],
             'installments' => ['nullable', 'integer', 'min:0', 'max:60'],
             'registered_on' => ['nullable', 'date'],
-            'includes_term_extension' => ['boolean'],
-            'extension_days' => [Rule::requiredIf($this->includes_term_extension), 'nullable', 'integer', 'min:1', 'max:730'],
             'includes_toefl' => ['boolean'],
             'includes_gold_card' => ['boolean'],
             'material_serial' => ['nullable', 'string', 'max:40'],
@@ -137,8 +130,7 @@ class EnrollmentForm extends Form
         $data = $this->validate();
         $data = array_map(fn ($value) => $value === '' ? null : $value, $data);
         $data['contract_number'] = $data['contract_number'] === null ? null : Str::upper(trim($data['contract_number']));
-        // Sin ampliación no hay días; sin material no hay serie ni tipo.
-        $data['extension_days'] = $data['includes_term_extension'] ? $data['extension_days'] : null;
+        // Sin material no hay serie ni tipo.
         if (! $data['material_assigned']) {
             $data['material_serial'] = null;
             $data['material_type'] = null;
