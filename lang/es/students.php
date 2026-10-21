@@ -309,7 +309,7 @@ return [
 
     'confirm_delete' => [
         'title' => '¿Eliminar a :name?',
-        'body' => 'Solo se elimina un alumno sin inscripciones (p. ej. un registro duplicado). Si dejó la escuela, cambia su estatus a Baja con el motivo.',
+        'body' => 'Se eliminan el alumno, su ficha de inscripción, su usuario y su encuesta. Solo es posible mientras no tenga historial (ausencias, movimientos del plazo o cambios de estatus). Si dejó la escuela, cambia su estatus a Baja con el motivo.',
         'confirm' => 'Eliminar alumno',
     ],
 

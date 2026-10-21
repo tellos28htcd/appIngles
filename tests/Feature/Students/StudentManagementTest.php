@@ -350,6 +350,27 @@ class StudentManagementTest extends TestCase
         $this->assertSame(2, $student->termMovements()->count());
     }
 
+    public function test_a_student_without_history_is_deleted_with_its_enrollment_and_user(): void
+    {
+        Notification::fake();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        $this->newStudent()->set('form.email', 'maria@appingles.com')->call('save');
+        $this->newStudent()->set('form.first_name', 'Juan')->set('form.email', 'juan@appingles.com')->call('save');
+        [$maria, $juan] = Student::orderBy('id')->get()->all();
+        $juan->absences()->create(['school_id' => $this->schoolA->id, 'starts_on' => '2026-08-01', 'ends_on' => '2026-08-03']);
+
+        // Con historial no se elimina: se da de baja.
+        Livewire::test(StudentIndex::class)->call('confirmDeletion', $juan->id)->assertForbidden();
+
+        $userId = $maria->user_id;
+        Livewire::test(StudentIndex::class)->call('confirmDeletion', $maria->id)->call('delete')->assertHasNoErrors();
+
+        $this->assertModelMissing($maria);
+        $this->assertDatabaseMissing('student_enrollments', ['student_id' => $maria->id]);
+        $this->assertDatabaseMissing('users', ['id' => $userId]);
+        $this->assertModelExists($juan);
+    }
+
     public function test_term_movements_are_isolated_per_school(): void
     {
         $student = Student::factory()->create(['school_id' => $this->schoolA->id, 'course_starts_on' => '2026-01-01']);

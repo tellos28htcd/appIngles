@@ -35,7 +35,9 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
 - **Tutor:** su usuario (rol Padre/Tutor) se crea a mano con "Dar acceso" en Alumnos → Tutores, solo cuando lo solicita.
   Verá únicamente a sus tutorados (portal "Mis alumnos", pendiente).
 - Alumno y Padre/Tutor no se asignan desde Usuarios.
-- Un alumno con inscripciones no se elimina: se da de baja con su motivo.
+- Un alumno se elimina (con su ficha, usuario y encuesta) solo mientras no tenga historial: ausencias, movimientos
+  del plazo o cambios de estatus además del alta (y, con Cobranza, pagos). Con historial se da de baja con su motivo.
+- El usuario de un alumno o tutor no se elimina desde Usuarios: depende de su expediente.
 - La contraseña de la plataforma externa (columna CAP del Excel) no se importa.
 - **Plazo del curso (acumulado):** fin = inicio del curso + 365 + días de los movimientos del plazo
   (`student_term_movements`): reinscripción (+365, se registra sola desde la fecha de reinscripción de la ficha),

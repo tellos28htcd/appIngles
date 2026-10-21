@@ -269,10 +269,16 @@ class Student extends Model
         return $this->user !== null && $this->status->canLogIn();
     }
 
-    /** Un alumno con inscripciones o historial se da de baja, no se elimina. */
+    /**
+     * Se elimina mientras no tenga historial (p. ej. un alta por error): sin ausencias, sin movimientos
+     * del plazo y sin cambios de estatus además del alta. Con historial se da de baja con su motivo.
+     * La ficha de inscripción, el usuario y la encuesta se eliminan con él.
+     */
     public function canBeDeleted(): bool
     {
-        return ! $this->enrollments()->exists();
+        return ! $this->absences()->exists()
+            && ! $this->termMovements()->exists()
+            && $this->statusChanges()->count() <= 1;
     }
 
     /** La ruta privada de la foto no se guarda en la bitácora; solo que cambió. */

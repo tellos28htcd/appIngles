@@ -39,10 +39,15 @@ class UserPolicy
             && ! $this->isLastActivePlatformAdmin($user);
     }
 
-    /** Eliminar solo si no tiene registros en ningún módulo (RN-24). */
+    /**
+     * Eliminar solo si no tiene registros en ningún módulo (RN-24). El usuario de un alumno o
+     * tutor no se elimina aquí: depende de su expediente (se quita al eliminar al alumno).
+     */
     public function delete(User $actor, User $user): bool
     {
-        return $this->toggleStatus($actor, $user) && ! $user->hasModuleRecords();
+        return $this->toggleStatus($actor, $user)
+            && ! in_array($user->loadMissing('role')->role?->slug, Role::MANAGED_BY_MODULES, true)
+            && ! $user->hasModuleRecords();
     }
 
     public function resendInvitation(User $actor, User $user): bool

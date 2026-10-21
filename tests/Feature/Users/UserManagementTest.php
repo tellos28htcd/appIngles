@@ -305,6 +305,18 @@ class UserManagementTest extends TestCase
         $this->assertModelMissing($teacher);
     }
 
+    public function test_student_and_guardian_users_are_not_deleted_from_users(): void
+    {
+        $student = $this->userWithRole(Role::STUDENT, $this->schoolA);
+        $guardian = $this->userWithRole(Role::GUARDIAN, $this->schoolA);
+        $this->actingAs($this->userWithRole(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        Livewire::test(UserIndex::class)->call('confirmDeletion', $student->id)->assertForbidden();
+        Livewire::test(UserIndex::class)->call('confirmDeletion', $guardian->id)->assertForbidden();
+        $this->assertModelExists($student);
+        $this->assertModelExists($guardian);
+    }
+
     public function test_user_with_module_records_cannot_be_deleted(): void
     {
         $teacher = $this->userWithRole(Role::TEACHER, $this->schoolA);

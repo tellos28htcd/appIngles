@@ -10,6 +10,8 @@ use App\Models\StudentType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -109,8 +111,15 @@ class StudentIndex extends Component
         $student = $this->find($this->confirmingDeletionId);
         $this->authorize('delete', $student);
 
-        $student->user?->delete();
-        $student->delete();
+        DB::transaction(function () use ($student): void {
+            $user = $student->user;
+            $student->delete();
+            $user?->delete();
+        });
+
+        if ($student->photo_path !== null) {
+            Storage::disk('local')->delete($student->photo_path);
+        }
         $this->confirmingDeletionId = null;
 
         $this->dispatch('toast', type: 'success', message: __('students.messages.deleted'));
