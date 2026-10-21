@@ -64,6 +64,9 @@ class TeacherForm extends Form
 
     public string $status = 'active';
 
+    /** Fecha de ingreso: aparece en el panel de disponibilidad desde ese día. */
+    public string $hired_on = '';
+
     /** Fecha de baja (solo con estatus Baja). */
     public string $terminated_on = '';
 
@@ -94,6 +97,7 @@ class TeacherForm extends Form
             'contract_type' => $teacher->contract_type?->value ?? ContractType::FullTime->value,
             'weekly_hours' => $teacher->weekly_hours ?? ContractType::FullTime->maxWeeklyHours(),
             'status' => $teacher->status->value,
+            'hired_on' => (string) $teacher->hired_on?->toDateString(),
             'terminated_on' => (string) $teacher->terminated_on?->toDateString(),
             'short_name' => (string) $teacher->short_name,
             'panel_number' => $teacher->panel_number,
@@ -146,6 +150,7 @@ class TeacherForm extends Form
             'contract_type' => ['required', Rule::enum(ContractType::class)],
             'weekly_hours' => ['required', 'integer', 'min:1', 'max:'.ContractType::MAX_WEEKLY_HOURS],
             'status' => ['required', Rule::enum(TeacherStatus::class)],
+            'hired_on' => ['required', 'date'],
             'terminated_on' => [Rule::requiredIf($this->status === TeacherStatus::Terminated->value), 'nullable', 'date'],
             'short_name' => ['nullable', 'string', 'max:20'],
             'panel_number' => ['nullable', 'integer', 'min:1', 'max:99', Rule::unique('teachers', 'panel_number')->where('school_id', $this->school_id)->ignore($this->teacher)],

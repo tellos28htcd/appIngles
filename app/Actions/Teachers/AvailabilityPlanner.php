@@ -97,8 +97,8 @@ final class AvailabilityPlanner
     }
 
     /**
-     * Teachers del panel que trabajan ese día: según sus incidencias de Baja y Reingreso (la baja
-     * cuenta desde su fecha; el reingreso también). Sin esas incidencias, los activos.
+     * Teachers del panel que trabajan ese día: desde su fecha de ingreso y según sus incidencias de
+     * Baja y Reingreso (la baja cuenta desde su fecha; el reingreso también). Sin esas incidencias, los activos.
      *
      * @return Collection<int, Teacher>
      */
@@ -112,6 +112,11 @@ final class AvailabilityPlanner
             ->with(['incidents' => fn ($query) => $query->withoutGlobalScope('school')->whereIn('type', $statusTypes)->orderBy('starts_on')->orderBy('id')])
             ->orderBy('panel_number')->get()
             ->filter(function (Teacher $teacher) use ($day): bool {
+                // Antes de su fecha de ingreso no aparece.
+                if ($teacher->hired_on !== null && $teacher->hired_on->gt($day)) {
+                    return false;
+                }
+
                 $last = $teacher->incidents->filter(fn (TeacherIncident $incident) => $incident->starts_on->lte($day))->last();
 
                 if ($last !== null) {

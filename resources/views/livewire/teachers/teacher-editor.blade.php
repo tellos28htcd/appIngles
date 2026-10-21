@@ -80,6 +80,7 @@
                 @endif
                 <x-ui.input name="form.email" type="email" :label="__('teachers.fields.email')" wire:model="form.email"
                             autocomplete="email" inputmode="email" maxlength="255" />
+                <x-ui.input name="form.hired_on" type="date" :label="__('teachers.fields.hired_on')" :hint="__('teachers.fields.hired_on_hint')" wire:model="form.hired_on" required />
                 <x-ui.select name="form.status" :label="__('teachers.fields.status')" :options="$statuses"
                              :hint="__('teachers.fields.status_hint')" wire:model.live="form.status" required />
                 @if ($form->status === \App\Enums\TeacherStatus::Terminated->value)

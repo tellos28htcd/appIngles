@@ -32,6 +32,7 @@ class TeacherEditor extends Component
             $this->authorize('create', Teacher::class);
             $user = auth()->user();
             $this->form->school_id = $user->isPlatformAdmin() ? null : $user->school_id;
+            $this->form->hired_on = now(config('appingles.timezone'))->toDateString();
         }
     }
 

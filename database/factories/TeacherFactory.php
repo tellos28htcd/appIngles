@@ -29,6 +29,7 @@ class TeacherFactory extends Factory
             'contract_type' => ContractType::FullTime,
             'weekly_hours' => 48,
             'status' => TeacherStatus::Active,
+            'hired_on' => '2025-01-01',
         ];
     }
 }

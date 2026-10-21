@@ -424,6 +424,16 @@ class TeacherAvailabilityTest extends TestCase
         $this->assertNull($this->cell($melissa, $this->monday->addDays(4), 9));
     }
 
+    public function test_a_teacher_appears_in_the_panel_from_the_hire_date(): void
+    {
+        $alfonso = $this->teacher('ALFONSO', 2, [1 => [9], 2 => [9], 3 => [9]], ['hired_on' => '2026-07-28']);
+        $this->planner()->generateWeek($this->school, $this->monday);
+
+        $this->assertNull($this->cell($alfonso, $this->monday, 9));
+        $this->assertNotNull($this->cell($alfonso, $this->monday->addDay(), 9));
+        $this->assertNotNull($this->cell($alfonso, $this->monday->addDays(2), 9));
+    }
+
     public function test_panel_permissions_and_isolation(): void
     {
         $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);

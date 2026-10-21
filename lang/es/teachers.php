@@ -72,6 +72,8 @@ return [
         'status' => 'Estatus',
         'status_hint' => 'Solo un teacher Activo inicia sesión y recibe clases.',
         'terminated_on' => 'Fecha de baja',
+        'hired_on' => 'Fecha de ingreso',
+        'hired_on_hint' => 'Aparece en el panel de disponibilidad desde esta fecha.',
         'short_name' => 'Nombre corto',
         'short_name_hint' => 'Como aparece en el panel (p. ej. MELISSA).',
         'panel_number' => 'Número en el panel',
