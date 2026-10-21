@@ -39,15 +39,19 @@
                                 <span class="font-semibold">
                                     {{ $incident->starts_on->translatedFormat('D j M Y') }}@if (! $incident->starts_on->equalTo($incident->ends_on)) – {{ $incident->ends_on->translatedFormat('D j M Y') }}@endif
                                 </span>
-                                <span class="text-ink-500">
-                                    {{ $incident->fromSlot ? substr($incident->fromSlot->starts_at, 0, 5).' – '.substr($incident->toSlot->ends_at, 0, 5) : __('availability.all_day') }}
-                                </span>
+                                @unless ($incident->type->isStatusChange())
+                                    <span class="text-ink-500">
+                                        {{ $incident->fromSlot ? substr($incident->fromSlot->starts_at, 0, 5).' – '.substr($incident->toSlot->ends_at, 0, 5) : __('availability.all_day') }}
+                                    </span>
+                                @endunless
                             </div>
                             @if ($canManage)
                                 <div class="flex items-center justify-end gap-0.5">
                                     @php($button = 'flex size-9 items-center justify-center rounded-[10px] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200')
-                                    <button type="button" wire:click="edit({{ $incident->id }})" class="{{ $button }} text-primary-700 hover:bg-primary-50"
-                                            aria-label="{{ __('availability.incident_edit') }}" title="{{ __('availability.incident_edit') }}"><x-ui.icon name="pencil" class="size-4" /></button>
+                                    @unless ($incident->type->isStatusChange())
+                                        <button type="button" wire:click="edit({{ $incident->id }})" class="{{ $button }} text-primary-700 hover:bg-primary-50"
+                                                aria-label="{{ __('availability.incident_edit') }}" title="{{ __('availability.incident_edit') }}"><x-ui.icon name="pencil" class="size-4" /></button>
+                                    @endunless
                                     <button type="button" wire:click="confirmDeletion({{ $incident->id }})" class="{{ $button }} text-danger-700 hover:bg-danger-50"
                                             aria-label="{{ __('availability.incident_delete') }}" title="{{ __('availability.incident_delete') }}"><x-ui.icon name="trash" class="size-4" /></button>
                                 </div>
@@ -73,12 +77,18 @@
                 <x-ui.select name="coveredTeacherId" :label="__('availability.incident_fields.covered_teacher')" :options="$teacherOptions"
                              :placeholder="__('students.select')" :hint="__('availability.covers_hint')" wire:model="coveredTeacherId" required />
             @endif
-            <div class="grid gap-4 sm:grid-cols-2">
-                <x-ui.input name="startsOn" type="date" :label="__('availability.incident_fields.starts_on')" wire:model="startsOn" required />
-                <x-ui.input name="endsOn" type="date" :label="__('availability.incident_fields.ends_on')" wire:model="endsOn" required />
-            </div>
-            <x-ui.toggle name="allDay" :label="__('availability.all_day')" :description="__('availability.all_day_hint')" wire:model.live="allDay" />
-            @unless ($allDay)
+            @php($isStatusChange = \App\Enums\TeacherIncidentType::tryFrom($incidentType)?->isStatusChange() ?? false)
+            @if ($isStatusChange)
+                <x-ui.input name="startsOn" type="date" :label="__('availability.incident_fields.'.$incidentType.'_on')" wire:model="startsOn"
+                            :hint="__('availability.status_change_hint.'.$incidentType)" required />
+            @else
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <x-ui.input name="startsOn" type="date" :label="__('availability.incident_fields.starts_on')" wire:model="startsOn" required />
+                    <x-ui.input name="endsOn" type="date" :label="__('availability.incident_fields.ends_on')" wire:model="endsOn" required />
+                </div>
+                <x-ui.toggle name="allDay" :label="__('availability.all_day')" :description="__('availability.all_day_hint')" wire:model.live="allDay" />
+            @endif
+            @unless ($allDay || $isStatusChange)
                 <div class="grid gap-4 sm:grid-cols-2">
                     <x-ui.select name="fromSlotId" :label="__('availability.incident_fields.from')" :options="$slotOptions" :placeholder="__('students.select')" wire:model="fromSlotId" required />
                     <x-ui.select name="toSlotId" :label="__('availability.incident_fields.to')" :options="$slotOptions" :placeholder="__('students.select')" wire:model="toSlotId" required />

@@ -74,9 +74,18 @@ return [
         'absence' => 'Falta (no llegó)',
         'unforeseen' => 'Evento imprevisto',
         'covers' => 'Cubre horas',
+        'termination' => 'Baja',
+        'rehire' => 'Reingreso',
+    ],
+
+    'status_change_hint' => [
+        'termination' => 'Desde esta fecha el teacher queda con estatus Baja, sin acceso y fuera del panel (antes conserva sus horas).',
+        'rehire' => 'Desde esta fecha el teacher vuelve a estar Activo y regresa al panel con su horario base.',
     ],
 
     'incident_fields' => [
+        'termination_on' => 'Fecha de baja',
+        'rehire_on' => 'Fecha de reingreso',
         'teacher' => 'Teacher',
         'type' => 'Tipo',
         'starts_on' => 'Desde',
@@ -102,5 +111,10 @@ return [
         'cover_weekly' => 'Con esta cobertura :teacher tendría :hours h en la semana del :week (máximo :limit).',
         'schedule_weekly' => 'El horario suma :hours h por semana; el máximo es :limit.',
         'slot_order' => 'La hora final debe ser igual o posterior a la inicial.',
+        'status_not_editable' => 'Una baja o un reingreso no se edita: elimina la última y regístrala de nuevo.',
+        'already_terminated' => 'El teacher ya está de baja; registra primero su reingreso.',
+        'not_terminated' => 'Solo se registra reingreso de un teacher que está de baja.',
+        'status_after' => 'Debe ser posterior a su último cambio de estatus (:date).',
+        'status_delete_latest' => 'De las bajas y reingresos solo se puede eliminar el último.',
     ],
 ];

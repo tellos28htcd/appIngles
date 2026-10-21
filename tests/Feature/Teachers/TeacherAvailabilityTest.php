@@ -389,6 +389,41 @@ class TeacherAvailabilityTest extends TestCase
         Livewire::test(BaseScheduleEditor::class, ['teacherId' => $melissa->id])->assertNotFound();
     }
 
+    public function test_termination_and_rehire_incidents_change_the_status_and_the_panel_from_their_date(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9], 6 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+        $register = fn (string $type, string $date) => Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $melissa->id)->set('incidentType', $type)->set('startsOn', $date)->set('reason', 'Motivo')
+            ->call('save');
+
+        $register('termination', '2026-07-29')->assertHasNoErrors();
+        $melissa->refresh();
+        $this->assertSame(TeacherStatus::Terminated, $melissa->status);
+        $this->assertSame('2026-07-29', $melissa->terminated_on->toDateString());
+        // Antes de la baja conserva sus horas; desde ese día sale del panel.
+        $this->assertNotNull($this->cell($melissa, $this->monday->addDay(), 9));
+        $this->assertNull($this->cell($melissa, $this->monday->addDays(2), 9));
+
+        $register('termination', '2026-07-30')->assertHasErrors('incidentType');
+        $register('rehire', '2026-07-29')->assertHasErrors('startsOn');
+
+        $register('rehire', '2026-07-31')->assertHasNoErrors();
+        $melissa->refresh();
+        $this->assertSame([TeacherStatus::Active, null], [$melissa->status, $melissa->terminated_on]);
+        $this->assertNull($this->cell($melissa, $this->monday->addDays(3), 9));
+        $this->assertNotNull($this->cell($melissa, $this->monday->addDays(4), 9));
+
+        // Solo se borra la última; al borrar el reingreso vuelve a estar de baja.
+        $termination = TeacherIncident::where('type', 'termination')->sole();
+        Livewire::test(TeacherIncidentIndex::class)->call('confirmDeletion', $termination->id)->assertSet('confirmingDeletionId', null);
+        $rehire = TeacherIncident::where('type', 'rehire')->sole();
+        Livewire::test(TeacherIncidentIndex::class)->call('confirmDeletion', $rehire->id)->call('delete');
+        $this->assertSame(TeacherStatus::Terminated, $melissa->fresh()->status);
+        $this->assertNull($this->cell($melissa, $this->monday->addDays(4), 9));
+    }
+
     public function test_panel_permissions_and_isolation(): void
     {
         $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);

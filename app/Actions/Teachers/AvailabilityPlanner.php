@@ -4,6 +4,8 @@ namespace App\Actions\Teachers;
 
 use App\Actions\Settings\EnsureOfficialHolidays;
 use App\Enums\ContractType;
+use App\Enums\TeacherIncidentType;
+use App\Enums\TeacherStatus;
 use App\Models\AvailabilityWeek;
 use App\Models\Classroom;
 use App\Models\Holiday;
@@ -94,6 +96,36 @@ final class AvailabilityPlanner
         return Teacher::withoutGlobalScope('school')->where('school_id', $school->id)->inPanel()->get();
     }
 
+    /**
+     * Teachers del panel que trabajan ese día: según sus incidencias de Baja y Reingreso (la baja
+     * cuenta desde su fecha; el reingreso también). Sin esas incidencias, los activos.
+     *
+     * @return Collection<int, Teacher>
+     */
+    public function teachersOn(School $school, CarbonInterface $date): Collection
+    {
+        $day = self::day($date);
+        $statusTypes = [TeacherIncidentType::Termination, TeacherIncidentType::Rehire];
+
+        return Teacher::withoutGlobalScope('school')->where('school_id', $school->id)->whereNotNull('panel_number')
+            ->whereIn('status', [TeacherStatus::Active, TeacherStatus::Terminated])
+            ->with(['incidents' => fn ($query) => $query->withoutGlobalScope('school')->whereIn('type', $statusTypes)->orderBy('starts_on')->orderBy('id')])
+            ->orderBy('panel_number')->get()
+            ->filter(function (Teacher $teacher) use ($day): bool {
+                $last = $teacher->incidents->filter(fn (TeacherIncident $incident) => $incident->starts_on->lte($day))->last();
+
+                if ($last !== null) {
+                    return $last->type === TeacherIncidentType::Rehire;
+                }
+
+                // Antes de su primera baja trabajaba; antes de un reingreso (sin baja registrada), no.
+                $next = $teacher->incidents->first();
+
+                return $next !== null ? $next->type === TeacherIncidentType::Termination : $teacher->status === TeacherStatus::Active;
+            })
+            ->values();
+    }
+
     public function isGenerated(School $school, CarbonInterface $monday): bool
     {
         return AvailabilityWeek::withoutGlobalScope('school')->where('school_id', $school->id)
@@ -163,14 +195,14 @@ final class AvailabilityPlanner
         $isHoliday = Holiday::withoutGlobalScope('school')->where('school_id', $school->id)->covering($day)->exists();
 
         $slots = $this->slots($school)->keyBy('id');
-        $teachers = $this->teachers($school)->load('scheduleBlocks');
+        $teachers = $this->teachersOn($school, $date)->load('scheduleBlocks');
         $incidents = TeacherIncident::withoutGlobalScope('school')->where('school_id', $school->id)
             ->whereDate('starts_on', '<=', $day)->whereDate('ends_on', '>=', $day)
             ->with(['fromSlot', 'toSlot'])->get();
 
         $classroomOf = fn (int $teacherId, int $slotId): ?int => $existing->get($teacherId.'|'.$slotId) ?? $previous->get($teacherId.'|'.$slotId);
         $absenceOf = fn (int $teacherId, ScheduleSlot $slot): ?TeacherIncident => $incidents->first(
-            fn (TeacherIncident $incident) => $incident->teacher_id === $teacherId && ! $incident->type->isCoverage() && $incident->covers($date, $slot)
+            fn (TeacherIncident $incident) => $incident->teacher_id === $teacherId && $incident->type->isAbsence() && $incident->covers($date, $slot)
         );
 
         $rows = [];
@@ -331,7 +363,7 @@ final class AvailabilityPlanner
                 }
 
                 $busy = $teacher->scheduleBlocks->contains(fn ($block) => $block->weekday === $day->dayOfWeekIso && $block->schedule_slot_id === $slot->id)
-                    && ! $incidents->contains(fn (TeacherIncident $other) => $other->teacher_id === $teacher->id && ! $other->type->isCoverage() && $other->covers($day, $slot));
+                    && ! $incidents->contains(fn (TeacherIncident $other) => $other->teacher_id === $teacher->id && $other->type->isAbsence() && $other->covers($day, $slot));
 
                 if ($busy) {
                     $problems[] = __('availability.validation.cover_busy', [
@@ -368,7 +400,7 @@ final class AvailabilityPlanner
         foreach ($this->days($school, $monday) as $day) {
             foreach ($slots as $slot) {
                 $own = $teacher->scheduleBlocks->contains(fn ($block) => $block->weekday === $day->dayOfWeekIso && $block->schedule_slot_id === $slot->id)
-                    && ! $incidents->contains(fn (TeacherIncident $other) => $other->teacher_id === $teacher->id && ! $other->type->isCoverage() && $other->covers($day, $slot));
+                    && ! $incidents->contains(fn (TeacherIncident $other) => $other->teacher_id === $teacher->id && $other->type->isAbsence() && $other->covers($day, $slot));
                 $covering = $incidents->contains(fn (TeacherIncident $other) => $other->teacher_id === $teacher->id && $other->type->isCoverage() && $other->covers($day, $slot));
 
                 $hours += ($own || $covering) ? 1 : 0;

@@ -3,7 +3,9 @@
 namespace App\Livewire\Teachers;
 
 use App\Actions\Teachers\AvailabilityPlanner;
+use App\Actions\Teachers\SyncTeacherStatus;
 use App\Enums\TeacherIncidentType;
+use App\Enums\TeacherStatus;
 use App\Models\School;
 use App\Models\Teacher;
 use App\Models\TeacherIncident;
@@ -23,8 +25,9 @@ use Livewire\WithPagination;
 
 /**
  * Teachers → Incidencias: permisos, vacaciones, incapacidad, faltas, eventos
- * imprevistos y "Cubre horas". Al guardar o borrar, el panel de disponibilidad
- * de esas fechas se actualiza solo.
+ * imprevistos, "Cubre horas", Baja y Reingreso. Al guardar o borrar, el panel de
+ * disponibilidad de esas fechas se actualiza solo. Baja y Reingreso cambian el
+ * estatus del teacher; no se editan: se borra la última y se registra de nuevo.
  */
 #[Layout('layouts.app')]
 class TeacherIncidentIndex extends Component
@@ -103,13 +106,25 @@ class TeacherIncidentIndex extends Component
         $this->editing = true;
     }
 
-    public function save(AvailabilityPlanner $planner): void
+    public function save(AvailabilityPlanner $planner, SyncTeacherStatus $syncStatus): void
     {
         $incident = $this->incidentId ? $this->find($this->incidentId) : null;
         $incident ? $this->authorize('update', $incident) : $this->authorize('create', TeacherIncident::class);
 
         $schoolId = auth()->user()->school_id;
         $isCoverage = $this->incidentType === TeacherIncidentType::Covers->value;
+        $statusType = TeacherIncidentType::tryFrom($this->incidentType);
+        $isStatus = $statusType?->isStatusChange() ?? false;
+
+        // Baja y reingreso son de un solo día y sin horas.
+        if ($isStatus) {
+            $this->endsOn = $this->startsOn;
+            $this->allDay = true;
+        }
+
+        if ($incident !== null && ($isStatus || $incident->type->isStatusChange())) {
+            throw ValidationException::withMessages(['incidentType' => __('availability.validation.status_not_editable')]);
+        }
         $inSchool = fn (string $table) => Rule::exists($table, 'id')->where('school_id', $schoolId);
 
         $this->validate([
@@ -138,6 +153,20 @@ class TeacherIncidentIndex extends Component
             'user_id' => $incident?->user_id ?? auth()->id(),
         ];
 
+        if ($isStatus) {
+            $this->checkStatusChange(Teacher::query()->where('school_id', $schoolId)->findOrFail($this->teacherId), $statusType, $syncStatus);
+
+            DB::transaction(function () use ($data, $syncStatus): void {
+                $saved = TeacherIncident::create($data);
+                $syncStatus->handle($saved->teacher, $saved->starts_on);
+            });
+
+            $this->editing = null;
+            $this->dispatch('toast', type: 'success', message: __('availability.messages.incident_saved'));
+
+            return;
+        }
+
         $candidate = ($incident ?? new TeacherIncident)->fill($data);
         $candidate->unsetRelation('fromSlot')->unsetRelation('toSlot')->load(['fromSlot', 'toSlot']);
 
@@ -165,20 +194,57 @@ class TeacherIncidentIndex extends Component
         $this->dispatch('toast', type: 'success', message: __('availability.messages.incident_saved'));
     }
 
+    /** Baja solo de un teacher que no está de baja; reingreso solo de uno de baja; siempre después del último cambio. */
+    private function checkStatusChange(Teacher $teacher, TeacherIncidentType $type, SyncTeacherStatus $syncStatus): void
+    {
+        $latest = $syncStatus->latest($teacher);
+        $isOut = $latest !== null ? $latest->type === TeacherIncidentType::Termination : $teacher->status === TeacherStatus::Terminated;
+
+        if ($type === TeacherIncidentType::Termination && $isOut) {
+            throw ValidationException::withMessages(['incidentType' => __('availability.validation.already_terminated')]);
+        }
+
+        if ($type === TeacherIncidentType::Rehire && ! $isOut) {
+            throw ValidationException::withMessages(['incidentType' => __('availability.validation.not_terminated')]);
+        }
+
+        if ($latest !== null && Carbon::parse($this->startsOn)->lte($latest->starts_on)) {
+            throw ValidationException::withMessages(['startsOn' => __('availability.validation.status_after', ['date' => $latest->starts_on->translatedFormat('j M Y')])]);
+        }
+    }
+
     public function confirmDeletion(int $incidentId): void
     {
-        $this->authorize('update', $this->find($incidentId));
+        $incident = $this->find($incidentId);
+        $this->authorize('update', $incident);
+
+        if (! $this->isDeletable($incident)) {
+            $this->dispatch('toast', type: 'error', message: __('availability.validation.status_delete_latest'));
+
+            return;
+        }
+
         $this->confirmingDeletionId = $incidentId;
     }
 
-    public function delete(AvailabilityPlanner $planner): void
+    /** De las bajas y reingresos solo se borra el último (el estatus regresa al anterior). */
+    private function isDeletable(TeacherIncident $incident): bool
+    {
+        return ! $incident->type->isStatusChange() || app(SyncTeacherStatus::class)->latest($incident->teacher)?->is($incident);
+    }
+
+    public function delete(AvailabilityPlanner $planner, SyncTeacherStatus $syncStatus): void
     {
         $incident = $this->find($this->confirmingDeletionId);
         $this->authorize('update', $incident);
+        abort_unless($this->isDeletable($incident), 403);
 
-        DB::transaction(function () use ($incident, $planner): void {
+        DB::transaction(function () use ($incident, $planner, $syncStatus): void {
             $incident->delete();
-            $planner->rebuildRange(School::findOrFail($incident->school_id), $incident->starts_on, $incident->ends_on);
+
+            $incident->type->isStatusChange()
+                ? $syncStatus->handle($incident->teacher, $incident->starts_on, $incident->type)
+                : $planner->rebuildRange(School::findOrFail($incident->school_id), $incident->starts_on, $incident->ends_on);
         });
 
         $this->confirmingDeletionId = null;
