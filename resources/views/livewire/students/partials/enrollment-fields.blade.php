@@ -12,12 +12,10 @@
     <div class="md:pt-7">
         <x-ui.toggle name="enrollment.commission_applies" :label="__('students.enrollment.fields.commission_applies')" :description="__('students.enrollment.commission_applies_hint')" wire:model="enrollment.commission_applies" />
     </div>
-    <div></div>
 
     <x-ui.select name="enrollment.student_plan_id" :label="__('students.enrollment.fields.student_plan_id')" :options="$this->planOptions"
                  :placeholder="__('students.enrollment.select_plan')" wire:model.live="enrollment.student_plan_id" />
     <x-ui.input name="enrollment.installments" type="number" :label="__('students.enrollment.fields.installments')" wire:model="enrollment.installments" min="0" max="60" class="tabular-nums" />
-    <div></div>
 
     <x-ui.select name="enrollment.start_book_id" :label="__('students.enrollment.fields.start_book_id')" :options="$this->bookOptions"
                  :placeholder="__('students.enrollment.select_book')" wire:model.live="enrollment.start_book_id" />
