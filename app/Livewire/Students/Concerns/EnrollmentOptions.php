@@ -3,6 +3,7 @@
 namespace App\Livewire\Students\Concerns;
 
 use App\Models\Activity;
+use App\Models\BankAccount;
 use App\Models\Book;
 use App\Models\Lesson;
 use App\Models\SalesAdvisor;
@@ -22,6 +23,17 @@ trait EnrollmentOptions
         return SalesAdvisor::query()->where('school_id', auth()->user()->school_id)
             ->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $this->enrollment->sales_advisor_id))
             ->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** @return array<int, string> Cuentas activas (y la que ya tenga la ficha). */
+    #[Computed]
+    public function bankAccountOptions(): array
+    {
+        return BankAccount::query()->where('school_id', auth()->user()->school_id)
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $this->enrollment->bank_account_id))
+            ->orderBy('name')->get()
+            ->mapWithKeys(fn (BankAccount $account) => [$account->id => $account->label()])
+            ->all();
     }
 
     /** @return array<int, string> */

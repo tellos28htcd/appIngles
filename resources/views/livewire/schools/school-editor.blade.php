@@ -164,6 +164,7 @@
                                  :options="collect(\App\Enums\MaxSessionsScope::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->all()"
                                  wire:model="form.max_sessions_scope" />
                     <x-ui.input name="form.max_sessions" type="number" :label="__('schools.fields.max_sessions')" wire:model="form.max_sessions" min="1" max="99" inputmode="numeric" class="tabular-nums" />
+                    <x-ui.input name="form.max_clubs" type="number" :label="__('schools.fields.max_clubs')" wire:model="form.max_clubs" min="1" max="99" inputmode="numeric" class="tabular-nums" />
                     <x-ui.choice name="form.failed_activity_policy" :label="__('schools.fields.failed_activity_policy')"
                                  :options="collect(\App\Enums\FailedActivityPolicy::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->all()"
                                  wire:model="form.failed_activity_policy" />

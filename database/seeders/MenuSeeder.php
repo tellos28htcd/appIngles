@@ -60,6 +60,7 @@ class MenuSeeder extends Seeder
             'settings-student-catalogs' => ['Catálogos de alumnos', null, 'student-catalogs.index', MenuItemStatus::Active],
             'settings-classrooms' => ['Aulas', null, 'classrooms.index', MenuItemStatus::Active],
             'settings-payment-methods' => ['Métodos de pago', null, 'payment-methods.index', MenuItemStatus::Active],
+            'settings-bank-accounts' => ['Cuentas bancarias', null, 'bank-accounts.index', MenuItemStatus::Active],
             'settings-charge-concepts' => ['Conceptos de cobro', null, 'charge-concepts.index', MenuItemStatus::Active],
             'settings-holidays' => ['Días festivos', null, 'holidays.index', MenuItemStatus::Active],
             'settings-audit' => ['Bitácora', null, 'school-audit-logs.index', MenuItemStatus::Active],

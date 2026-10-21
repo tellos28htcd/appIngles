@@ -27,6 +27,14 @@ class EnrollmentForm extends Form
 
     public ?int $installments = null;
 
+    /** Fecha del primer cobro (Cobranza calcula las demás mensualidades en el mismo día de cada mes). */
+    public string $first_charge_on = '';
+
+    /** Razón social: a nombre de quién se factura. */
+    public string $billing_name = '';
+
+    public ?int $bank_account_id = null;
+
     /** Fecha de contrato. */
     public string $registered_on = '';
 
@@ -54,7 +62,7 @@ class EnrollmentForm extends Form
     public string $reenrolled_on = '';
 
     /** Inicio del curso, fecha de baja y de graduación se capturan en datos generales del alumno. */
-    private const DATES = ['registered_on', 'material_delivered_on', 'reenrolled_on'];
+    private const DATES = ['registered_on', 'material_delivered_on', 'reenrolled_on', 'first_charge_on'];
 
     public const MATERIAL_TYPES = ['F', 'C'];
 
@@ -71,10 +79,11 @@ class EnrollmentForm extends Form
 
         $this->fill([
             'contract_number' => (string) $enrollment->contract_number,
+            'billing_name' => (string) $enrollment->billing_name,
             'material_serial' => (string) $enrollment->material_serial,
             'material_type' => (string) $enrollment->material_type,
             ...$enrollment->only([
-                'sales_advisor_id', 'student_plan_id', 'installments', 'start_book_id', 'start_lesson_id', 'start_activity_id',
+                'sales_advisor_id', 'student_plan_id', 'installments', 'bank_account_id', 'start_book_id', 'start_lesson_id', 'start_activity_id',
                 'includes_toefl', 'includes_gold_card', 'material_assigned', 'commission_applies',
             ]),
             ...collect(self::DATES)->mapWithKeys(fn (string $field) => [$field => (string) $enrollment->{$field}?->toDateString()])->all(),
@@ -102,6 +111,9 @@ class EnrollmentForm extends Form
             'sales_advisor_id' => ['nullable', 'integer', $inSchool('sales_advisors')],
             'student_plan_id' => ['nullable', 'integer', $inSchool('student_plans')],
             'installments' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'first_charge_on' => ['nullable', 'date'],
+            'billing_name' => ['nullable', 'string', 'max:200'],
+            'bank_account_id' => ['nullable', 'integer', $inSchool('bank_accounts')],
             'registered_on' => ['nullable', 'date'],
             // Obligatoria si la escuela cuenta el fin del curso desde la entrega de material.
             'material_delivered_on' => [Rule::requiredIf(School::find($schoolId)?->course_end_from === CourseEndFrom::MaterialDelivery), 'nullable', 'date'],
@@ -137,6 +149,7 @@ class EnrollmentForm extends Form
         $data = $this->validate();
         $data = array_map(fn ($value) => $value === '' ? null : $value, $data);
         $data['contract_number'] = $data['contract_number'] === null ? null : Str::upper(trim($data['contract_number']));
+        $data['billing_name'] = $data['billing_name'] === null ? null : Str::upper(trim($data['billing_name']));
         // Sin material no hay serie ni tipo.
         if (! $data['material_assigned']) {
             $data['material_serial'] = null;

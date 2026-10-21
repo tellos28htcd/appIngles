@@ -11,6 +11,7 @@ use App\Livewire\Students\StudentEditor;
 use App\Livewire\Students\StudentIndex;
 use App\Livewire\Students\StudentShow;
 use App\Livewire\Users\UserEditor;
+use App\Models\BankAccount;
 use App\Models\Guardian;
 use App\Models\Role;
 use App\Models\SalesAdvisor;
@@ -390,6 +391,26 @@ class StudentManagementTest extends TestCase
 
         $this->schoolA->update(['course_end_from' => CourseEndFrom::Contract]);
         $this->assertSame('2027-01-01', $student->fresh(['enrollments', 'termMovements', 'absences', 'school'])->courseEndsOn()->toDateString());
+    }
+
+    public function test_enrollment_keeps_first_charge_billing_name_and_a_bank_account_of_the_school(): void
+    {
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        $mine = BankAccount::create(['school_id' => $this->schoolA->id, 'name' => 'BBVA principal', 'bank' => 'BBVA']);
+        $foreign = BankAccount::create(['school_id' => $this->schoolB->id, 'name' => 'Ajena', 'bank' => 'HSBC']);
+
+        $this->newStudent()->set('enrollment.bank_account_id', $foreign->id)->call('save')->assertHasErrors('enrollment.bank_account_id');
+
+        $this->newStudent()
+            ->set('enrollment.first_charge_on', '2026-11-05')
+            ->set('enrollment.billing_name', 'Comercial del Bajío sa de cv')
+            ->set('enrollment.bank_account_id', $mine->id)
+            ->call('save')->assertHasNoErrors();
+
+        $enrollment = Student::sole()->enrollments()->sole();
+        $this->assertSame(['2026-11-05', 'COMERCIAL DEL BAJÍO SA DE CV', $mine->id],
+            [$enrollment->first_charge_on->toDateString(), $enrollment->billing_name, $enrollment->bank_account_id]);
+        $this->get(route('students.show', $enrollment->student_id))->assertOk()->assertSee('BBVA principal');
     }
 
     public function test_term_movements_are_isolated_per_school(): void

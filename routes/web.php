@@ -20,6 +20,7 @@ use App\Livewire\Roles\RoleEditor;
 use App\Livewire\Roles\RoleIndex;
 use App\Livewire\Schools\SchoolEditor;
 use App\Livewire\Schools\SchoolIndex;
+use App\Livewire\Settings\BankAccountIndex;
 use App\Livewire\Settings\ChargeConceptIndex;
 use App\Livewire\Settings\ClassroomIndex;
 use App\Livewire\Settings\HolidayIndex;
@@ -72,6 +73,7 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
     Route::livewire('/configuracion/mi-escuela', MySchool::class)->name('my-school.edit');
     Route::livewire('/configuracion/salones', ClassroomIndex::class)->name('classrooms.index');
     Route::livewire('/configuracion/metodos-de-pago', PaymentMethodIndex::class)->name('payment-methods.index');
+    Route::livewire('/configuracion/cuentas-bancarias', BankAccountIndex::class)->name('bank-accounts.index');
     Route::livewire('/configuracion/conceptos-de-cobro', ChargeConceptIndex::class)->name('charge-concepts.index');
     Route::livewire('/configuracion/dias-festivos', HolidayIndex::class)->name('holidays.index');
 

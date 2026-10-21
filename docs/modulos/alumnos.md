@@ -49,6 +49,8 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
   generales) se captura como referencia.
 - **Solicitud de ausencia:** máximo 60 días naturales por ciclo (se suman al fin del curso); el conteo se reinicia en la fecha de cada reinscripción.
   Datos generales muestra los días del ciclo y el acumulado.
+- **Ficha (cobro):** fecha de cobro (primer cobro; Cobranza calcula las demás mensualidades el mismo día de cada mes),
+  razón social (a nombre de quién se factura) y cuenta bancaria de pago (Configuración → Cuentas bancarias, `bank_accounts`).
 - **Planes:** A = Contado; se quitó "Contado – 1 mensualidad"; se agregaron C 4 y 5 meses, D 7 meses, F 9 y 11 meses.
 - Domicilios históricos: `php artisan students:split-addresses [--school=] [--dry-run]` separa la línea en partes
   (solo los que aún no tienen calle); los dudosos quedan marcados "Revisar domicilio" y se limpian al guardar el alumno.

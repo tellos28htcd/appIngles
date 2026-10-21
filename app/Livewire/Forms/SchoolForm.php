@@ -86,6 +86,9 @@ class SchoolForm extends Form
 
     public ?int $max_sessions = null;
 
+    /** Cantidad máxima de clubs por alumno (vacío = sin límite). */
+    public ?int $max_clubs = null;
+
     public string $failed_activity_policy = 'shift';
 
     public ?int $club_min_lesson_number = null;
@@ -97,7 +100,7 @@ class SchoolForm extends Form
         $this->fill([
             ...$school->only([
                 'code', 'enrollment_prefix', 'name', 'state_id', 'municipality_id', 'last_folio_series_a', 'last_folio_series_b',
-                'brand_primary', 'session_capacity', 'timezone', 'currency', 'max_sessions', 'club_min_lesson_number',
+                'brand_primary', 'session_capacity', 'timezone', 'currency', 'max_sessions', 'max_clubs', 'club_min_lesson_number',
                 'works_sundays', 'schedules_classrooms', 'books_without_classroom', 'hybrid_clubs', 'requires_progress',
             ]),
             ...array_map(fn ($value) => (string) $value, $school->only([
@@ -150,6 +153,7 @@ class SchoolForm extends Form
             'course_end_from' => ['required', Rule::enum(CourseEndFrom::class)],
             'max_sessions_scope' => ['required', Rule::enum(MaxSessionsScope::class)],
             'max_sessions' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'max_clubs' => ['nullable', 'integer', 'min:1', 'max:99'],
             'failed_activity_policy' => ['required', Rule::enum(FailedActivityPolicy::class)],
             'club_min_lesson_number' => ['nullable', 'integer', Rule::in(array_keys($this->lessonOptions()))],
         ];

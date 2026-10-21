@@ -100,7 +100,7 @@ class StudentShow extends Component
             ->with([
                 'user', 'type', 'informationSource', 'state', 'municipality', 'school',
                 'enrollments' => fn ($query) => $query->latest('registered_on')->latest('id'),
-                'enrollments.salesAdvisor', 'enrollments.plan', 'enrollments.startBook', 'enrollments.startLesson', 'enrollments.startActivity',
+                'enrollments.salesAdvisor', 'enrollments.plan', 'enrollments.bankAccount', 'enrollments.startBook', 'enrollments.startLesson', 'enrollments.startActivity',
                 'statusChanges' => fn ($query) => $query->latest('changed_on')->latest('id'),
                 'statusChanges.user:id,name',
                 'absences' => fn ($query) => $query->latest('starts_on'),

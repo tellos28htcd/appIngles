@@ -110,6 +110,9 @@
                                 'student_plan_id' => $record->plan ? $record->plan->name.' · '.trans_choice('students.enrollment.installments_count', $record->installments ?? $record->plan->installments) : '—',
                                 'start_point' => collect([$record->startBook?->name, $record->startLesson?->name, $record->startActivity?->code])->filter()->implode(' · ') ?: '—',
                                 'material_delivered_on' => $date($record->material_delivered_on),
+                                'first_charge_on' => $date($record->first_charge_on),
+                                'billing_name' => $record->billing_name ?? '—',
+                                'bank_account_id' => $record->bankAccount?->label() ?? '—',
                                 'reenrolled_on' => $date($record->reenrolled_on),
                                 'services' => collect($record->services())->map(fn ($service) => __("students.enrollment.services.$service"))->implode(', ') ?: '—',
                                 'material_assigned' => $record->material_assigned

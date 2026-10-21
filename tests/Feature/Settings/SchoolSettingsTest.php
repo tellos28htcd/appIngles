@@ -3,11 +3,13 @@
 namespace Tests\Feature\Settings;
 
 use App\Enums\HolidayType;
+use App\Livewire\Settings\BankAccountIndex;
 use App\Livewire\Settings\ChargeConceptIndex;
 use App\Livewire\Settings\ClassroomIndex;
 use App\Livewire\Settings\HolidayIndex;
 use App\Livewire\Settings\MySchool;
 use App\Livewire\Settings\PaymentMethodIndex;
+use App\Models\BankAccount;
 use App\Models\ChargeConcept;
 use App\Models\Classroom;
 use App\Models\Holiday;
@@ -150,6 +152,26 @@ class SchoolSettingsTest extends TestCase
         $method = PaymentMethod::sole();
         $this->assertTrue($method->requires_reference);
         $this->assertSame($this->schoolA->id, $method->school_id);
+    }
+
+    public function test_bank_accounts_are_captured_by_each_school_and_isolated(): void
+    {
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        $this->get(route('bank-accounts.index'))->assertOk()->assertSee('Aún no hay cuentas bancarias');
+
+        Livewire::test(BankAccountIndex::class)
+            ->call('edit')->set('name', 'BBVA principal')->set('bank', 'BBVA')->set('clabe', '12345')
+            ->call('save')->assertHasErrors('clabe')
+            ->set('clabe', '0121 8000 1234 5678 90')->set('accountNumber', '0123 456 789')
+            ->call('save')->assertHasNoErrors();
+
+        $account = BankAccount::sole();
+        $this->assertSame([$this->schoolA->id, '0123456789', '012180001234567890'], [$account->school_id, $account->account_number, $account->clabe]);
+        $this->assertSame('BBVA principal · BBVA · …6789', $account->label());
+
+        $foreign = BankAccount::create(['school_id' => $this->schoolB->id, 'name' => 'Ajena', 'bank' => 'HSBC']);
+        Livewire::test(BankAccountIndex::class)->call('edit', $foreign->id)->assertNotFound();
+        $this->assertSame(['BBVA principal'], Livewire::test(BankAccountIndex::class)->get('accounts')->pluck('name')->all());
     }
 
     public function test_charge_concept_keeps_type_and_amount(): void

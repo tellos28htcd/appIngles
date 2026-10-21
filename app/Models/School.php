@@ -28,7 +28,7 @@ use Illuminate\Support\Str;
     'logo_path', 'brand_primary', 'brand_accent',
     'session_capacity', 'timezone', 'currency',
     'works_sundays', 'schedules_classrooms', 'books_without_classroom', 'hybrid_clubs', 'requires_progress',
-    'course_end_from', 'self_booking', 'max_sessions_scope', 'max_sessions', 'failed_activity_policy', 'club_min_lesson_number',
+    'course_end_from', 'self_booking', 'max_sessions_scope', 'max_sessions', 'max_clubs', 'failed_activity_policy', 'club_min_lesson_number',
     'status',
 ])]
 class School extends Model
@@ -53,6 +53,7 @@ class School extends Model
             'requires_progress' => 'boolean',
             'session_capacity' => 'integer',
             'max_sessions' => 'integer',
+            'max_clubs' => 'integer',
             'club_min_lesson_number' => 'integer',
             'last_folio_series_a' => 'integer',
             'last_folio_series_b' => 'integer',

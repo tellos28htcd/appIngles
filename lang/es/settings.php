@@ -36,6 +36,22 @@ return [
         'description_hint' => 'Opcional: piso, ubicación o equipo (proyector, pizarrón…).',
     ],
 
+    'bank_accounts' => [
+        'title' => 'Cuentas bancarias',
+        'subtitle' => 'Cuentas donde los alumnos depositan sus pagos',
+        'add' => 'Nueva cuenta',
+        'edit' => 'Editar cuenta bancaria',
+        'empty' => 'Aún no hay cuentas bancarias',
+        'empty_hint' => 'Agrega las cuentas de tu escuela para elegirlas en la ficha de inscripción.',
+        'name' => 'Nombre corto',
+        'name_hint' => 'Cómo se verá al elegirla, p. ej. "BBVA principal".',
+        'bank' => 'Banco',
+        'account_holder' => 'Titular',
+        'account_number' => 'Número de cuenta',
+        'account_short' => 'Cuenta :number',
+        'account_number_invalid' => 'El número de cuenta solo lleva dígitos (4 a 30).',
+    ],
+
     'payment_methods' => [
         'title' => 'Métodos de pago',
         'subtitle' => 'Formas en que tu escuela recibe pagos',

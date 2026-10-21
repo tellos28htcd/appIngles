@@ -24,12 +24,13 @@ Fuente: `Información general.xlsx` (pestañas *Configuración Generales* y *Con
 | Operación | Cupo por sesión (análisis RN-21), zona horaria, moneda | `session_capacity` (1–6), `timezone`, `currency` |
 | Configuración del plantel | Trabaja los días domingo | `works_sundays` |
 | | Programar horario para las aulas | `schedules_classrooms` |
-| | Agendar sin asignar un aula | `books_without_classroom` |
+| | Agendar en lista de espera | `books_without_classroom` |
 | | Agendar clubes híbridos | `hybrid_clubs` |
 | | El alumno requiere progreso para acceder a los contenidos | `requires_progress` |
 | | Permitir que los alumnos reserven sus propias sesiones | `self_booking`: no permitir (solo recepción) / día anterior (alumno y recepción) / a cualquier hora |
 | | ¿Las sesiones máximas se aplican por…? | `max_sessions_scope`: plantel / alumno |
 | | Cantidad máxima de sesiones por alumno | `max_sessions` |
+| | Cantidad máxima de club por alumno | `max_clubs` (vacío = sin límite) |
 | | Si una actividad agendada no se aprueba | `failed_activity_policy`: eliminar / recorrer |
 | Estado | — | `status`: activa / suspendida |
 

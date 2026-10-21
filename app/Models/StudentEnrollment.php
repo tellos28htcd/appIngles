@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * convenio de extensión. Los datos de cobro van en Cobranza.
  */
 #[Fillable([
-    'school_id', 'student_id', 'contract_number', 'sales_advisor_id', 'student_plan_id', 'installments',
+    'school_id', 'student_id', 'contract_number', 'sales_advisor_id', 'student_plan_id', 'installments', 'first_charge_on', 'billing_name', 'bank_account_id',
     'registered_on', 'material_delivered_on', 'starts_on', 'ends_on', 'withdrawn_on',
     'includes_term_extension', 'extension_days', 'includes_toefl', 'includes_gold_card',
     'material_serial', 'material_type', 'material_assigned', 'commission_applies',
@@ -62,6 +62,7 @@ class StudentEnrollment extends Model
     {
         return [
             'installments' => 'integer',
+            'first_charge_on' => 'date',
             'extension_days' => 'integer',
             'registered_on' => 'date',
             'material_delivered_on' => 'date',
@@ -82,6 +83,12 @@ class StudentEnrollment extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    /** @return BelongsTo<BankAccount, $this> */
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 
     /** @return BelongsTo<SalesAdvisor, $this> */
