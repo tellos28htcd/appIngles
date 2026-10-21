@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\AvailabilityWeek;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Support\Navigation;
@@ -26,6 +27,13 @@ class TeacherPolicy
     {
         return $this->viewAny($actor)
             && ($actor->isPlatformAdmin() || $actor->school_id === $teacher->school_id);
+    }
+
+    /** Horario base: quien administra teachers o quien edita el panel de disponibilidad de su escuela. */
+    public function editSchedule(User $actor, Teacher $teacher): bool
+    {
+        return $this->update($actor, $teacher)
+            || ($actor->school_id === $teacher->school_id && $actor->can('manage', AvailabilityWeek::class));
     }
 
     public function viewPhoto(User $actor, Teacher $teacher): bool

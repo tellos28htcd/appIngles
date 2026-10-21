@@ -7,8 +7,8 @@ use App\Enums\HolidayType;
 use App\Enums\TeacherIncidentType;
 use App\Enums\TeacherStatus;
 use App\Livewire\Teachers\AvailabilityPanel;
+use App\Livewire\Teachers\BaseScheduleEditor;
 use App\Livewire\Teachers\TeacherIncidentIndex;
-use App\Livewire\Teachers\TeacherSchedule;
 use App\Models\Classroom;
 use App\Models\Holiday;
 use App\Models\Role;
@@ -293,10 +293,10 @@ class TeacherAvailabilityTest extends TestCase
         $all = collect(range(1, 6))->flatMap(fn ($day) => collect(range(7, 15))->map(fn ($hour) => $day.'-'.$this->slots[$hour]->id))
             ->mapWithKeys(fn ($key) => [$key => true])->all();
 
-        Livewire::test(TeacherSchedule::class, ['teacher' => $teacher])->set('selected', $all)->call('save')->assertHasErrors('selected');
+        Livewire::test(BaseScheduleEditor::class, ['teacherId' => $teacher->id])->set('selected', $all)->call('save')->assertHasErrors('selected');
 
         $waitlist = $this->teacher('LISTA_ESP', 7, [], ['is_waitlist' => true]);
-        Livewire::test(TeacherSchedule::class, ['teacher' => $waitlist])->set('selected', $all)->call('save')->assertHasNoErrors();
+        Livewire::test(BaseScheduleEditor::class, ['teacherId' => $waitlist->id])->set('selected', $all)->call('save')->assertHasNoErrors();
         $this->assertSame(54, $waitlist->scheduleBlocks()->count());
     }
 
@@ -329,14 +329,16 @@ class TeacherAvailabilityTest extends TestCase
 
     public function test_the_chart_does_not_count_the_waitlist(): void
     {
-        $this->teacher('MELISSA', 1, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9]]);
+        // Lunes a viernes y sábado: el promedio cuenta todos los días del panel (6).
+        $this->teacher('MELISSA', 1, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9], 6 => [9]]);
+        $this->teacher('DULCE', 2, [6 => [9]]);
         $this->teacher('ESPERA', 9, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9]], ['is_waitlist' => true]);
         $this->planner()->generateWeek($this->school, $this->monday);
 
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
         $average = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)->viewData('average');
 
-        $this->assertEquals(1, $average[$this->slots[9]->id]);
+        $this->assertEquals(1.2, $average[$this->slots[9]->id]);
     }
 
     public function test_a_sunday_shift_adds_sunday_and_its_hours_only_apply_that_day(): void
@@ -350,7 +352,7 @@ class TeacherAvailabilityTest extends TestCase
 
         $teacher = $this->teacher('MELISSA', 1, []);
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
-        Livewire::test(TeacherSchedule::class, ['teacher' => $teacher])
+        Livewire::test(BaseScheduleEditor::class, ['teacherId' => $teacher->id])
             ->set('selected', ['7-'.$slot->id => true, '1-'.$slot->id => true, '1-'.$this->slots[9]->id => true, '7-'.$this->slots[9]->id => true])
             ->call('save');
 
@@ -360,6 +362,31 @@ class TeacherAvailabilityTest extends TestCase
 
         $this->planner()->generateWeek($this->school, $this->monday);
         $this->assertTrue(TeacherAvailability::where('teacher_id', $teacher->id)->whereDate('date', '2026-08-02')->where('schedule_slot_id', $slot->id)->exists());
+    }
+
+    public function test_the_base_schedule_is_edited_from_the_panel_and_refreshes_it(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-07-27 09:00'));
+        $melissa = $this->teacher('MELISSA', 1, [2 => [9]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+
+        $panel = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)
+            ->call('editSchedule', $melissa->id)->assertSet('editingScheduleTeacherId', $melissa->id)
+            ->assertSeeLivewire(BaseScheduleEditor::class);
+
+        Livewire::test(BaseScheduleEditor::class, ['teacherId' => $melissa->id])
+            ->set('selected', ['2-'.$this->slots[9]->id => true, '3-'.$this->slots[10]->id => true])
+            ->call('save')->assertHasNoErrors()->assertDispatched('base-schedule-saved');
+
+        // La semana armada se recalcula con el nuevo horario base.
+        $this->assertNotNull($this->cell($melissa, $this->monday->addDays(2), 10));
+        $panel->dispatch('base-schedule-saved', teacherId: $melissa->id)->assertSet('editingScheduleTeacherId', null);
+
+        // Un teacher de otra escuela no se puede editar.
+        $this->flushSession();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->otherSchool));
+        Livewire::test(BaseScheduleEditor::class, ['teacherId' => $melissa->id])->assertNotFound();
     }
 
     public function test_panel_permissions_and_isolation(): void

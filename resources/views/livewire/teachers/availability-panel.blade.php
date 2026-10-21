@@ -39,7 +39,13 @@
                         @foreach ($days as $day)
                             @foreach ($teachers as $teacher)
                                 <th class="h-24 w-7 min-w-7 align-bottom px-0 pb-1 text-[11px] font-semibold uppercase leading-none text-white">
-                                    <span class="inline-block [writing-mode:vertical-rl] rotate-180 whitespace-nowrap">{{ $teacher->panelName() }}</span>
+                                    @can('editSchedule', $teacher)
+                                        <button type="button" wire:click="editSchedule({{ $teacher->id }})"
+                                                class="inline-block rounded [writing-mode:vertical-rl] rotate-180 whitespace-nowrap uppercase hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                                                title="{{ __('availability.edit_schedule', ['teacher' => $teacher->panelName()]) }}">{{ $teacher->panelName() }}</button>
+                                    @else
+                                        <span class="inline-block [writing-mode:vertical-rl] rotate-180 whitespace-nowrap">{{ $teacher->panelName() }}</span>
+                                    @endcan
                                 </th>
                             @endforeach
                             <th class="w-3 min-w-3"></th>
@@ -135,7 +141,13 @@
                                 <td class="py-0.5">
                                     <span class="flex items-center gap-2">
                                         <span class="flex size-6 flex-none items-center justify-center rounded text-xs font-bold {{ \App\Support\RoomColors::for($teacher->panel_number ?? 1) }}">{{ $teacher->panel_number ?? '–' }}</span>
-                                        <span class="font-semibold">{{ $teacher->panelName() }}</span>
+                                        @can('editSchedule', $teacher)
+                                            <button type="button" wire:click="editSchedule({{ $teacher->id }})"
+                                                    class="rounded font-semibold text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                                                    title="{{ __('availability.edit_schedule', ['teacher' => $teacher->panelName()]) }}">{{ $teacher->panelName() }}</button>
+                                        @else
+                                            <span class="font-semibold">{{ $teacher->panelName() }}</span>
+                                        @endcan
                                     </span>
                                 </td>
                                 @php($assigned = $weekly->get($teacher->id, 0))
@@ -165,6 +177,16 @@
                 </div>
             </x-ui.card>
         </div>
+
+        {{-- Horario base del teacher (clic en su nombre); al guardar se recalcula el panel. --}}
+        @php($scheduleTeacher = $editingScheduleTeacherId ? $teachers->firstWhere('id', $editingScheduleTeacherId) : null)
+        <x-ui.modal wire:model="editingScheduleTeacherId" size="lg"
+                    :title="__('availability.schedule_modal_title', ['teacher' => $scheduleTeacher?->fullName() ?? ''])">
+            @if ($scheduleTeacher)
+                <p class="-mt-3 text-sm text-ink-500">{{ $scheduleTeacher->contract_type?->label() }} · {{ __('availability.schedule_modal_hint') }}</p>
+                <livewire:teachers.base-schedule-editor :teacher-id="$scheduleTeacher->id" :key="'schedule-'.$scheduleTeacher->id" />
+            @endif
+        </x-ui.modal>
 
         {{-- Selector de aula (uno para todo el panel) --}}
         @if ($canManage)

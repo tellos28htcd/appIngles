@@ -14,6 +14,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -31,6 +32,9 @@ class AvailabilityPanel extends Component
 
     #[Url(as: 'semana', except: '')]
     public string $week = '';
+
+    /** Teacher cuyo horario base se edita en la ventana (clic en su nombre). */
+    public ?int $editingScheduleTeacherId = null;
 
     public function mount(): void
     {
@@ -130,6 +134,20 @@ class AvailabilityPanel extends Component
         }
     }
 
+    public function editSchedule(int $teacherId): void
+    {
+        $teacher = Teacher::query()->where('school_id', auth()->user()->school_id)->findOrFail($teacherId);
+        $this->authorize('editSchedule', $teacher);
+        $this->editingScheduleTeacherId = $teacher->id;
+    }
+
+    /** Al guardar el horario base se cierra la ventana; el panel se vuelve a dibujar con las semanas recalculadas. */
+    #[On('base-schedule-saved')]
+    public function scheduleSaved(): void
+    {
+        $this->editingScheduleTeacherId = null;
+    }
+
     public function render(AvailabilityPlanner $planner): View
     {
         $school = $this->school();
@@ -154,14 +172,19 @@ class AvailabilityPanel extends Component
         $perDay = $cells->groupBy(fn (TeacherAvailability $cell) => $cell->date->toDateString().'|'.$cell->teacher_id)->map->count();
         $weekly = $cells->groupBy('teacher_id')->map->count();
 
-        // Gráfica: promedio de teachers disponibles por hora, de lunes a viernes (como "x̄T" del Excel).
-        // La Lista de espera (columna 9) no cuenta: no es un teacher que dé clase.
+        // Gráfica: promedio de teachers disponibles por hora en los días que muestra el panel (como "x̄T" del Excel).
+        // Cada hora se promedia entre los días en que su turno aplica; los días festivos no cuentan (no hay clase).
+        // La Lista de espera no cuenta: no es un teacher que dé clase.
+        $holidays = $planner->holidays($school, $days);
         $waitlist = $teachers->where('is_waitlist', true)->pluck('id');
         $chartCells = $cells->whereNotIn('teacher_id', $waitlist);
-        $weekdays = collect($days)->filter(fn (CarbonImmutable $day) => $day->dayOfWeekIso <= 5)->map->toDateString();
-        $average = $slots->mapWithKeys(fn ($slot) => [$slot->id => $weekdays->isEmpty() ? 0 : round(
-            $weekdays->sum(fn (string $day) => $chartCells->where('schedule_slot_id', $slot->id)->filter(fn ($cell) => $cell->date->toDateString() === $day)->count()) / $weekdays->count(), 1,
-        )]);
+        $average = $slots->mapWithKeys(function ($slot) use ($days, $holidays, $chartCells, $planner) {
+            $slotDays = collect($days)->filter(fn (CarbonImmutable $day) => ! isset($holidays[$day->toDateString()]) && $planner->slotAppliesOn($slot, $day->dayOfWeekIso))
+                ->map->toDateString();
+            $count = $chartCells->where('schedule_slot_id', $slot->id)->filter(fn ($cell) => $slotDays->contains($cell->date->toDateString()))->count();
+
+            return [$slot->id => $slotDays->isEmpty() ? 0 : round($count / $slotDays->count(), 1)];
+        });
 
         // Horas con incidencia que nadie cubre: se marcan "A" (ausente) en el panel.
         $covered = $cells->whereNotNull('covered_teacher_id')
@@ -188,7 +211,7 @@ class AvailabilityPanel extends Component
             'average' => $average,
             'maxAverage' => max(1, (float) $average->max()),
             'generated' => $generated,
-            'holidays' => $planner->holidays($school, $days),
+            'holidays' => $holidays,
             'canManage' => auth()->user()->can('manage', AvailabilityWeek::class),
             'classrooms' => $classrooms,
             'classroomNumbers' => $this->classroomNumbers($classrooms),
