@@ -37,7 +37,8 @@ Tipos: Permiso con goce, Permiso sin goce, Vacaciones, Incapacidad, Falta (no ll
 Fechas, día completo u horas, y **motivo obligatorio**. Las horas con incidencia quedan vacías en el panel (la celda se
 conserva oculta con su aula). "Cubre horas" pasa esas horas a quien cubre, en la misma aula; quien cubre debe estar libre
 y no pasar de 48 h en la semana (por día sí puede pasar de 8). Al guardar o borrar, el panel se recalcula.
-- **Fecha de ingreso** del teacher (Acceso al sistema, obligatoria): aparece en el panel desde ese día.
+- **Fecha de ingreso** del teacher (Acceso al sistema, obligatoria): aparece en el panel desde ese día; antes no tiene
+  columna ni horas (tampoco en semanas anteriores).
 - **Baja** y **Reingreso** (una fecha y motivo): cambian el estatus del teacher (Baja con su fecha, sin acceso / Activo).
   El panel decide quién trabaja cada día con esas fechas: antes de la baja conserva sus horas; desde la baja sale y
   desde el reingreso regresa. No se editan; solo se borra la última (el estatus regresa al anterior).

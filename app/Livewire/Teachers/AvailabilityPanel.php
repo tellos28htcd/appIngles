@@ -168,6 +168,15 @@ class AvailabilityPanel extends Component
             ->orderByRaw('panel_number is null')->orderBy('panel_number')->orderBy('first_name')
             ->get();
 
+        // Cada teacher aparece desde su fecha de ingreso: antes no tiene columna ni horas en el panel.
+        $hired = fn (Teacher $teacher, string $day): bool => $teacher->hired_on === null || $teacher->hired_on->toDateString() <= $day;
+        $teachers = $teachers->filter(fn (Teacher $teacher) => $hired($teacher, end($days)->toDateString()))->values();
+        $byId = $teachers->keyBy('id');
+        $cells = $cells->filter(fn (TeacherAvailability $cell) => $byId->has($cell->teacher_id) && $hired($byId->get($cell->teacher_id), $cell->date->toDateString()))->values();
+        $dayTeachers = collect($days)->mapWithKeys(fn (CarbonImmutable $day) => [
+            $day->toDateString() => $teachers->filter(fn (Teacher $teacher) => $hired($teacher, $day->toDateString()))->values(),
+        ])->all();
+
         $grid = $cells->keyBy(fn (TeacherAvailability $cell) => $cell->date->toDateString().'|'.$cell->schedule_slot_id.'|'.$cell->teacher_id);
         $perDay = $cells->groupBy(fn (TeacherAvailability $cell) => $cell->date->toDateString().'|'.$cell->teacher_id)->map->count();
         $weekly = $cells->groupBy('teacher_id')->map->count();
@@ -205,6 +214,7 @@ class AvailabilityPanel extends Component
             'applies' => $slots->mapWithKeys(fn ($slot) => [$slot->id => collect($days)->mapWithKeys(fn (CarbonImmutable $day) => [$day->toDateString() => $planner->slotAppliesOn($slot, $day->dayOfWeekIso)])->all()])->all(),
             'scheduleSlots' => $slots,
             'teachers' => $teachers,
+            'dayTeachers' => $dayTeachers,
             'grid' => $grid,
             'perDay' => $perDay,
             'weekly' => $weekly,

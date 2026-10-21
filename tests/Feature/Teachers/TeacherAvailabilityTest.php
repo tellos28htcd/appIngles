@@ -432,6 +432,17 @@ class TeacherAvailabilityTest extends TestCase
         $this->assertNull($this->cell($alfonso, $this->monday, 9));
         $this->assertNotNull($this->cell($alfonso, $this->monday->addDay(), 9));
         $this->assertNotNull($this->cell($alfonso, $this->monday->addDays(2), 9));
+
+        // En el panel no tiene columna antes de su fecha de ingreso (ni en semanas anteriores).
+        $this->teacher('MELISSA', 1, [1 => [9]]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $panel = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class);
+        $dayTeachers = $panel->viewData('dayTeachers');
+        $this->assertSame(['MELISSA'], $dayTeachers['2026-07-27']->pluck('short_name')->all());
+        $this->assertSame(['MELISSA', 'ALFONSO'], $dayTeachers['2026-07-28']->pluck('short_name')->all());
+
+        $previous = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-20'])->test(AvailabilityPanel::class);
+        $this->assertNotContains('ALFONSO', $previous->viewData('teachers')->pluck('short_name')->all());
     }
 
     public function test_panel_permissions_and_isolation(): void

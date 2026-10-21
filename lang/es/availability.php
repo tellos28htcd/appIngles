@@ -33,6 +33,7 @@ return [
     'edit_schedule' => 'Editar el horario base de :teacher',
     'schedule_modal_title' => 'Horario base · :teacher',
     'schedule_modal_hint' => 'Al guardar se recalculan las semanas armadas desde hoy.',
+    'no_teachers_yet' => 'Ningún teacher había ingresado este día.',
     'absent_uncovered' => 'Ausente: incidencia sin quien cubra',
 
     'schedule_title' => 'Horario de :teacher',

@@ -37,7 +37,8 @@
                             {{ \Carbon\CarbonImmutable::parse($week)->translatedFormat('M') }}
                         </th>
                         @foreach ($days as $day)
-                            @foreach ($teachers as $teacher)
+                            @if ($dayTeachers[$day->toDateString()]->isEmpty()) <th class="w-7 min-w-7 bg-ink-900"></th> @endif
+                            @foreach ($dayTeachers[$day->toDateString()] as $teacher)
                                 <th class="h-24 w-7 min-w-7 align-bottom px-0 pb-1 text-[11px] font-semibold uppercase leading-none text-white">
                                     @can('editSchedule', $teacher)
                                         <button type="button" wire:click="editSchedule({{ $teacher->id }})"
@@ -53,7 +54,8 @@
                     </tr>
                     <tr>
                         @foreach ($days as $day)
-                            @foreach ($teachers as $teacher)
+                            @if ($dayTeachers[$day->toDateString()]->isEmpty()) <th class="bg-ink-900"></th> @endif
+                            @foreach ($dayTeachers[$day->toDateString()] as $teacher)
                                 <th class="border-x border-ink-900 bg-ink-500 py-0.5 text-xs font-bold text-white tabular-nums">{{ $teacher->panel_number ?? '–' }}</th>
                             @endforeach
                             <th></th>
@@ -62,7 +64,7 @@
                     <tr>
                         @foreach ($days as $day)
                             @php($holiday = $holidays[$day->toDateString()] ?? null)
-                            <th colspan="{{ $teachers->count() }}" @class([
+                            <th colspan="{{ max(1, $dayTeachers[$day->toDateString()]->count()) }}" @class([
                                 'py-1 text-xs font-bold',
                                 'bg-primary-600 text-on-primary' => $holiday === null,
                                 'bg-warning-500 text-white' => $holiday !== null,
@@ -81,7 +83,8 @@
                         <tr wire:key="row-{{ $slot->id }}" @class(['bg-surface' => $loop->odd, 'bg-white' => $loop->even])>
                             <th scope="row" class="bg-white px-1.5 text-sm font-extrabold tabular-nums text-ink-900" title="{{ $slot->range() }}">{{ (int) substr($slot->starts_at, 0, 2) }}</th>
                             @foreach ($days as $day)
-                                @foreach ($teachers as $teacher)
+                                @if ($dayTeachers[$day->toDateString()]->isEmpty()) <td class="h-7 border border-line bg-surface-2 p-0" title="{{ __('availability.no_teachers_yet') }}"></td> @endif
+                                @foreach ($dayTeachers[$day->toDateString()] as $teacher)
                                     @php($key = $day->toDateString().'|'.$slot->id.'|'.$teacher->id)
                                     @php($cell = $grid->get($key))
                                     <td @class(['h-7 border border-line p-0', 'bg-surface-2' => ! $applies[$slot->id][$day->toDateString()]])>
@@ -114,7 +117,8 @@
                     <tr>
                         <th></th>
                         @foreach ($days as $day)
-                            @foreach ($teachers as $teacher)
+                            @if ($dayTeachers[$day->toDateString()]->isEmpty()) <td class="bg-ink-900"></td> @endif
+                            @foreach ($dayTeachers[$day->toDateString()] as $teacher)
                                 <td class="bg-accent-500 py-1 text-xs font-bold tabular-nums text-on-accent">{{ $perDay->get($day->toDateString().'|'.$teacher->id, 0) }}</td>
                             @endforeach
                             <td></td>
