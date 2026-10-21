@@ -27,7 +27,7 @@ Fuente: `Información general.xlsx` (pestañas *Configuración Generales* y *Con
 | | Agendar sin asignar un aula | `books_without_classroom` |
 | | Agendar clubes híbridos | `hybrid_clubs` |
 | | El alumno requiere progreso para acceder a los contenidos | `requires_progress` |
-| | Permitir que los alumnos reserven sus propias sesiones | `self_booking`: no permitir / solo 24 h antes / a cualquier hora |
+| | Permitir que los alumnos reserven sus propias sesiones | `self_booking`: no permitir (solo recepción) / día anterior (alumno y recepción) / a cualquier hora |
 | | ¿Las sesiones máximas se aplican por…? | `max_sessions_scope`: plantel / alumno |
 | | Cantidad máxima de sesiones por alumno | `max_sessions` |
 | | Si una actividad agendada no se aprueba | `failed_activity_policy`: eliminar / recorrer |

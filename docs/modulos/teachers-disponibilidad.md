@@ -47,6 +47,7 @@ El catálogo "Salones" se llama ahora **Aulas**.
   incidencias y los días festivos. No debe volver a consultarlos.
 - Al recalcular (incidencia, festivo u horario base) cada hora **conserva su id**: se actualiza, no se borra y se vuelve
   a crear. Las reservaciones se pueden ligar a esa fila.
-- Solo se reserva en semanas armadas y con al menos 24 h de anticipación (RN-27).
+- Solo se reserva en semanas armadas (RN-27). Según Mi escuela (`SelfBooking`): "No permitir" = solo recepción;
+  "Día anterior" = el alumno reserva hasta el día anterior y recepción también puede agendar; "A cualquier hora" = el alumno.
 - Si una incidencia quita horas con alumnos reservados, las reservaciones pasan automáticamente a quien cubre, en la
   misma aula (RN-28).

@@ -107,7 +107,7 @@ return [
 
     'self_booking' => [
         'disabled' => 'No permitir (solo recepción)',
-        'at_least_24h_before' => 'Solo 24 h antes',
+        'at_least_24h_before' => 'Día anterior',
         'any_time' => 'A cualquier hora del día',
     ],
 
