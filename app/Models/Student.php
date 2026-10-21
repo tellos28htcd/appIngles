@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CourseEndFrom;
 use App\Enums\StudentStatus;
 use App\Enums\StudentTermMovementType;
 use App\Models\Concerns\Auditable;
@@ -158,12 +159,33 @@ class Student extends Model
     /** Días de solicitud de ausencia que se pueden autorizar por ciclo del programa. */
     public const MAX_ABSENCE_DAYS = 60;
 
-    /** Inicio del ciclo vigente (para las ausencias): la última reinscripción o, si no hay, el inicio del curso. */
+    /** Primera ficha de inscripción del alumno (de ella sale la fecha base del fin del curso). */
+    public function firstEnrollment(): ?StudentEnrollment
+    {
+        return $this->enrollments->sortBy([['registered_on', 'asc'], ['id', 'asc']])->first();
+    }
+
+    /**
+     * Fecha desde la que se cuenta el fin del curso: la fecha de contrato o la de entrega de material
+     * de la primera ficha, según "Mi escuela".
+     */
+    public function courseBaseDate(): ?Carbon
+    {
+        $enrollment = $this->firstEnrollment();
+
+        $date = $this->school?->course_end_from === CourseEndFrom::MaterialDelivery
+            ? $enrollment?->material_delivered_on
+            : $enrollment?->registered_on;
+
+        return $date?->copy();
+    }
+
+    /** Inicio del ciclo vigente (para las ausencias): la última reinscripción o, si no hay, la fecha base del curso. */
     public function cycleStartsOn(): ?Carbon
     {
         $lastReenrollment = $this->termMovements->where('type', StudentTermMovementType::Reenrollment)->max('occurred_on');
 
-        return $lastReenrollment ? Carbon::parse($lastReenrollment) : $this->course_starts_on?->copy();
+        return $lastReenrollment ? Carbon::parse($lastReenrollment) : ($this->courseBaseDate() ?? $this->course_starts_on?->copy());
     }
 
     /** Días de extensión de tiempo acumulados. */
@@ -173,21 +195,24 @@ class Student extends Model
     }
 
     /**
-     * Fin del curso: inicio del curso + 365 días + los días de los movimientos del plazo
-     * (reinscripción, extensión, ajuste, mensualidad abierta). Las ausencias no lo recorren.
+     * Fin del curso: fecha base (contrato o entrega de material, según Mi escuela) + 365 días
+     * + los días de los movimientos del plazo (reinscripción, extensión, ajuste, mensualidad abierta)
+     * + los días de las solicitudes de ausencia.
      */
     public function courseEndsOn(): ?Carbon
     {
-        return $this->course_starts_on?->copy()->addDays(self::PROGRAM_DAYS + (int) $this->termMovements->sum('days'));
+        return $this->courseBaseDate()?->addDays(self::PROGRAM_DAYS + (int) $this->termMovements->sum('days') + $this->absenceDaysTotal());
     }
 
-    /** Fin del curso antes de un movimiento (inicio + 365 + los movimientos anteriores a él). */
+    /** Fin del curso antes de un movimiento (fecha base + 365 + los movimientos y ausencias anteriores a él). */
     public function courseEndsBefore(StudentTermMovement $movement): ?Carbon
     {
         $previous = $this->termMovements->filter(fn (StudentTermMovement $item) => $item->occurred_on->lt($movement->occurred_on)
             || ($item->occurred_on->eq($movement->occurred_on) && $item->id < $movement->id));
+        $absences = $this->absences->filter(fn (StudentAbsence $absence) => $absence->starts_on->lt($movement->occurred_on));
 
-        return $this->course_starts_on?->copy()->addDays(self::PROGRAM_DAYS + (int) $previous->sum('days'));
+        return $this->courseBaseDate()?->addDays(self::PROGRAM_DAYS + (int) $previous->sum('days')
+            + (int) $absences->sum(fn (StudentAbsence $absence) => $absence->days()));
     }
 
     /** Mensualidad abierta sin cerrar (el fin del curso es estimado mientras exista). */

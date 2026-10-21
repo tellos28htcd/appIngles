@@ -62,11 +62,12 @@ class TeacherSchedule extends Component
         $this->authorize('update', $teacher);
         $school = School::findOrFail($teacher->school_id);
 
-        $valid = $planner->slots($school)->pluck('id')->all();
-        $days = range(1, $school->works_sundays ? 7 : 6);
+        $slots = $planner->slots($school)->keyBy('id');
+        $days = $planner->weekdays($school);
+        // Solo las horas de un turno que aplica ese día (p. ej. el turno Domingo solo el domingo).
         $blocks = collect($this->selected)->filter()->keys()
             ->map(fn (string $key) => array_map('intval', explode('-', $key)))
-            ->filter(fn (array $pair) => in_array($pair[0], $days, true) && in_array($pair[1], $valid, true))
+            ->filter(fn (array $pair) => in_array($pair[0], $days, true) && $slots->has($pair[1]) && $planner->slotAppliesOn($slots->get($pair[1]), $pair[0]))
             ->values();
 
         $limit = $planner->weeklyLimit($teacher);
@@ -98,12 +99,14 @@ class TeacherSchedule extends Component
     {
         $teacher = $this->teacher();
         $school = School::findOrFail($teacher->school_id);
-        $days = array_slice([1, 2, 3, 4, 5, 6, 7], 0, $school->works_sundays ? 7 : 6);
+        $days = $planner->weekdays($school);
+        $slots = $planner->slots($school);
         $selected = collect($this->selected)->filter();
 
         return view('livewire.teachers.teacher-schedule', [
             'teacher' => $teacher,
-            'scheduleSlots' => $planner->slots($school),
+            'scheduleSlots' => $slots,
+            'applies' => $slots->mapWithKeys(fn ($slot) => [$slot->id => collect($days)->filter(fn (int $day) => $planner->slotAppliesOn($slot, $day))->values()->all()])->all(),
             'days' => $days,
             'dailyHours' => collect($days)->mapWithKeys(fn (int $day) => [$day => $selected->keys()->filter(fn (string $key) => str_starts_with($key, $day.'-'))->count()])->all(),
             'weeklyHours' => $selected->count(),

@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Forms;
 
+use App\Enums\CourseEndFrom;
+use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentPlan;
@@ -25,7 +27,10 @@ class EnrollmentForm extends Form
 
     public ?int $installments = null;
 
+    /** Fecha de contrato. */
     public string $registered_on = '';
+
+    public string $material_delivered_on = '';
 
     public bool $includes_toefl = false;
 
@@ -49,7 +54,7 @@ class EnrollmentForm extends Form
     public string $reenrolled_on = '';
 
     /** Inicio del curso, fecha de baja y de graduación se capturan en datos generales del alumno. */
-    private const DATES = ['registered_on', 'reenrolled_on'];
+    private const DATES = ['registered_on', 'material_delivered_on', 'reenrolled_on'];
 
     public const MATERIAL_TYPES = ['F', 'C'];
 
@@ -98,6 +103,8 @@ class EnrollmentForm extends Form
             'student_plan_id' => ['nullable', 'integer', $inSchool('student_plans')],
             'installments' => ['nullable', 'integer', 'min:0', 'max:60'],
             'registered_on' => ['nullable', 'date'],
+            // Obligatoria si la escuela cuenta el fin del curso desde la entrega de material.
+            'material_delivered_on' => [Rule::requiredIf(School::find($schoolId)?->course_end_from === CourseEndFrom::MaterialDelivery), 'nullable', 'date'],
             'includes_toefl' => ['boolean'],
             'includes_gold_card' => ['boolean'],
             'material_serial' => ['nullable', 'string', 'max:40'],

@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 #[Fillable([
     'school_id', 'student_id', 'contract_number', 'sales_advisor_id', 'student_plan_id', 'installments',
-    'registered_on', 'starts_on', 'ends_on', 'withdrawn_on',
+    'registered_on', 'material_delivered_on', 'starts_on', 'ends_on', 'withdrawn_on',
     'includes_term_extension', 'extension_days', 'includes_toefl', 'includes_gold_card',
     'material_serial', 'material_type', 'material_assigned', 'commission_applies',
     'start_book_id', 'start_lesson_id', 'start_activity_id', 'reenrolled_on', 'graduated_on',
@@ -64,6 +64,7 @@ class StudentEnrollment extends Model
             'installments' => 'integer',
             'extension_days' => 'integer',
             'registered_on' => 'date',
+            'material_delivered_on' => 'date',
             'starts_on' => 'date',
             'ends_on' => 'date',
             'withdrawn_on' => 'date',

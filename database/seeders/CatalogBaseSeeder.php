@@ -157,7 +157,7 @@ class CatalogBaseSeeder extends Seeder
         foreach (self::SHIFTS as $order => $name) {
             $shifts[$name] = Shift::ofCatalog(null)->firstOrCreate(
                 ['school_id' => null, 'name' => $name],
-                ['sort_order' => ($order + 1) * 10, 'is_active' => true],
+                ['sort_order' => ($order + 1) * 10, 'is_active' => true, 'weekdays' => $name === 'Sabatino' ? [6] : Shift::DEFAULT_DAYS],
             );
         }
 

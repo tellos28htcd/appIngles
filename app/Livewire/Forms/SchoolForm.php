@@ -3,6 +3,7 @@
 namespace App\Livewire\Forms;
 
 use App\Actions\Catalogs\CopyBaseCatalogs;
+use App\Enums\CourseEndFrom;
 use App\Enums\FailedActivityPolicy;
 use App\Enums\MaxSessionsScope;
 use App\Enums\SelfBooking;
@@ -78,6 +79,9 @@ class SchoolForm extends Form
 
     public string $self_booking = 'disabled';
 
+    /** Fecha de la ficha desde la que se cuenta el fin del curso: contract | material. */
+    public string $course_end_from = 'contract';
+
     public string $max_sessions_scope = 'student';
 
     public ?int $max_sessions = null;
@@ -101,6 +105,7 @@ class SchoolForm extends Form
             ])),
             'brand_accent' => $school->brand_accent ?? config('appingles.brand.accent'),
             'self_booking' => $school->self_booking->value,
+            'course_end_from' => $school->course_end_from?->value ?? CourseEndFrom::Contract->value,
             'max_sessions_scope' => $school->max_sessions_scope->value,
             'failed_activity_policy' => $school->failed_activity_policy->value,
         ]);
@@ -142,6 +147,7 @@ class SchoolForm extends Form
             'hybrid_clubs' => ['boolean'],
             'requires_progress' => ['boolean'],
             'self_booking' => ['required', Rule::enum(SelfBooking::class)],
+            'course_end_from' => ['required', Rule::enum(CourseEndFrom::class)],
             'max_sessions_scope' => ['required', Rule::enum(MaxSessionsScope::class)],
             'max_sessions' => ['nullable', 'integer', 'min:1', 'max:99'],
             'failed_activity_policy' => ['required', Rule::enum(FailedActivityPolicy::class)],

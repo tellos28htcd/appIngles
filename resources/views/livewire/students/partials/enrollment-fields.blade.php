@@ -3,6 +3,8 @@
 <div class="grid gap-4 md:grid-cols-3">
     <x-ui.input name="enrollment.contract_number" :label="__('students.enrollment.fields.contract_number')" wire:model="enrollment.contract_number" maxlength="30" class="font-mono uppercase" />
     <x-ui.input name="enrollment.registered_on" type="date" :label="__('students.enrollment.fields.registered_on')" wire:model="enrollment.registered_on" />
+    <x-ui.input name="enrollment.material_delivered_on" type="date" :label="__('students.enrollment.fields.material_delivered_on')" wire:model="enrollment.material_delivered_on"
+                :hint="__('students.enrollment.material_delivered_on_hint')" />
     <x-ui.input name="enrollment.reenrolled_on" type="date" :label="__('students.enrollment.fields.reenrolled_on')" :hint="__('students.enrollment.reenrolled_on_hint')" wire:model="enrollment.reenrolled_on" />
 
     <x-ui.select name="enrollment.sales_advisor_id" :label="__('students.enrollment.fields.sales_advisor_id')" :options="$this->advisorOptions"

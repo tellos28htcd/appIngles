@@ -71,6 +71,7 @@ return [
         'weekly_hours_hint' => 'Horas asignadas; nunca más de 48 por semana.',
         'status' => 'Estatus',
         'status_hint' => 'Solo un teacher Activo inicia sesión y recibe clases.',
+        'terminated_on' => 'Fecha de baja',
         'short_name' => 'Nombre corto',
         'short_name_hint' => 'Como aparece en el panel (p. ej. MELISSA).',
         'panel_number' => 'Número en el panel',

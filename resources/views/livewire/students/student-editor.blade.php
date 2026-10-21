@@ -91,12 +91,6 @@
                 </div>
             </fieldset>
 
-            <div class="grid gap-x-6 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-4">
-                <x-ui.toggle name="form.learns_visual" :label="__('students.fields.learns_visual')" wire:model="form.learns_visual" />
-                <x-ui.toggle name="form.learns_auditory" :label="__('students.fields.learns_auditory')" wire:model="form.learns_auditory" />
-                <x-ui.toggle name="form.learns_kinesthetic" :label="__('students.fields.learns_kinesthetic')" wire:model="form.learns_kinesthetic" />
-                <x-ui.toggle name="form.advertising_consent" :label="__('students.fields.advertising_consent')" wire:model="form.advertising_consent" />
-            </div>
 
             <x-ui.textarea name="form.notes" :label="__('students.fields.notes')" wire:model="form.notes" rows="2" maxlength="2000" />
         </x-ui.card>
@@ -108,13 +102,22 @@
             </x-ui.card>
         @endunless
 
-        {{-- Encuesta --}}
-        @if ($this->surveySections->isNotEmpty())
-            <x-ui.card :title="__('students.sections.survey')" :description="__('students.sections.survey_hint')">
-                <div class="flex flex-col gap-6">
-                    @foreach ($this->surveySections as $section => $questions)
+        {{-- Encuesta. "¿Modo de aprendizaje?" va al inicio de Contexto académico y "Acepta aparecer en publicidad" en Comunicación. --}}
+        @php($sectionKey = fn (string $section) => \Illuminate\Support\Str::of(\Illuminate\Support\Str::ascii($section))->lower()->toString())
+        @php($learningSection = $this->surveySections->keys()->first(fn ($section) => str_contains($sectionKey($section), 'academic')))
+        @php($contactSection = $this->surveySections->keys()->first(fn ($section) => str_contains($sectionKey($section), 'comunicacion')))
+        <x-ui.card :title="__('students.sections.survey')" :description="__('students.sections.survey_hint')">
+            <div class="flex flex-col gap-6">
+                @if ($learningSection === null || $contactSection === null)
+                    <fieldset class="flex flex-col gap-4">
+                        @if ($learningSection === null) @include('livewire.students.partials.survey-learning-style') @endif
+                        @if ($contactSection === null) @include('livewire.students.partials.survey-advertising-consent') @endif
+                    </fieldset>
+                @endif
+                @foreach ($this->surveySections as $section => $questions)
                         <fieldset class="flex flex-col gap-4" wire:key="survey-section-{{ $loop->index }}">
                             <legend class="mb-1 text-sm font-bold uppercase tracking-wide text-ink-500">{{ $section }}</legend>
+                            @if ($section === $learningSection) @include('livewire.students.partials.survey-learning-style') @endif
                             <div class="grid gap-4 md:grid-cols-2">
                                 @foreach ($questions as $question)
                                     @php($current = $form->answers[$question->id] ?? '')
@@ -132,11 +135,11 @@
                                     </div>
                                 @endforeach
                             </div>
+                            @if ($section === $contactSection) @include('livewire.students.partials.survey-advertising-consent') @endif
                         </fieldset>
-                    @endforeach
-                </div>
-            </x-ui.card>
-        @endif
+                @endforeach
+            </div>
+        </x-ui.card>
 
         <div class="sticky bottom-20 z-20 -mx-4 flex flex-col-reverse gap-2.5 border-t border-line bg-white/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:flex-row md:justify-end md:border-0 md:bg-transparent md:p-0">
             <a href="{{ $editing ? route('students.show', $form->student) : route('students.index') }}" wire:navigate

@@ -300,6 +300,68 @@ class TeacherAvailabilityTest extends TestCase
         $this->assertSame(54, $waitlist->scheduleBlocks()->count());
     }
 
+    public function test_uncovered_incident_hours_show_absent_and_covered_ones_do_not(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10, 11, 12]]);
+        $dulce = $this->teacher('DULCE', 4, [1 => [15]]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+        Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $melissa->id)->set('incidentType', 'vacation')
+            ->set('startsOn', '2026-07-27')->set('endsOn', '2026-07-27')->set('allDay', true)->set('reason', 'Vacaciones')
+            ->call('save')->assertHasNoErrors();
+        Livewire::test(TeacherIncidentIndex::class)
+            ->call('edit')->set('teacherId', $dulce->id)->set('incidentType', 'covers')->set('coveredTeacherId', $melissa->id)
+            ->set('startsOn', '2026-07-27')->set('endsOn', '2026-07-27')->set('allDay', false)
+            ->set('fromSlotId', $this->slots[9]->id)->set('toSlotId', $this->slots[10]->id)->set('reason', 'Cubre')
+            ->call('save')->assertHasNoErrors();
+
+        $absences = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)->viewData('absences');
+        $key = fn (int $hour) => '2026-07-27|'.$this->slots[$hour]->id.'|'.$melissa->id;
+
+        // 9 y 10 las cubre Dulce; 11 y 12 nadie: se muestran "A".
+        $this->assertFalse($absences->has($key(9)));
+        $this->assertFalse($absences->has($key(10)));
+        $this->assertTrue($absences->has($key(11)));
+        $this->assertTrue($absences->has($key(12)));
+    }
+
+    public function test_the_chart_does_not_count_the_waitlist(): void
+    {
+        $this->teacher('MELISSA', 1, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9]]);
+        $this->teacher('ESPERA', 9, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9]], ['is_waitlist' => true]);
+        $this->planner()->generateWeek($this->school, $this->monday);
+
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $average = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)->viewData('average');
+
+        $this->assertEquals(1, $average[$this->slots[9]->id]);
+    }
+
+    public function test_a_sunday_shift_adds_sunday_and_its_hours_only_apply_that_day(): void
+    {
+        $this->assertSame(range(1, 6), $this->planner()->weekdays($this->school));
+
+        $sunday = Shift::create(['school_id' => $this->school->id, 'name' => 'Domingo', 'weekdays' => [7], 'sort_order' => 2, 'is_active' => true]);
+        $slot = ScheduleSlot::create(['school_id' => $this->school->id, 'shift_id' => $sunday->id, 'number' => 30, 'starts_at' => '21:00:00', 'ends_at' => '22:00:00', 'is_active' => true]);
+        $this->assertSame(range(1, 7), $this->planner()->weekdays($this->school));
+        $this->assertCount(7, $this->planner()->days($this->school, $this->monday));
+
+        $teacher = $this->teacher('MELISSA', 1, []);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        Livewire::test(TeacherSchedule::class, ['teacher' => $teacher])
+            ->set('selected', ['7-'.$slot->id => true, '1-'.$slot->id => true, '1-'.$this->slots[9]->id => true, '7-'.$this->slots[9]->id => true])
+            ->call('save');
+
+        // El turno Domingo solo el domingo; el Matutino (lunes a sábado) no el domingo.
+        $this->assertEqualsCanonicalizing(['7-'.$slot->id, '1-'.$this->slots[9]->id],
+            $teacher->scheduleBlocks()->get()->map(fn ($block) => $block->weekday.'-'.$block->schedule_slot_id)->all());
+
+        $this->planner()->generateWeek($this->school, $this->monday);
+        $this->assertTrue(TeacherAvailability::where('teacher_id', $teacher->id)->whereDate('date', '2026-08-02')->where('schedule_slot_id', $slot->id)->exists());
+    }
+
     public function test_panel_permissions_and_isolation(): void
     {
         $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);

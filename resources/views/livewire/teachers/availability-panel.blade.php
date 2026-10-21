@@ -76,9 +76,13 @@
                             <th scope="row" class="bg-white px-1.5 text-sm font-extrabold tabular-nums text-ink-900" title="{{ $slot->range() }}">{{ (int) substr($slot->starts_at, 0, 2) }}</th>
                             @foreach ($days as $day)
                                 @foreach ($teachers as $teacher)
-                                    @php($cell = $grid->get($day->toDateString().'|'.$slot->id.'|'.$teacher->id))
-                                    <td class="h-7 border border-line p-0">
-                                        @if ($cell)
+                                    @php($key = $day->toDateString().'|'.$slot->id.'|'.$teacher->id)
+                                    @php($cell = $grid->get($key))
+                                    <td @class(['h-7 border border-line p-0', 'bg-surface-2' => ! $applies[$slot->id][$day->toDateString()]])>
+                                        @if (! $cell && $absences->has($key))
+                                            <span class="flex h-7 w-full items-center justify-center bg-warning-500 font-extrabold text-white"
+                                                  title="{{ $teacher->panelName() }} · {{ $dayNames[$day->toDateString()] }} {{ $slot->range() }} · {{ __('availability.absent_uncovered') }}">A</span>
+                                        @elseif ($cell)
                                             @php($label = $cell->classroom?->name)
                                             <button type="button"
                                                     @if ($canManage) x-on:click="pick({{ $cell->id }}, $event)" @else disabled @endif
@@ -114,7 +118,7 @@
             </table>
         </section>
 
-        <div class="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+        <div class="grid items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,600px)]">
             {{-- Leyenda: número, teacher, horas asignadas y horas a cumplir --}}
             <x-ui.card :title="__('availability.legend')">
                 <table class="w-full text-sm">
@@ -144,7 +148,7 @@
             </x-ui.card>
 
             {{-- Gráfica: promedio de teachers por hora (lunes a viernes) --}}
-            <x-ui.card :title="__('availability.chart_title')" :description="__('availability.chart_hint')">
+            <x-ui.card :title="__('availability.chart_title')" :description="__('availability.chart_hint')" class="w-full max-w-[600px]">
                 <div class="flex h-56 items-end gap-1.5 border-b border-l border-line pl-1" role="img" aria-label="{{ __('availability.chart_title') }}">
                     @foreach ($scheduleSlots as $slot)
                         @php($value = $average[$slot->id])

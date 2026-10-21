@@ -39,12 +39,15 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
   del plazo o cambios de estatus además del alta (y, con Cobranza, pagos). Con historial se da de baja con su motivo.
 - El usuario de un alumno o tutor no se elimina desde Usuarios: depende de su expediente.
 - La contraseña de la plataforma externa (columna CAP del Excel) no se importa.
-- **Plazo del curso (acumulado):** fin = inicio del curso + 365 + días de los movimientos del plazo
+- **Plazo del curso (acumulado):** fin = fecha base + 365 + días de los movimientos del plazo + días de ausencia.
+  La fecha base es la fecha de contrato o la de entrega de material de la primera ficha, según Mi escuela
+  (`schools.course_end_from`); con "entrega de material" esa fecha es obligatoria en la ficha. Movimientos
   (`student_term_movements`): reinscripción (+365, se registra sola desde la fecha de reinscripción de la ficha),
   extensión de tiempo (hasta 120 días cada una), ajuste de días (solo suma) y mensualidad abierta (días estimados;
   al cerrarla con la fecha real se cuentan los días reales; Cobranza cobra mientras siga abierta). Ej.: 01/01/2026 →
-  01/01/2027 → +120 = 01/05/2027 → +7 = 08/05/2027 → reinscripción +365 = 07/05/2028. Las ausencias no lo recorren.
-- **Solicitud de ausencia:** máximo 60 días naturales por ciclo; el conteo se reinicia en la fecha de cada reinscripción.
+  01/01/2027 → +120 = 01/05/2027 → +7 = 08/05/2027 → reinscripción +365 = 07/05/2028. Inicio del curso (Datos
+  generales) se captura como referencia.
+- **Solicitud de ausencia:** máximo 60 días naturales por ciclo (se suman al fin del curso); el conteo se reinicia en la fecha de cada reinscripción.
   Datos generales muestra los días del ciclo y el acumulado.
 - **Planes:** A = Contado; se quitó "Contado – 1 mensualidad"; se agregaron C 4 y 5 meses, D 7 meses, F 9 y 11 meses.
 - Domicilios históricos: `php artisan students:split-addresses [--school=] [--dry-run]` separa la línea en partes

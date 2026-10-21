@@ -273,7 +273,7 @@ final class ImportStudents
             $seenEmails[$email] = $line;
         }
 
-        foreach (['birth_date', 'status_date', 'registered_on', 'course_starts_on', 'withdrawn_on', 'reenrolled_on', 'graduated_on', 'absence_from', 'absence_to'] as $field) {
+        foreach (['birth_date', 'status_date', 'registered_on', 'material_delivered_on', 'course_starts_on', 'withdrawn_on', 'reenrolled_on', 'graduated_on', 'absence_from', 'absence_to'] as $field) {
             if ($this->filled($data, $field) && $this->date($data, $field) === null && ! $this->isPlaceholderDate($data[$field])) {
                 $warnings[] = __('students.import.warnings.date', ['field' => StudentTemplate::COLUMNS[$field][0], 'value' => $this->display($data[$field])]);
             }
@@ -401,7 +401,7 @@ final class ImportStudents
     /** @param array<string, mixed> $data */
     private function importEnrollment(Student $student, array $data): void
     {
-        $fields = ['contract_number', 'sales_advisor', 'plan', 'installments', 'registered_on',
+        $fields = ['contract_number', 'sales_advisor', 'plan', 'installments', 'registered_on', 'material_delivered_on',
             'material_serial', 'material_type', 'start_book', 'start_lesson', 'start_activity', 'reenrolled_on'];
 
         if (collect($fields)->every(fn (string $field) => ! $this->filled($data, $field))) {
@@ -426,6 +426,7 @@ final class ImportStudents
             'student_plan_id' => $planId,
             'installments' => $installments ?? ($planId ? StudentPlan::find($planId)?->installments : null),
             'registered_on' => $this->date($data, 'registered_on'),
+            'material_delivered_on' => $this->date($data, 'material_delivered_on') ?? $enrollment->material_delivered_on,
             'includes_toefl' => $this->bool($data, 'includes_toefl'),
             'includes_gold_card' => $this->bool($data, 'includes_gold_card'),
             'material_serial' => $material && ($serial = $this->text($data, 'material_serial')) !== null ? Str::upper(Str::limit($serial, 40, '')) : null,

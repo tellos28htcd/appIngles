@@ -7,7 +7,7 @@
                 <li wire:key="shift-{{ $shift->id }}" @class(['flex items-center gap-3 px-4 py-2.5 md:px-5', 'opacity-60' => ! $shift->is_active])>
                     <div class="flex min-w-0 flex-1 flex-col">
                         <span class="truncate font-bold">{{ $shift->name }}</span>
-                        <span class="text-xs text-ink-500">{{ trans_choice('catalogs.shifts.slots_count', $shift->slots_count) }}</span>
+                        <span class="text-xs text-ink-500">{{ trans_choice('catalogs.shifts.slots_count', $shift->slots_count) }} · {{ collect($shift->days())->map(fn ($day) => \Illuminate\Support\Str::ucfirst(mb_substr($weekdayNames[$day], 0, 3)))->implode(', ') }}</span>
                     </div>
                     <x-catalog.row-actions :active="$shift->is_active" :name="$shift->name"
                                            edit="editShift({{ $shift->id }})" toggle="toggleShift({{ $shift->id }})" delete="confirmShiftDeletion({{ $shift->id }})" />
@@ -55,6 +55,19 @@
 
     <x-ui.modal wire:model="editingShift" :title="__($shiftId ? 'catalogs.shifts.edit' : 'catalogs.shifts.add')">
         <x-ui.input name="shiftName" :label="__('catalogs.fields.name')" wire:model="shiftName" maxlength="60" required />
+        <fieldset class="flex flex-col gap-2">
+            <legend class="mb-1 text-sm font-semibold text-ink-900">{{ __('catalogs.fields.weekdays') }}</legend>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                @foreach ($weekdayNames as $day => $dayName)
+                    <label class="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md border-[1.5px] border-line-strong bg-white px-3 text-[15px] transition hover:bg-surface has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 has-[:checked]:font-semibold">
+                        <input type="checkbox" value="{{ $day }}" wire:model="shiftWeekdays" class="size-[18px] flex-none accent-primary-600">
+                        {{ \Illuminate\Support\Str::ucfirst($dayName) }}
+                    </label>
+                @endforeach
+            </div>
+            <p class="text-sm text-ink-500">{{ __('catalogs.shifts.weekdays_hint') }}</p>
+            @error('shiftWeekdays') <p role="alert" class="text-sm font-medium text-danger-700">{{ $message }}</p> @enderror
+        </fieldset>
         <x-slot:footer>
             <x-ui.button variant="ghost" x-on:click="open = null">{{ __('catalogs.actions.cancel') }}</x-ui.button>
             <x-ui.button wire:click="saveShift">{{ __('catalogs.actions.save') }}</x-ui.button>

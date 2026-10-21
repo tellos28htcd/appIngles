@@ -154,6 +154,9 @@
                     @endforeach
                 </div>
                 <div class="flex flex-col gap-6">
+                    <x-ui.choice name="form.course_end_from" :label="__('schools.fields.course_end_from')"
+                                 :options="collect(\App\Enums\CourseEndFrom::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->all()"
+                                 wire:model="form.course_end_from" />
                     <x-ui.choice name="form.self_booking" :label="__('schools.fields.self_booking')"
                                  :options="collect(\App\Enums\SelfBooking::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->all()"
                                  wire:model="form.self_booking" />

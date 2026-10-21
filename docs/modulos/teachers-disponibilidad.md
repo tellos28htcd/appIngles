@@ -20,11 +20,13 @@ el Excel tiene días de 9 y 10 horas, por eso no bloquean. Al guardar, las seman
 ## Panel de disponibilidad
 Igual a la hoja "H de Teacher": por día una columna por teacher (número y nombre corto), por hora el **número de aula**
 con su color (paleta `--color-room-1…9`, como el Excel), horas por día, leyenda (asignadas / a cumplir) y gráfica del
-promedio de teachers por hora de lunes a viernes (x̄T). Selector de mes y semana = histórico.
+promedio de teachers por hora de lunes a viernes (x̄T; sin la Lista de espera, ancho fijo ~600 px). Selector de mes y
+semana = histórico. Una hora con incidencia que nadie cubre se muestra **A** (ausente) en naranja.
 - Cada semana se arma con el botón **Armar semana**: horario base + aulas de la **última semana armada** (aunque se haya
   saltado alguna). El listado de semanas del mes se forma solo; el contenido, solo con el botón.
 - El aula se asigna o cambia con un clic en la celda. Un aula no tiene dos teachers a la misma hora (RN-05).
-- Domingo solo si la escuela trabaja domingos. Los días festivos no tienen disponibilidad (RN-22) y su encabezado dice
+- Cada turno del catálogo tiene sus **días** (lunes a domingo): sus horas solo aparecen esos días en el horario base y
+  en el panel. El domingo aparece si la escuela trabaja domingos o tiene un turno activo con domingo. Los días festivos no tienen disponibilidad (RN-22) y su encabezado dice
   "Día festivo: …". Al armar una semana se generan los festivos oficiales del año si faltan. Si se agrega, cambia,
   desactiva o borra un festivo, las semanas ya armadas se recalculan solas (las horas se conservan ocultas con su aula).
 

@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
     'first_name', 'last_name', 'second_last_name', 'curp', 'rfc', 'photo_path',
     'street', 'exterior_number', 'interior_number', 'neighborhood', 'postal_code', 'state_id', 'municipality_id',
     'short_name', 'panel_number', 'is_waitlist',
-    'contract_type', 'weekly_hours', 'status',
+    'contract_type', 'weekly_hours', 'status', 'terminated_on',
 ])]
 class Teacher extends Model
 {
@@ -34,6 +34,7 @@ class Teacher extends Model
             'contract_type' => ContractType::class,
             'weekly_hours' => 'integer',
             'status' => TeacherStatus::class,
+            'terminated_on' => 'date',
             'panel_number' => 'integer',
             'is_waitlist' => 'boolean',
         ];

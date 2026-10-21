@@ -98,7 +98,7 @@ class StudentShow extends Component
     {
         return Student::query()->where('school_id', auth()->user()->school_id)
             ->with([
-                'user', 'type', 'informationSource', 'state', 'municipality',
+                'user', 'type', 'informationSource', 'state', 'municipality', 'school',
                 'enrollments' => fn ($query) => $query->latest('registered_on')->latest('id'),
                 'enrollments.salesAdvisor', 'enrollments.plan', 'enrollments.startBook', 'enrollments.startLesson', 'enrollments.startActivity',
                 'statusChanges' => fn ($query) => $query->latest('changed_on')->latest('id'),

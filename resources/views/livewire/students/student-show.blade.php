@@ -49,7 +49,6 @@
                         'landline_phone' => $student->landline_phone ?? '—',
                         'birth_date' => $student->birth_date ? $date($student->birth_date).' · '.trans_choice('students.age', $student->age()) : '—',
                         'student_type_id' => $student->type?->name ?? '—',
-                        'learning_style' => collect(['visual', 'auditory', 'kinesthetic'])->filter(fn ($style) => $student->{'learns_'.$style})->map(fn ($style) => __("students.fields.learns_$style"))->implode(', ') ?: '—',
                         'course_starts_on' => $date($student->course_starts_on),
                         'course_ends_on' => $date($student->courseEndsOn()).($student->openMonthly() ? ' · '.__('students.term.estimated') : ''),
                         'extension' => trans_choice('students.fields.extension_days', $student->extensionDays()),
@@ -71,10 +70,7 @@
                             @endif
                         </dd>
                     </div>
-                    <div class="flex min-w-0 flex-col">
-                        <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">{{ __('students.fields.advertising_consent') }}</dt>
-                        <dd>{{ __($student->advertising_consent ? 'audit.yes' : 'audit.no') }}</dd>
-                    </div>
+
                     @if ($student->notes)
                         <div class="flex min-w-0 flex-col sm:col-span-2 lg:col-span-3">
                             <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">{{ __('students.fields.notes') }}</dt>
@@ -113,6 +109,7 @@
                                 'information_source_id' => $student->informationSource?->name ?? '—',
                                 'student_plan_id' => $record->plan ? $record->plan->name.' · '.trans_choice('students.enrollment.installments_count', $record->installments ?? $record->plan->installments) : '—',
                                 'start_point' => collect([$record->startBook?->name, $record->startLesson?->name, $record->startActivity?->code])->filter()->implode(' · ') ?: '—',
+                                'material_delivered_on' => $date($record->material_delivered_on),
                                 'reenrolled_on' => $date($record->reenrolled_on),
                                 'services' => collect($record->services())->map(fn ($service) => __("students.enrollment.services.$service"))->implode(', ') ?: '—',
                                 'material_assigned' => $record->material_assigned
@@ -133,18 +130,22 @@
 
             {{-- Encuesta --}}
             <x-ui.card :title="__('students.sections.survey')">
-                @if ($student->surveyAnswers->isEmpty())
-                    <p class="text-sm text-ink-500">{{ __('students.survey_empty') }}</p>
-                @else
-                    <dl class="grid gap-x-6 gap-y-3 text-sm md:grid-cols-2">
-                        @foreach ($student->surveyAnswers->sortBy(fn ($answer) => $answer->question?->sort_order) as $answer)
-                            <div class="flex min-w-0 flex-col" wire:key="answer-{{ $answer->id }}">
-                                <dt class="text-ink-500">{{ $answer->question?->question }}</dt>
-                                <dd class="font-semibold [overflow-wrap:anywhere]">{{ $answer->answer }}</dd>
-                            </div>
-                        @endforeach
-                    </dl>
-                @endif
+                <dl class="grid gap-x-6 gap-y-3 text-sm md:grid-cols-2">
+                    <div class="flex min-w-0 flex-col">
+                        <dt class="text-ink-500">{{ __('students.fields.learning_mode_question') }}</dt>
+                        <dd class="font-semibold">{{ collect(['visual', 'auditory', 'kinesthetic'])->filter(fn ($style) => $student->{'learns_'.$style})->map(fn ($style) => __("students.fields.learns_$style"))->implode(', ') ?: '—' }}</dd>
+                    </div>
+                    @foreach ($student->surveyAnswers->sortBy(fn ($answer) => $answer->question?->sort_order) as $answer)
+                        <div class="flex min-w-0 flex-col" wire:key="answer-{{ $answer->id }}">
+                            <dt class="text-ink-500">{{ $answer->question?->question }}</dt>
+                            <dd class="font-semibold [overflow-wrap:anywhere]">{{ $answer->answer }}</dd>
+                        </div>
+                    @endforeach
+                    <div class="flex min-w-0 flex-col">
+                        <dt class="text-ink-500">{{ __('students.fields.advertising_consent') }}</dt>
+                        <dd class="font-semibold">{{ __($student->advertising_consent ? 'audit.yes' : 'audit.no') }}</dd>
+                    </div>
+                </dl>
             </x-ui.card>
         </div>
 
@@ -198,10 +199,11 @@
             </x-ui.card>
 
             {{-- Plazo del curso --}}
+            @php($baseLabel = \Illuminate\Support\Str::lower(($student->school->course_end_from ?? \App\Enums\CourseEndFrom::Contract)->label()))
             <x-ui.card :title="__('students.sections.term')"
-                       :description="__('students.term.summary', ['start' => $date($student->course_starts_on), 'end' => $date($student->courseEndsOn())])">
-                @if ($student->course_starts_on === null)
-                    <p class="text-sm text-warning-700">{{ __('students.term.no_start') }}</p>
+                       :description="__('students.term.summary', ['base' => $baseLabel, 'start' => $date($student->courseBaseDate()), 'end' => $date($student->courseEndsOn()), 'absences' => trans_choice('students.absences.days', $student->absenceDaysTotal())])">
+                @if ($student->courseBaseDate() === null)
+                    <p class="text-sm font-semibold text-warning-700">{{ __('students.term.no_start', ['base' => $baseLabel]) }}</p>
                 @endif
                 @forelse ($student->termMovements as $movement)
                     <div wire:key="movement-{{ $movement->id }}" class="flex items-start gap-3">

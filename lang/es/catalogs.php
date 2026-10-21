@@ -32,6 +32,7 @@ return [
         'add' => 'Nuevo turno',
         'edit' => 'Editar turno',
         'slots_count' => '{0} Sin horarios|{1} 1 horario|[2,*] :count horarios',
+        'weekdays_hint' => 'Sus horarios solo aparecen esos días en el horario base de los teachers y en el panel de disponibilidad. Con domingo, el domingo se agrega al panel.',
     ],
 
     'slots' => [
@@ -88,6 +89,7 @@ return [
 
     'fields' => [
         'name' => 'Nombre',
+        'weekdays' => 'Días en que aplica',
         'number' => 'Número',
         'number_short' => 'Núm.',
         'activity_number' => 'Número de actividad',

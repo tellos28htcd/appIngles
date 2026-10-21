@@ -113,6 +113,22 @@ class TeacherManagementTest extends TestCase
             ->assertHasErrors('form.email');
     }
 
+    public function test_terminated_status_requires_its_date(): void
+    {
+        Notification::fake();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        $editor = $this->fillTeacher(Livewire::test(TeacherEditor::class))->set('form.email', '')
+            ->set('form.status', 'terminated')
+            ->assertSet('form.terminated_on', now(config('appingles.timezone'))->toDateString())
+            ->set('form.terminated_on', '')
+            ->call('save')
+            ->assertHasErrors('form.terminated_on');
+
+        $editor->set('form.terminated_on', '2026-09-30')->call('save')->assertHasNoErrors();
+        $this->assertSame('2026-09-30', Teacher::sole()->terminated_on->toDateString());
+    }
+
     public function test_teacher_without_user_can_be_deleted(): void
     {
         $teacher = Teacher::factory()->create(['school_id' => $this->schoolA->id, 'user_id' => null]);

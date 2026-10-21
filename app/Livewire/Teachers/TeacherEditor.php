@@ -40,6 +40,14 @@ class TeacherEditor extends Component
         $this->form->municipality_id = null;
     }
 
+    /** Al elegir Baja se propone la fecha de hoy. */
+    public function updatedFormStatus(): void
+    {
+        if ($this->form->status === TeacherStatus::Terminated->value && $this->form->terminated_on === '') {
+            $this->form->terminated_on = now(config('appingles.timezone'))->toDateString();
+        }
+    }
+
     public function updatedFormContractType(): void
     {
         $this->form->syncWeeklyHours();

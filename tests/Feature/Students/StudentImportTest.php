@@ -148,7 +148,7 @@ class StudentImportTest extends TestCase
         $this->assertSame(10, $enrollment->installments);
         $this->assertNull($isela->withdrawn_on);
         $this->assertSame('2023-04-03', $isela->course_starts_on->toDateString());
-        $this->assertSame('2024-05-02', $isela->courseEndsOn()->toDateString()); // 365 + 30 días de ampliación
+        $this->assertSame('2024-04-30', $isela->courseEndsOn()->toDateString()); // contrato 2023-04-01 + 365 + 30 de extensión
         $this->assertSame('4422150000', $isela->landline_phone);
         $this->assertSame(['AV. DE LA LUZ', '1500', '15', 'PUESTA DEL SOL', '76100', $this->queretaro->id, false],
             [$isela->street, $isela->exterior_number, $isela->interior_number, $isela->neighborhood, $isela->postal_code, $isela->municipality_id, $isela->address_needs_review]);

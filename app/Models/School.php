@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CourseEndFrom;
 use App\Enums\FailedActivityPolicy;
 use App\Enums\MaxSessionsScope;
 use App\Enums\SchoolStatus;
@@ -27,7 +28,7 @@ use Illuminate\Support\Str;
     'logo_path', 'brand_primary', 'brand_accent',
     'session_capacity', 'timezone', 'currency',
     'works_sundays', 'schedules_classrooms', 'books_without_classroom', 'hybrid_clubs', 'requires_progress',
-    'self_booking', 'max_sessions_scope', 'max_sessions', 'failed_activity_policy', 'club_min_lesson_number',
+    'course_end_from', 'self_booking', 'max_sessions_scope', 'max_sessions', 'failed_activity_policy', 'club_min_lesson_number',
     'status',
 ])]
 class School extends Model
@@ -42,6 +43,7 @@ class School extends Model
         return [
             'status' => SchoolStatus::class,
             'self_booking' => SelfBooking::class,
+            'course_end_from' => CourseEndFrom::class,
             'max_sessions_scope' => MaxSessionsScope::class,
             'failed_activity_policy' => FailedActivityPolicy::class,
             'works_sundays' => 'boolean',

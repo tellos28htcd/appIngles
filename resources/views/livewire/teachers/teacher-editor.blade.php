@@ -81,7 +81,10 @@
                 <x-ui.input name="form.email" type="email" :label="__('teachers.fields.email')" wire:model="form.email"
                             autocomplete="email" inputmode="email" maxlength="255" />
                 <x-ui.select name="form.status" :label="__('teachers.fields.status')" :options="$statuses"
-                             :hint="__('teachers.fields.status_hint')" wire:model="form.status" required />
+                             :hint="__('teachers.fields.status_hint')" wire:model.live="form.status" required />
+                @if ($form->status === \App\Enums\TeacherStatus::Terminated->value)
+                    <x-ui.input name="form.terminated_on" type="date" :label="__('teachers.fields.terminated_on')" wire:model="form.terminated_on" required />
+                @endif
             </x-ui.card>
         </div>
 

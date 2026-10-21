@@ -89,6 +89,7 @@ return [
         'hybrid_clubs' => 'Agendar clubes híbridos',
         'requires_progress' => 'El alumno requiere progreso para acceder a los contenidos',
         'self_booking' => 'Permitir que los alumnos reserven sus propias sesiones',
+        'course_end_from' => 'El fin del curso se cuenta desde la',
         'max_sessions_scope' => '¿Las sesiones máximas se aplican por…?',
         'max_sessions' => 'Cantidad máxima de sesiones por alumno',
         'club_min_lesson_number' => '¿A partir de cuál lección el alumno puede participar en clubes?',
@@ -97,6 +98,11 @@ return [
         'select_state' => 'Selecciona una entidad',
         'select_municipality' => 'Selecciona un municipio',
         'select_state_first' => 'Primero elige la entidad',
+    ],
+
+    'course_end_from' => [
+        'contract' => 'Fecha de contrato',
+        'material' => 'Fecha de entrega de material',
     ],
 
     'self_booking' => [

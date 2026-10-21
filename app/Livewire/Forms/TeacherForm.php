@@ -64,6 +64,9 @@ class TeacherForm extends Form
 
     public string $status = 'active';
 
+    /** Fecha de baja (solo con estatus Baja). */
+    public string $terminated_on = '';
+
     /** Nombre corto para el panel de disponibilidad (p. ej. MELISSA). */
     public string $short_name = '';
 
@@ -91,6 +94,7 @@ class TeacherForm extends Form
             'contract_type' => $teacher->contract_type?->value ?? ContractType::FullTime->value,
             'weekly_hours' => $teacher->weekly_hours ?? ContractType::FullTime->maxWeeklyHours(),
             'status' => $teacher->status->value,
+            'terminated_on' => (string) $teacher->terminated_on?->toDateString(),
             'short_name' => (string) $teacher->short_name,
             'panel_number' => $teacher->panel_number,
             'is_waitlist' => (bool) $teacher->is_waitlist,
@@ -142,6 +146,7 @@ class TeacherForm extends Form
             'contract_type' => ['required', Rule::enum(ContractType::class)],
             'weekly_hours' => ['required', 'integer', 'min:1', 'max:'.ContractType::MAX_WEEKLY_HOURS],
             'status' => ['required', Rule::enum(TeacherStatus::class)],
+            'terminated_on' => [Rule::requiredIf($this->status === TeacherStatus::Terminated->value), 'nullable', 'date'],
             'short_name' => ['nullable', 'string', 'max:20'],
             'panel_number' => ['nullable', 'integer', 'min:1', 'max:99', Rule::unique('teachers', 'panel_number')->where('school_id', $this->school_id)->ignore($this->teacher)],
             'is_waitlist' => ['boolean'],
@@ -189,6 +194,8 @@ class TeacherForm extends Form
         $photo = $data['photo'] ?? null;
         unset($data['photo']);
         $data = array_map(fn ($value) => $value === '' ? null : $value, $data);
+        // La fecha de baja solo aplica con estatus Baja.
+        $data['terminated_on'] = $data['status'] === TeacherStatus::Terminated->value ? $data['terminated_on'] : null;
         $creating = $this->teacher === null;
 
         $userCreated = false;

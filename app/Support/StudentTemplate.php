@@ -59,7 +59,8 @@ final class StudentTemplate
         'sales_advisor' => ['Asesor de ventas', 'list:advisors'],
         'plan' => ['Plan (clave)', 'list:plans'],
         'installments' => ['Mensualidades', 'number'],
-        'registered_on' => ['Fecha de la ficha de inscripción', 'date'],
+        'registered_on' => ['Fecha de contrato', 'date'],
+        'material_delivered_on' => ['Fecha de entrega de material', 'date'],
         'course_starts_on' => ['Fecha de inicio del curso', 'date'],
         'withdrawn_on' => ['Fecha de baja', 'date'],
         'includes_term_extension' => ['Ampliación de plazo', 'bool'],
@@ -94,7 +95,7 @@ final class StudentTemplate
     public const REQUIRED = ['first_name', 'last_name'];
 
     /** Encabezados de versiones anteriores de la plantilla que se siguen aceptando. */
-    private const ALIASES = ['toefl' => 'includes_toefl', 'domicilio' => 'address', 'dias de ampliacion de plazo' => 'extension_days'];
+    private const ALIASES = ['toefl' => 'includes_toefl', 'domicilio' => 'address', 'dias de ampliacion de plazo' => 'extension_days', 'fecha de la ficha de inscripcion' => 'registered_on'];
 
     /** Encabezados normalizados (sin acentos ni mayúsculas) para reconocer las columnas aunque cambien ligeramente. */
     public static function normalize(string $text): string

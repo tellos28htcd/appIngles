@@ -155,16 +155,31 @@ class AvailabilityPanel extends Component
         $weekly = $cells->groupBy('teacher_id')->map->count();
 
         // Gráfica: promedio de teachers disponibles por hora, de lunes a viernes (como "x̄T" del Excel).
+        // La Lista de espera (columna 9) no cuenta: no es un teacher que dé clase.
+        $waitlist = $teachers->where('is_waitlist', true)->pluck('id');
+        $chartCells = $cells->whereNotIn('teacher_id', $waitlist);
         $weekdays = collect($days)->filter(fn (CarbonImmutable $day) => $day->dayOfWeekIso <= 5)->map->toDateString();
         $average = $slots->mapWithKeys(fn ($slot) => [$slot->id => $weekdays->isEmpty() ? 0 : round(
-            $weekdays->sum(fn (string $day) => $cells->where('schedule_slot_id', $slot->id)->filter(fn ($cell) => $cell->date->toDateString() === $day)->count()) / $weekdays->count(), 1,
+            $weekdays->sum(fn (string $day) => $chartCells->where('schedule_slot_id', $slot->id)->filter(fn ($cell) => $cell->date->toDateString() === $day)->count()) / $weekdays->count(), 1,
         )]);
+
+        // Horas con incidencia que nadie cubre: se marcan "A" (ausente) en el panel.
+        $covered = $cells->whereNotNull('covered_teacher_id')
+            ->map(fn (TeacherAvailability $cell) => $cell->date->toDateString().'|'.$cell->schedule_slot_id.'|'.$cell->covered_teacher_id)->flip();
+        $absences = TeacherAvailability::query()->where('school_id', $school->id)->where('is_absent', true)->whereNotNull('teacher_incident_id')
+            ->whereBetween('date', [$days[0]->toDateString(), end($days)->toDateString()])
+            ->get(['date', 'schedule_slot_id', 'teacher_id'])
+            ->map(fn (TeacherAvailability $cell) => $cell->date->toDateString().'|'.$cell->schedule_slot_id.'|'.$cell->teacher_id)
+            ->reject(fn (string $key) => $covered->has($key))
+            ->flip();
 
         $classrooms = Classroom::query()->ofCatalog($school->id)->where('is_active', true)->orderByRaw('CAST(name AS UNSIGNED)')->orderBy('name')->get(['id', 'name']);
 
         return view('livewire.teachers.availability-panel', [
             'school' => $school,
             'days' => $days,
+            'absences' => $absences,
+            'applies' => $slots->mapWithKeys(fn ($slot) => [$slot->id => collect($days)->mapWithKeys(fn (CarbonImmutable $day) => [$day->toDateString() => $planner->slotAppliesOn($slot, $day->dayOfWeekIso)])->all()])->all(),
             'scheduleSlots' => $slots,
             'teachers' => $teachers,
             'grid' => $grid,

@@ -29,7 +29,8 @@ return [
     'to_fulfill_short' => 'A cumplir',
     'to_fulfill_hint' => 'Horas que debe cumplir por semana según su contratación',
     'chart_title' => 'Promedio de teachers por hora',
-    'chart_hint' => 'De lunes a viernes (saturación promedio de teachers).',
+    'chart_hint' => 'De lunes a viernes (saturación promedio de teachers; sin la Lista de espera).',
+    'absent_uncovered' => 'Ausente: incidencia sin quien cubra',
 
     'schedule_title' => 'Horario de :teacher',
     'schedule_heading' => 'Horario base',
@@ -40,7 +41,8 @@ return [
     'toggle_day' => 'Marcar o desmarcar el día completo',
     'toggle_hour' => 'Marcar o desmarcar esta hora en todos los días',
     'weekly_total' => '{0} Sin horas por semana|{1} 1 hora por semana|[2,*] :count horas por semana',
-    'weekly_limit' => 'máximo :limit',
+    'weekly_limit' => 'Máximo :limit horas por semana',
+    'slot_not_on_day' => 'Esta hora no se trabaja este día (según los días de su turno).',
     'to_fulfill' => 'debe cumplir :hours',
     'daily_reference' => 'Referencia por su contratación: :hours horas por día (en ámbar los días que la pasan).',
 

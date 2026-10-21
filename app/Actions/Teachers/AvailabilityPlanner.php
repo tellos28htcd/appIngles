@@ -44,14 +44,28 @@ final class AvailabilityPlanner
     public function slots(School $school): Collection
     {
         return ScheduleSlot::withoutGlobalScope('school')->where('school_id', $school->id)
-            ->where('is_active', true)->orderBy('starts_at')->get();
+            ->where('is_active', true)->with('shift')->orderBy('starts_at')->get();
     }
 
-    /** Días que se muestran en la semana: lunes a sábado, y domingo si la escuela trabaja domingos. @return list<CarbonImmutable> */
+    /** ¿El bloque se trabaja ese día de la semana? (según los días de su turno; 1 = lunes … 7 = domingo). */
+    public function slotAppliesOn(ScheduleSlot $slot, int $weekday): bool
+    {
+        return $slot->shift?->appliesOn($weekday) ?? $weekday <= 6;
+    }
+
+    /** Días de la semana de la escuela (1 … 6, y 7 si trabaja domingos o tiene un turno con domingo). @return list<int> */
+    public function weekdays(School $school): array
+    {
+        $sunday = $school->works_sundays || $this->slots($school)->contains(fn (ScheduleSlot $slot) => $this->slotAppliesOn($slot, 7));
+
+        return range(1, $sunday ? 7 : 6);
+    }
+
+    /** Días que se muestran en la semana: lunes a sábado, y domingo si la escuela lo trabaja. @return list<CarbonImmutable> */
     public function days(School $school, CarbonInterface $monday): array
     {
         $monday = self::day($monday)->startOfWeek(CarbonInterface::MONDAY);
-        $count = $school->works_sundays ? 7 : 6;
+        $count = count($this->weekdays($school));
 
         return array_map(fn (int $offset) => $monday->addDays($offset), range(0, $count - 1));
     }
@@ -194,7 +208,7 @@ final class AvailabilityPlanner
             foreach ($teacher->scheduleBlocks->where('weekday', $date->dayOfWeekIso) as $block) {
                 $slot = $slots->get($block->schedule_slot_id);
 
-                if ($slot !== null) {
+                if ($slot !== null && $this->slotAppliesOn($slot, $date->dayOfWeekIso)) {
                     $scheduled[$teacher->id][$slot->id] = true;
 
                     $absence = $absenceOf($teacher->id, $slot);

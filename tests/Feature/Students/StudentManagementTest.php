@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Students;
 
+use App\Enums\CourseEndFrom;
 use App\Enums\StudentStatus;
 use App\Enums\StudentTermMovementType;
 use App\Enums\UserStatus;
@@ -303,6 +304,7 @@ class StudentManagementTest extends TestCase
         $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
         $this->newStudent()
             ->set('form.course_starts_on', '2026-01-01')
+            ->set('enrollment.registered_on', '2026-01-01')
             ->set('enrollment.material_serial', 'ABC-1')
             ->set('enrollment.material_type', 'F')
             ->set('enrollment.material_assigned', false)
@@ -371,6 +373,25 @@ class StudentManagementTest extends TestCase
         $this->assertModelExists($juan);
     }
 
+    public function test_course_end_can_be_counted_from_the_material_delivery(): void
+    {
+        $this->schoolA->update(['course_end_from' => CourseEndFrom::MaterialDelivery]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        // La escuela cuenta desde la entrega de material: la fecha es obligatoria en la ficha.
+        $this->newStudent()->set('enrollment.registered_on', '2026-01-01')->call('save')->assertHasErrors('enrollment.material_delivered_on');
+
+        $this->newStudent()->set('enrollment.registered_on', '2026-01-01')->set('enrollment.material_delivered_on', '2026-01-15')
+            ->call('save')->assertHasNoErrors();
+
+        $student = Student::with(['enrollments', 'termMovements', 'absences', 'school'])->sole();
+        $this->assertSame('2026-01-15', $student->courseBaseDate()->toDateString());
+        $this->assertSame('2027-01-15', $student->courseEndsOn()->toDateString());
+
+        $this->schoolA->update(['course_end_from' => CourseEndFrom::Contract]);
+        $this->assertSame('2027-01-01', $student->fresh(['enrollments', 'termMovements', 'absences', 'school'])->courseEndsOn()->toDateString());
+    }
+
     public function test_term_movements_are_isolated_per_school(): void
     {
         $student = Student::factory()->create(['school_id' => $this->schoolA->id, 'course_starts_on' => '2026-01-01']);
@@ -385,7 +406,7 @@ class StudentManagementTest extends TestCase
     public function test_absence_requests_are_limited_to_60_days_per_cycle_and_can_be_printed(): void
     {
         $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
-        $this->newStudent()->set('form.course_starts_on', '2026-01-05')->call('save');
+        $this->newStudent()->set('form.course_starts_on', '2026-01-05')->set('enrollment.registered_on', '2026-01-05')->call('save');
         $student = Student::sole();
 
         $show = Livewire::test(StudentShow::class, ['student' => $student])
@@ -396,8 +417,8 @@ class StudentManagementTest extends TestCase
         $show->set('absenceTo', '2026-06-15')->call('saveAbsence')->assertHasNoErrors();
         $student = $student->fresh(['absences', 'enrollments']);
         $this->assertSame([60, 60], [$student->absenceDaysInCycle(), $student->absenceDaysTotal()]);
-        // Las ausencias no recorren el fin del curso.
-        $this->assertSame('2027-01-05', $student->courseEndsOn()->toDateString());
+        // Los días de ausencia se suman al fin del curso: contrato 2026-01-05 + 365 + 60.
+        $this->assertSame('2027-03-06', $student->courseEndsOn()->toDateString());
 
         // La reinscripción abre un ciclo nuevo y el conteo vuelve a empezar.
         $student->enrollments()->create(['school_id' => $this->schoolA->id, 'reenrolled_on' => '2027-01-05']);

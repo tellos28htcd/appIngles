@@ -24,6 +24,9 @@ class ShiftsTab extends Component
 
     public string $shiftName = '';
 
+    /** Días en que aplica el turno (1 = lunes … 7 = domingo). @var list<int|string> */
+    public array $shiftWeekdays = [];
+
     // Horario
     public ?bool $editingSlot = null;
 
@@ -51,6 +54,7 @@ class ShiftsTab extends Component
         $shift = $id ? $this->findInCatalog(Shift::class, $id) : null;
         $this->shiftId = $shift?->id;
         $this->shiftName = (string) $shift?->name;
+        $this->shiftWeekdays = array_map('strval', $shift?->days() ?? Shift::DEFAULT_DAYS);
         $this->editingShift = true;
     }
 
@@ -60,14 +64,17 @@ class ShiftsTab extends Component
 
         $data = $this->validate([
             'shiftName' => ['required', 'string', 'max:60', $this->uniqueInCatalog('shifts', 'name', $this->shiftId)],
-        ], attributes: ['shiftName' => Str::lower(__('catalogs.fields.name'))]);
+            'shiftWeekdays' => ['required', 'array', 'min:1'],
+            'shiftWeekdays.*' => ['integer', 'between:1,7'],
+        ], attributes: ['shiftName' => Str::lower(__('catalogs.fields.name')), 'shiftWeekdays' => Str::lower(__('catalogs.fields.weekdays'))]);
 
         $shift = $this->shiftId ? $this->findInCatalog(Shift::class, $this->shiftId) : new Shift([
             'school_id' => $this->schoolId,
             'sort_order' => (int) $this->catalog(Shift::class)->max('sort_order') + 10,
             'is_active' => true,
         ]);
-        $shift->fill(['name' => trim($data['shiftName'])])->save();
+        $weekdays = collect($data['shiftWeekdays'])->map(fn ($day) => (int) $day)->unique()->sort()->values()->all();
+        $shift->fill(['name' => trim($data['shiftName']), 'weekdays' => $weekdays])->save();
 
         $this->editingShift = null;
         $this->dispatch('toast', type: 'success', message: __('catalogs.messages.saved'));
@@ -159,6 +166,8 @@ class ShiftsTab extends Component
 
     public function render(): View
     {
-        return view('livewire.catalogs.shifts-tab');
+        return view('livewire.catalogs.shifts-tab', [
+            'weekdayNames' => collect(range(1, 7))->mapWithKeys(fn (int $day) => [$day => now()->startOfWeek()->addDays($day - 1)->translatedFormat('l')])->all(),
+        ]);
     }
 }
