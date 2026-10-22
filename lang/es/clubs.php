@@ -12,7 +12,6 @@ return [
     'no_rooms_hint' => 'Marca en Configuración → Aulas cuál es el aula audiovisual (para clubs).',
     'room' => 'Aula :name',
     'any_room' => 'Cualquier aula libre',
-    'online_short' => '· En línea',
     'orphan' => 'el teacher ya no tiene esta hora en el panel (revísalo)',
     'add' => 'Programar club',
     'edit' => 'Club programado',

@@ -189,7 +189,7 @@ class ClubScheduleTest extends TestCase
         $this->schedule('2026-07-27', 9, $melissa)->assertHasNoErrors();
 
         $this->actingAs($this->user(Role::RECEPTION));
-        $this->get(route('clubs.schedule', ['mes' => '2026-07']))->assertOk()->assertSee('C12')->assertSee('MELISSA');
+        $this->get(route('clubs.schedule', ['mes' => '2026-07']))->assertOk()->assertSee('C12')->assertSee('MELISSA')->assertSee('Presencial');
         Livewire::test(ClubSchedule::class)->call('add', '2026-07-27', $this->slots[10]->id)->assertForbidden();
 
         $other = School::factory()->create();

@@ -77,8 +77,9 @@
                                                         'hover:opacity-85' => $canManage,
                                                     ])
                                                     title="{{ $session->club?->name }} · {{ $session->teacher?->fullName() }} · {{ $session->modality->label() }} · {{ __('clubs.room', ['name' => $session->classroom?->name]) }}{{ $orphan ? ' · '.__('clubs.orphan') : '' }}">
-                                                <span class="text-sm font-extrabold">{{ $session->code }}@if ($session->modality === \App\Enums\ClubModality::Online) <span class="font-semibold">{{ __('clubs.online_short') }}</span>@endif</span>
+                                                <span class="text-sm font-extrabold">{{ $session->code }}</span>
                                                 <span class="text-[11px] font-bold uppercase">{{ $session->teacher?->panelName() }}</span>
+                                                <span class="mt-0.5 rounded-full bg-white/90 px-2 text-[10px] font-bold uppercase tracking-wide text-ink-900">{{ $session->modality->label() }}</span>
                                             </button>
                                         @endforeach
                                         @if ($canManage && $free > 0)
