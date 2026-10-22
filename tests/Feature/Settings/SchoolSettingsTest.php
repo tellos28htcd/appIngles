@@ -58,7 +58,7 @@ class SchoolSettingsTest extends TestCase
     {
         $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
 
-        $this->get(route('my-school.edit'))->assertOk()->assertSee('Mi escuela')->assertSee('ESCUELA A');
+        $this->get(route('my-school.edit'))->assertOk()->assertSee('Mi Instituto')->assertSee('ESCUELA A');
 
         Livewire::test(MySchool::class)
             ->set('form.name', 'ESCUELA A CENTRO')

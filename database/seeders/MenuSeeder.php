@@ -54,7 +54,7 @@ class MenuSeeder extends Seeder
         ]],
         'reports' => ['Reportes', 'chart', null, MenuItemStatus::ComingSoon],
         'settings' => ['Configuración', 'settings', null, MenuItemStatus::Active, [
-            'settings-school' => ['Mi escuela', null, 'my-school.edit', MenuItemStatus::Active],
+            'settings-school' => ['Mi Instituto', null, 'my-school.edit', MenuItemStatus::Active],
             'settings-users' => ['Usuarios', null, 'users.index', MenuItemStatus::Active],
             'settings-catalogs' => ['Catálogos académicos', null, 'catalogs.index', MenuItemStatus::Active],
             'settings-student-catalogs' => ['Catálogos de alumnos', null, 'student-catalogs.index', MenuItemStatus::Active],
