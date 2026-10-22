@@ -7,6 +7,7 @@ use App\Enums\StudentStatus;
 use App\Enums\StudentTermMovementType;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
+use Carbon\CarbonInterface;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -270,6 +271,23 @@ class Student extends Model
     public function age(): ?int
     {
         return $this->birth_date?->age;
+    }
+
+    /**
+     * Alumnos que cumplen años en esa fecha. Quien nació el 29 de febrero celebra el 28
+     * en los años que no son bisiestos.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeBirthdayOn(Builder $query, CarbonInterface $date): void
+    {
+        $query->whereNotNull('birth_date')->where(function (Builder $query) use ($date): void {
+            $query->where(fn (Builder $q) => $q->whereMonth('birth_date', $date->month)->whereDay('birth_date', $date->day));
+
+            if ($date->month === 2 && $date->day === 28 && ! $date->isLeapYear()) {
+                $query->orWhere(fn (Builder $q) => $q->whereMonth('birth_date', 2)->whereDay('birth_date', 29));
+            }
+        });
     }
 
     public function nextBirthday(): ?Carbon

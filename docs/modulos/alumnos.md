@@ -55,6 +55,14 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
 - Domicilios históricos: `php artisan students:split-addresses [--school=] [--dry-run]` separa la línea en partes
   (solo los que aún no tienen calle); los dudosos quedan marcados "Revisar domicilio" y se limpian al guardar el alumno.
 
+## Cumpleaños
+- Cada mañana (BIRTHDAY_TIME, 07:00) el programador corre `students:birthday-greetings`: notifica a los alumnos
+  con usuario (Activo o En pausa) que cumplen años (29-feb → 28-feb en años no bisiestos). No se repite en el año.
+- El alumno ve una ventana de felicitación al entrar hasta que la marque como leída o la cierre (máximo 7 días).
+- Correo de felicitación solo con `BIRTHDAY_MAIL=true` (activarlo en producción).
+- Recepción y Administrador de escuela ven "Cumpleaños de hoy" en Inicio.
+- Servidor: cron `* * * * * php artisan schedule:run` del usuario del sitio.
+
 ## Permisos
 - Alta, edición, cambio de estatus, tutores, importación y envío de acceso: Administrador de escuela y Servicios escolares.
 - Consulta: los roles con la opción "Expedientes" (Coordinador académico, Mentor, Recepción).

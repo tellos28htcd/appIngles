@@ -15,6 +15,28 @@
             </div>
         </section>
 
+        <div class="flex min-w-0 flex-col gap-4 md:gap-6">
+        @if ($birthdays !== null)
+            <section class="flex flex-col gap-4 rounded-xl border border-line bg-white p-5 shadow-xs md:p-6" aria-labelledby="birthdays-title">
+                <h2 id="birthdays-title" class="flex items-center gap-2 text-h4 font-semibold"><span aria-hidden="true">🎂</span> {{ __('birthdays.today.title') }}</h2>
+                @forelse ($birthdays as $student)
+                    <a href="{{ route('students.show', $student) }}" wire:navigate wire:key="birthday-{{ $student->id }}"
+                       class="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+                       title="{{ __('birthdays.today.view') }}">
+                        @include('livewire.students.partials.avatar', ['student' => $student, 'size' => 'size-10 text-sm'])
+                        <span class="flex min-w-0 flex-1 flex-col">
+                            <span class="truncate font-semibold">{{ $student->fullName() }}</span>
+                            <span class="text-xs text-ink-500">
+                                {{ collect([$student->age() ? trans_choice('birthdays.today.age', $student->age()) : null, $student->mobile_phone, $student->enrollment_number])->filter()->implode(' · ') }}
+                            </span>
+                        </span>
+                    </a>
+                @empty
+                    <p class="text-sm text-ink-500">{{ __('birthdays.today.empty') }}</p>
+                @endforelse
+            </section>
+        @endif
+
         <section class="flex flex-col gap-4 rounded-xl border border-line bg-white p-5 shadow-xs md:p-6" aria-labelledby="roadmap-title">
             <h2 id="roadmap-title" class="text-h4 font-semibold">{{ __('dashboard.roadmap.title') }}</h2>
             <ol class="flex flex-col gap-3">
@@ -40,5 +62,6 @@
                 @endforeach
             </ol>
         </section>
+        </div>
     </div>
 </div>

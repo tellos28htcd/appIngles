@@ -83,6 +83,10 @@
         </div>
     </div>
 
+    @auth
+        <livewire:birthday-greeting />
+    @endauth
+
     <x-ui.toasts />
 
     @livewireScripts

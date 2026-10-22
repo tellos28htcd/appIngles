@@ -21,6 +21,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cumpleaños de alumnos
+    |--------------------------------------------------------------------------
+    | La felicitación siempre aparece como ventana al entrar al sistema. El
+    | correo solo se envía con BIRTHDAY_MAIL=true (activarlo en producción).
+    */
+
+    'birthdays' => [
+        'mail' => (bool) env('BIRTHDAY_MAIL', false),
+        'time' => env('BIRTHDAY_TIME', '07:00'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Super Administrador inicial
     |--------------------------------------------------------------------------
     | Lo crea SuperAdminSeeder. Sin contraseña en .env, el seeder genera una
