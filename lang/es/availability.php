@@ -33,6 +33,7 @@ return [
     'edit_schedule' => 'Editar el horario base de :teacher',
     'schedule_modal_title' => 'Horario base · :teacher',
     'schedule_modal_hint' => 'Al guardar se recalculan las semanas armadas desde hoy.',
+    'club_cell' => 'Club :code (aula :classroom)',
     'no_teachers_yet' => 'Ningún teacher había ingresado este día.',
     'absent_uncovered' => 'Ausente: incidencia sin quien cubra',
 
@@ -112,6 +113,7 @@ return [
         'cover_weekly' => 'Con esta cobertura :teacher tendría :hours h en la semana del :week (máximo :limit).',
         'schedule_weekly' => 'El horario suma :hours h por semana; el máximo es :limit.',
         'slot_order' => 'La hora final debe ser igual o posterior a la inicial.',
+        'club_hour' => 'Es una hora de club: se cambia en Programación de clubs.',
         'status_not_editable' => 'Una baja o un reingreso no se edita: elimina la última y regístrala de nuevo.',
         'already_terminated' => 'El teacher ya está de baja; registra primero su reingreso.',
         'not_terminated' => 'Solo se registra reingreso de un teacher que está de baja.',

@@ -31,6 +31,7 @@ use App\Livewire\Students\StudentImport;
 use App\Livewire\Students\StudentIndex;
 use App\Livewire\Students\StudentShow;
 use App\Livewire\Teachers\AvailabilityPanel;
+use App\Livewire\Teachers\ClubSchedule;
 use App\Livewire\Teachers\TeacherEditor;
 use App\Livewire\Teachers\TeacherIncidentIndex;
 use App\Livewire\Teachers\TeacherIndex;
@@ -83,6 +84,7 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
     Route::livewire('/teachers/{teacher}/horario', TeacherSchedule::class)->name('teachers.schedule');
     Route::livewire('/disponibilidad-de-horarios', AvailabilityPanel::class)->name('availability.index');
     Route::livewire('/incidencias-de-teachers', TeacherIncidentIndex::class)->name('teacher-incidents.index');
+    Route::livewire('/programacion-de-clubs', ClubSchedule::class)->name('clubs.schedule');
 
     Route::livewire('/alumnos', StudentIndex::class)->name('students.index');
     Route::livewire('/alumnos/nuevo', StudentEditor::class)->name('students.create');

@@ -74,6 +74,17 @@ return [
     ],
 
     'clubs' => [
+        'codes' => 'Abreviaturas para la programación de clubs',
+        'codes_hint' => 'Cada abreviatura (p. ej. C12) indica qué niveles cubre y su color en el calendario.',
+        'code' => 'Abreviatura',
+        'code_levels' => 'Niveles',
+        'code_color' => 'Color',
+        'color_option' => 'Color :n',
+        'code_active' => 'Activa',
+        'add_code' => 'Agregar abreviatura',
+        'remove_code' => 'Quitar abreviatura',
+        'code_taken' => 'La abreviatura :code ya la usa otro club.',
+        'code_title' => 'Niveles: :levels',
         'title' => 'Clubes',
         'description' => 'Horas que cuenta cada club según el nivel del alumno.',
         'add' => 'Nuevo club',

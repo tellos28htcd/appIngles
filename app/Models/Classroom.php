@@ -6,9 +6,10 @@ use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** Salón / aula del plantel. Su capacidad es física; el cupo de una sesión es el menor entre ambos. */
-#[Fillable(['school_id', 'base_id', 'name', 'capacity', 'description', 'is_active'])]
+#[Fillable(['school_id', 'base_id', 'name', 'capacity', 'description', 'is_club_room', 'is_active'])]
 class Classroom extends Model
 {
     use Auditable, BelongsToSchool;
@@ -18,12 +19,19 @@ class Classroom extends Model
         return [
             'capacity' => 'integer',
             'is_active' => 'boolean',
+            'is_club_room' => 'boolean',
         ];
     }
 
-    /** Se podrá eliminar mientras ninguna sesión de Agenda lo use. */
+    /** @return HasMany<ClassroomClosure, $this> */
+    public function closures(): HasMany
+    {
+        return $this->hasMany(ClassroomClosure::class)->orderBy('starts_on');
+    }
+
+    /** Se podrá eliminar mientras ningún club ni sesión de Agenda lo use. */
     public function canBeDeleted(): bool
     {
-        return true;
+        return ! ClubSession::withoutGlobalScope('school')->where('classroom_id', $this->id)->exists();
     }
 }

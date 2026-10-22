@@ -26,6 +26,7 @@ class MenuSeeder extends Seeder
             'teachers-list' => ['Teachers', null, 'teachers.index', MenuItemStatus::Active],
             'teachers-availability' => ['Disponibilidad de horarios', null, 'availability.index', MenuItemStatus::Active],
             'teachers-incidents' => ['Incidencias', null, 'teacher-incidents.index', MenuItemStatus::Active],
+            'teachers-clubs' => ['Programación de clubs', null, 'clubs.schedule', MenuItemStatus::Active],
         ]],
         'students' => ['Alumnos', 'student', null, MenuItemStatus::Active, [
             'students-records' => ['Expedientes', null, 'students.index', MenuItemStatus::Active],
@@ -89,7 +90,7 @@ class MenuSeeder extends Seeder
             'billing-statements', 'billing-payments', 'billing-actions', 'reports',
         ],
         Role::ACADEMIC_COORDINATOR => [
-            'dashboard', 'agenda', 'teachers-list', 'teachers-availability', 'teachers-incidents', 'students-records', 'students-guardians',
+            'dashboard', 'agenda', 'teachers-list', 'teachers-availability', 'teachers-incidents', 'teachers-clubs', 'students-records', 'students-guardians',
             'tracking-attendance', 'tracking-evaluations', 'tracking-risk', 'reports',
         ],
         Role::TEACHER => ['dashboard', 'agenda', 'tracking-attendance', 'tracking-evaluations'],
@@ -99,7 +100,7 @@ class MenuSeeder extends Seeder
             'billing-statements', 'billing-payments', 'billing-overdue', 'billing-actions', 'reports',
         ],
         Role::RECEPTION => [
-            'dashboard', 'agenda', 'students-records', 'students-guardians',
+            'dashboard', 'agenda', 'teachers-clubs', 'students-records', 'students-guardians',
             'billing-statements', 'billing-payments',
         ],
         Role::GUARDIAN => ['dashboard', 'my-students-progress', 'my-students-account'],

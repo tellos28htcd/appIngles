@@ -32,6 +32,13 @@
                         <tr wire:key="classroom-{{ $classroom->id }}" @class(['hover:bg-surface', 'opacity-60' => ! $classroom->is_active])>
                             <td class="px-4 py-2.5 md:px-5">
                                 <span class="font-semibold">{{ $classroom->name }}</span>
+                                @if ($classroom->is_club_room)
+                                    <x-ui.badge variant="info" class="ml-1">{{ __('settings.classrooms.club_room_badge') }}</x-ui.badge>
+                                    @if ($schoolId !== null)
+                                        <button type="button" wire:click="openClosures({{ $classroom->id }})"
+                                                class="ml-1 text-sm font-semibold text-primary-700 underline-offset-2 hover:underline">{{ __('settings.closures.open') }}</button>
+                                    @endif
+                                @endif
                                 @if ($classroom->description)
                                     <span class="block text-xs text-ink-500">{{ $classroom->description }}</span>
                                 @endif
@@ -55,9 +62,51 @@
         </div>
         <p class="-mt-2 text-[13px] text-ink-500">{{ __('settings.classrooms.capacity_hint') }}</p>
         <x-ui.input name="description" :label="__('settings.fields.description')" :hint="__('settings.classrooms.description_hint')" wire:model="description" maxlength="255" />
+        <x-ui.toggle name="isClubRoom" :label="__('settings.classrooms.club_room')" :description="__('settings.classrooms.club_room_hint')" wire:model="isClubRoom" />
         <x-slot:footer>
             <x-ui.button variant="ghost" x-on:click="open = null">{{ __('settings.actions.cancel') }}</x-ui.button>
             <x-ui.button wire:click="save">{{ __('settings.actions.save') }}</x-ui.button>
+        </x-slot:footer>
+    </x-ui.modal>
+
+    {{-- Periodos sin disponibilidad del aula audiovisual --}}
+    <x-ui.modal wire:model="closuresClassroomId" size="md" :title="__('settings.closures.title')">
+        <p class="-mt-2 text-sm text-ink-500">{{ __('settings.closures.hint') }}</p>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <x-ui.input name="closureFrom" type="date" :label="__('settings.closures.from')" wire:model="closureFrom" required />
+            <x-ui.input name="closureTo" type="date" :label="__('settings.closures.to')" wire:model="closureTo" required />
+        </div>
+        <x-ui.toggle name="closureAllDay" :label="__('settings.closures.all_day')" wire:model.live="closureAllDay" />
+        @unless ($closureAllDay)
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-ui.select name="closureFromSlot" :label="__('settings.closures.from_hour')" :options="$this->slotOptions" :placeholder="__('students.select')" wire:model="closureFromSlot" required />
+                <x-ui.select name="closureToSlot" :label="__('settings.closures.to_hour')" :options="$this->slotOptions" :placeholder="__('students.select')" wire:model="closureToSlot" required />
+            </div>
+        @endunless
+        <x-ui.input name="closureReason" :label="__('settings.closures.reason')" wire:model="closureReason" maxlength="255" required />
+        <div class="flex justify-end">
+            <x-ui.button variant="secondary" wire:click="saveClosure"><x-ui.icon name="plus" class="size-4" />{{ __('settings.closures.add') }}</x-ui.button>
+        </div>
+        <ul class="divide-y divide-line rounded-lg border border-line">
+            @forelse ($this->closures as $closure)
+                <li wire:key="closure-{{ $closure->id }}" class="flex items-start gap-3 px-3 py-2">
+                    <div class="flex min-w-0 flex-1 flex-col text-sm">
+                        <span class="font-semibold tabular-nums">
+                            {{ $closure->starts_on->translatedFormat('j M Y') }}@if (! $closure->starts_on->equalTo($closure->ends_on)) – {{ $closure->ends_on->translatedFormat('j M Y') }}@endif
+                            · {{ $closure->isAllDay() ? __('settings.closures.all_day') : substr($closure->fromSlot->starts_at, 0, 5).'–'.substr($closure->toSlot->ends_at, 0, 5) }}
+                        </span>
+                        <span class="text-ink-500 [overflow-wrap:anywhere]">{{ $closure->reason }}</span>
+                    </div>
+                    <button type="button" wire:click="deleteClosure({{ $closure->id }})" wire:confirm="{{ __('settings.closures.confirm_delete') }}"
+                            class="flex size-9 flex-none items-center justify-center rounded-[10px] text-danger-700 hover:bg-danger-50"
+                            aria-label="{{ __('settings.closures.delete') }}" title="{{ __('settings.closures.delete') }}"><x-ui.icon name="trash" class="size-4" /></button>
+                </li>
+            @empty
+                <li class="px-3 py-2 text-sm text-ink-500">{{ __('settings.closures.empty') }}</li>
+            @endforelse
+        </ul>
+        <x-slot:footer>
+            <x-ui.button variant="ghost" x-on:click="open = null">{{ __('settings.closures.close') }}</x-ui.button>
         </x-slot:footer>
     </x-ui.modal>
 

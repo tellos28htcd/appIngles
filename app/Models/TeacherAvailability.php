@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Celda del panel: el teacher está disponible esa fecha, en ese bloque de
  * horario y (cuando ya se asignó) en esa aula. Si cubre a otro teacher, lo indica.
  */
-#[Fillable(['school_id', 'teacher_id', 'date', 'schedule_slot_id', 'classroom_id', 'is_absent', 'held_classroom_id', 'covered_teacher_id', 'teacher_incident_id'])]
+#[Fillable(['school_id', 'teacher_id', 'date', 'schedule_slot_id', 'classroom_id', 'is_absent', 'held_classroom_id', 'covered_teacher_id', 'teacher_incident_id', 'club_session_id'])]
 class TeacherAvailability extends Model
 {
     use BelongsToSchool;
@@ -40,5 +40,11 @@ class TeacherAvailability extends Model
     public function slot(): BelongsTo
     {
         return $this->belongsTo(ScheduleSlot::class, 'schedule_slot_id');
+    }
+
+    /** @return BelongsTo<ClubSession, $this> */
+    public function clubSession(): BelongsTo
+    {
+        return $this->belongsTo(ClubSession::class);
     }
 }

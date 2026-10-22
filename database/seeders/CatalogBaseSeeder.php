@@ -70,6 +70,16 @@ class CatalogBaseSeeder extends Seeder
         'Ted Talks Club' => [null, null, 10],
     ];
 
+    /** Abreviaturas de cada club para la programación mensual (niveles que cubre y color del panel). */
+    private const CLUB_CODES = [
+        'Conversation Club' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true], ['code' => 'C23', 'levels' => [2, 3], 'color' => 2, 'is_active' => true]],
+        'Movie Club' => [['code' => 'M12', 'levels' => [1, 2], 'color' => 3, 'is_active' => true], ['code' => 'M23', 'levels' => [2, 3], 'color' => 4, 'is_active' => true]],
+        'Soundbooth Club' => [['code' => 'S12', 'levels' => [1, 2], 'color' => 5, 'is_active' => true], ['code' => 'S23', 'levels' => [2, 3], 'color' => 6, 'is_active' => true]],
+        'Field Trip Club' => [['code' => 'F12', 'levels' => [1, 2], 'color' => 9, 'is_active' => true], ['code' => 'F23', 'levels' => [2, 3], 'color' => 1, 'is_active' => true]],
+        'Book Club' => [['code' => 'B12', 'levels' => [1, 2], 'color' => 7, 'is_active' => true], ['code' => 'B23', 'levels' => [2, 3], 'color' => 8, 'is_active' => true]],
+        'Ted Talks Club' => [['code' => 'T3', 'levels' => [3], 'color' => 2, 'is_active' => true]],
+    ];
+
     /** Método => ¿pide referencia (folio, autorización, número de cheque)? */
     private const PAYMENT_METHODS = [
         'Efectivo' => false,
@@ -211,6 +221,7 @@ class CatalogBaseSeeder extends Seeder
             $club = Club::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
                 'sort_order' => $order += 10,
                 'is_active' => true,
+                'codes' => self::CLUB_CODES[$name] ?? [],
             ]);
 
             if (! $club->wasRecentlyCreated) {
