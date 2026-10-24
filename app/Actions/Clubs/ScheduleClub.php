@@ -63,7 +63,7 @@ final class ScheduleClub
     }
 
     /**
-     * @param  array{club_id: int, code: string, teacher_id: int, date: string, schedule_slot_id: int, modality: string, classroom_id?: ?int}  $data
+     * @param  array{club_id: int, code: string, teacher_id: int, date: string, schedule_slot_id: int, modality: string, classroom_id?: ?int, repeats?: bool}  $data
      */
     public function save(School $school, array $data, ?ClubSession $session = null, ?int $userId = null): ClubSession
     {
@@ -88,6 +88,7 @@ final class ScheduleClub
                 'date' => $date->toDateString(),
                 'schedule_slot_id' => $data['schedule_slot_id'],
                 'modality' => ClubModality::from($data['modality']),
+                'repeats' => (bool) ($data['repeats'] ?? false),
             ])->save();
 
             $this->refresh($school, $date->toDateString());

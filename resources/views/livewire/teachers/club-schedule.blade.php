@@ -188,7 +188,7 @@
                          :placeholder="__($this->teacherOptions ? 'students.select' : 'clubs.no_teachers')" :hint="__('clubs.teacher_hint')" wire:model="teacherId" required />
             <x-ui.choice name="modality" :label="__('clubs.fields.modality')" :options="$modalities" wire:model.live="modality" />
             <x-ui.select name="classroomId" :label="__($modality === 'online' ? 'clubs.fields.virtual_room' : 'clubs.fields.room')" :options="$this->roomOptions"
-                         :placeholder="__($this->roomOptions ? 'clubs.any_room' : 'clubs.no_free_room')" wire:model="classroomId" wire:key="rooms-{{ $modality }}"
+                         :placeholder="__($this->roomOptions ? 'students.select' : 'clubs.no_free_room')" wire:model="classroomId" wire:key="rooms-{{ $modality }}" required
                          :hint="$modality === 'online' && ! $this->roomOptions ? __('clubs.no_virtual_hint') : null" />
             <x-ui.toggle name="repeat" :label="__('clubs.repeat')" :description="__('clubs.repeat_hint')" wire:model="repeat" />
             <x-slot:footer>

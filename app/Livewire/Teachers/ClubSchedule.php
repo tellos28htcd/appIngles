@@ -122,7 +122,7 @@ class ClubSchedule extends Component
         $this->teacherId = $session->teacher_id;
         $this->modality = $session->modality->value;
         $this->classroomId = $session->classroom_id;
-        $this->repeat = false;
+        $this->repeat = $session->repeats;
         $this->editing = true;
     }
 
@@ -135,13 +135,21 @@ class ClubSchedule extends Component
     public function save(ScheduleClub $scheduler): void
     {
         $this->authorize('manage', ClubSession::class);
+
+        // Sin aula libre de esa modalidad se dice el motivo (en vez de "elige un aula").
+        if ($this->classroomId === null && $this->roomOptions === [] && ($modality = ClubModality::tryFrom($this->modality)) !== null) {
+            throw ValidationException::withMessages(['classroomId' => __('clubs.validation.no_room_'.$modality->value)]);
+        }
+
         $this->validate([
             'codeKey' => ['required', 'string'],
             'teacherId' => ['required', 'integer'],
             'modality' => ['required', 'in:'.implode(',', array_column(ClubModality::cases(), 'value'))],
             'date' => ['required', 'date'],
             'slotId' => ['required', 'integer'],
+            'classroomId' => ['required', 'integer'],
         ], attributes: [
+            'classroomId' => mb_strtolower(__($this->modality === ClubModality::Online->value ? 'clubs.fields.virtual_room' : 'clubs.fields.room')),
             'codeKey' => mb_strtolower(__('clubs.fields.code')),
             'teacherId' => mb_strtolower(__('clubs.fields.teacher')),
             'modality' => mb_strtolower(__('clubs.fields.modality')),
@@ -152,6 +160,7 @@ class ClubSchedule extends Component
         $data = [
             'club_id' => (int) $clubId, 'code' => $code, 'teacher_id' => $this->teacherId, 'date' => $this->date,
             'schedule_slot_id' => $this->slotId, 'modality' => $this->modality, 'classroom_id' => $this->classroomId,
+            'repeats' => $this->repeat,
         ];
 
         $scheduler->save($school, $data, $this->sessionId ? $this->find($this->sessionId) : null, auth()->id());

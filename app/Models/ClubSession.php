@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * aula audiovisual y modalidad. Esa hora del teacher deja de estar disponible
  * para clases normales.
  */
-#[Fillable(['school_id', 'club_id', 'code', 'teacher_id', 'classroom_id', 'date', 'schedule_slot_id', 'modality', 'user_id'])]
+#[Fillable(['school_id', 'club_id', 'code', 'teacher_id', 'classroom_id', 'date', 'schedule_slot_id', 'modality', 'repeats', 'user_id'])]
 class ClubSession extends Model
 {
     use Auditable, BelongsToSchool;
@@ -24,6 +24,7 @@ class ClubSession extends Model
         return [
             'date' => 'date',
             'modality' => ClubModality::class,
+            'repeats' => 'boolean',
         ];
     }
 

@@ -16,7 +16,6 @@ return [
     'reserved' => 'Reservada para otra actividad',
     'save' => 'Guardar club',
     'room' => 'Aula :name',
-    'any_room' => 'Cualquier aula libre',
     'orphan' => 'el teacher ya no tiene esta hora en el panel (revísalo)',
     'add' => 'Programar club',
     'edit' => 'Club programado',
