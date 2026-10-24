@@ -7,6 +7,7 @@ return [
     'authorized' => 'Horas autorizadas al mes',
     'programmed' => 'Horas programadas en el mes',
     'all_match' => 'Todo coincide',
+    'teacher_prefix' => 'T.',
     'not_matching' => 'Aún no coincide',
     'no_activities' => 'No hay actividades activas: agrégalas en Catálogos académicos → Actividades de coordinación.',
     'uses_teacher_hour' => 'Ocupa la hora del teacher (se marca en el panel de disponibilidad)',
@@ -47,6 +48,7 @@ return [
         'teacher' => 'El teacher no tiene esa hora libre (horario base, incidencias, club u otra actividad).',
         'teacher_working' => 'El teacher no está trabajando a esa hora (horario base o incidencias).',
         'over' => 'No se pueden agregar más horas a ":activity": ya llegó a sus :hours h autorizadas del mes.',
+        'over_teacher' => 'Ese teacher ya tiene sus :hours h autorizadas de ":activity" en el mes.',
     ],
 
     'messages' => [

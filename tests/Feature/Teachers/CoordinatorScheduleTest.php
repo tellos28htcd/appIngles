@@ -69,7 +69,7 @@ class CoordinatorScheduleTest extends TestCase
     /** @param array<int, list<int>> $hours */
     private function teacher(string $short, int $number, array $hours): Teacher
     {
-        $teacher = Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => $short, 'panel_number' => $number]);
+        $teacher = Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'first_name' => ucfirst(strtolower($short)), 'short_name' => $short, 'panel_number' => $number]);
 
         foreach ($hours as $weekday => $list) {
             foreach ($list as $hour) {
@@ -156,6 +156,25 @@ class CoordinatorScheduleTest extends TestCase
         $cell = TeacherAvailability::where('teacher_id', $melissa->id)->whereDate('date', '2026-07-27')->where('schedule_slot_id', $this->slots[9]->id)->sole();
         $this->assertNull($cell->coordinator_session_id);
         $this->assertContains($melissa->id, app(AvailabilityPlanner::class)->availableTeacherIds($this->school, CarbonImmutable::parse('2026-07-27'), $this->slots[9]));
+    }
+
+    public function test_club_evaluation_has_two_hours_per_teacher_and_a_row_per_teacher(): void
+    {
+        $evaluation = CoordinatorActivity::create(['school_id' => $this->school->id, 'name' => 'Evaluación de Club', 'authorized_hours' => 2,
+            'per_teacher' => true, 'requires_teacher' => true, 'table_column' => 1, 'sort_order' => 3, 'is_active' => true]);
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10, 11], 2 => [9]]);
+        $dulce = $this->teacher('DULCE', 2, [1 => [11], 2 => [10]]);
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+
+        $this->program('2026-07-27', 9, $evaluation, $melissa)->assertHasNoErrors();
+        $this->program('2026-07-27', 10, $evaluation, $melissa)->assertHasNoErrors();
+        // Melissa ya tiene sus 2 h; Dulce tiene las suyas aparte.
+        $this->program('2026-07-28', 9, $evaluation, $melissa)->assertHasErrors('activityId');
+        $this->program('2026-07-28', 10, $evaluation, $dulce)->assertHasNoErrors();
+
+        $columns = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)->viewData('columns');
+        $left = collect($columns[1])->filter()->mapWithKeys(fn ($row) => [$row['label'] => [$row['authorized'], $row['programmed']]])->all();
+        $this->assertSame(['Evaluación de Club T. Melissa' => [2.0, 2.0], 'Evaluación de Club T. Dulce' => [2.0, 1.0]], $left);
     }
 
     public function test_authorized_hours_cannot_be_exceeded_and_totals_are_shown(): void

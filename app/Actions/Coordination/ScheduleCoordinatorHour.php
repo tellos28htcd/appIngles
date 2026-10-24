@@ -32,12 +32,16 @@ final class ScheduleCoordinatorHour
         return max(0.0, (strtotime($slot->ends_at) - strtotime($slot->starts_at)) / 3600);
     }
 
-    /** Horas programadas de una actividad en el mes de esa fecha (sin contar la que se edita). */
-    public function monthHours(CoordinatorActivity $activity, CarbonImmutable $date, ?int $exceptSessionId = null): float
+    /**
+     * Horas programadas de una actividad en el mes de esa fecha (sin contar la que se edita).
+     * Si sus horas autorizadas son por teacher, solo las de ese teacher.
+     */
+    public function monthHours(CoordinatorActivity $activity, CarbonImmutable $date, ?int $exceptSessionId = null, ?int $teacherId = null): float
     {
         return (float) CoordinatorSession::withoutGlobalScope('school')->where('coordinator_activity_id', $activity->id)
             ->whereBetween('date', [$date->startOfMonth()->toDateString(), $date->endOfMonth()->toDateString()])
             ->when($exceptSessionId, fn ($query, $id) => $query->whereKeyNot($id))
+            ->when($activity->per_teacher, fn ($query) => $query->where('teacher_id', $teacherId))
             ->with('slot')->get()->sum(fn (CoordinatorSession $session) => $session->hours());
     }
 
@@ -115,13 +119,15 @@ final class ScheduleCoordinatorHour
             return ['teacherId', __('coordination.validation.teacher')];
         }
 
-        if (! $activity->uses_teacher_hour && $activity->requires_teacher && ! in_array($teacherId, $this->planner->workingTeacherIds($school, $date, $slot), true)) {
+        if (! $activity->uses_teacher_hour && $activity->needsTeacher() && ! in_array($teacherId, $this->planner->workingTeacherIds($school, $date, $slot), true)) {
             return ['teacherId', __('coordination.validation.teacher_working')];
         }
 
-        $hours = $this->monthHours($activity, $date, $session?->id) + self::slotHours($slot);
+        $hours = $this->monthHours($activity, $date, $session?->id, $teacherId) + self::slotHours($slot);
         if ($hours > $activity->authorized_hours + 0.001) {
-            return ['activityId', __('coordination.validation.over', ['activity' => $activity->name, 'hours' => (float) $activity->authorized_hours])];
+            return ['activityId', $activity->per_teacher
+                ? __('coordination.validation.over_teacher', ['activity' => $activity->name, 'hours' => (float) $activity->authorized_hours])
+                : __('coordination.validation.over', ['activity' => $activity->name, 'hours' => (float) $activity->authorized_hours])];
         }
 
         return null;

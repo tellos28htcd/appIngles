@@ -7,7 +7,10 @@ Decisiones del 23-oct-2026.
 "Se elige teacher", "Ocupa la hora del teacher" y la letra que se ve en el panel. Iniciales: las 13 actividades del
 Excel más **Evaluación de Sesión** (2 h). Sin teacher ("Actividad Coordinación"): Programación de Clubs, Elaboración
 de club en Canva, Elaboración de clubs, Preparación de junta Mensual y Junta mensual. Todas las demás llevan teacher;
-solo **Revisión de Planeaciones** ocupa su hora (letra **R**).
+solo **Revisión de Planeaciones** ocupa su hora (letra **R**). **Evaluación de Club** y **Evaluación de Sesión** tienen
+HA **por teacher** (2 h al mes cada teacher). Se agregan "Carpetas mensuales de Oscar" y "Reporte mensual CN de Oscar"
+(2 h, sin teacher). La tabla HA/HP va en dos columnas (`table_column`), como el Excel; las actividades por teacher
+muestran un renglón por teacher del panel (activo, sin Lista de espera, ya ingresado).
 
 ## Programación (Teachers → Horas Coordinador)
 Calendario del mes igual al de clubs (una cuadrícula por semana, renglones alternos). Arriba, la tabla del catálogo

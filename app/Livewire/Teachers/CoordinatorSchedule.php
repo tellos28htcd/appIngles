@@ -301,14 +301,42 @@ class CoordinatorSchedule extends Component
             $weeks[] = $planner->days($school, $monday);
         }
 
-        // HA (autorizadas) y HP (programadas en el mes) por actividad.
-        $programmed = $this->sessions->groupBy('coordinator_activity_id')
+        // HA (autorizadas) y HP (programadas en el mes) por actividad, en dos columnas como el Excel.
+        // Las actividades "por teacher" (Evaluación de Club y de Sesión) llevan un renglón por teacher.
+        $programmed = $this->sessions->groupBy(fn (CoordinatorSession $session) => $session->coordinator_activity_id.'|'.($session->teacher_id ?? 0))
             ->map(fn (Collection $items) => $items->sum(fn (CoordinatorSession $session) => $session->hours()));
-        $catalog = $this->activities->map(fn (CoordinatorActivity $activity) => [
-            'activity' => $activity,
-            'authorized' => (float) $activity->authorized_hours,
-            'programmed' => (float) ($programmed[$activity->id] ?? 0),
-        ]);
+        $hoursOf = fn (CoordinatorActivity $activity, ?int $teacherId = null) => (float) ($teacherId !== null
+            ? ($programmed[$activity->id.'|'.$teacherId] ?? 0)
+            : $programmed->filter(fn ($hours, $key) => str_starts_with($key, $activity->id.'|'))->sum());
+        $evaluated = Teacher::query()->where('school_id', $school->id)->inPanel()->where('is_waitlist', false)
+            ->where(fn ($query) => $query->whereNull('hired_on')->orWhereDate('hired_on', '<=', $first->endOfMonth()->toDateString()))
+            ->get();
+
+        $columns = [1 => [], 2 => []];
+        foreach ($this->activities as $activity) {
+            $column = $activity->table_column === 1 ? 1 : 2;
+
+            if (! $activity->per_teacher) {
+                $columns[$column][] = ['activity' => $activity, 'label' => $activity->name, 'authorized' => (float) $activity->authorized_hours, 'programmed' => $hoursOf($activity)];
+
+                continue;
+            }
+
+            // Un renglón en blanco separa dos grupos "por teacher" (como en el Excel).
+            if (collect($columns[$column])->contains(fn ($row) => $row !== null && $row['activity']->per_teacher)) {
+                $columns[$column][] = null;
+            }
+
+            foreach ($evaluated as $teacher) {
+                $columns[$column][] = [
+                    'activity' => $activity,
+                    'label' => $activity->name.' '.__('coordination.teacher_prefix').' '.Str::title(Str::before(trim($teacher->first_name), ' ') ?: $teacher->panelName()),
+                    'authorized' => (float) $activity->authorized_hours,
+                    'programmed' => $hoursOf($activity, $teacher->id),
+                ];
+            }
+        }
+        $catalog = collect($columns)->flatten(1)->filter()->values();
 
         return view('livewire.teachers.coordinator-schedule', [
             'monthStart' => $first,
@@ -317,6 +345,7 @@ class CoordinatorSchedule extends Component
             'holidays' => $planner->holidays($school, collect($weeks)->flatten(1)->all()),
             'grid' => $this->sessions->keyBy(fn (CoordinatorSession $session) => $session->date->toDateString().'|'.$session->schedule_slot_id),
             'catalog' => $catalog,
+            'columns' => $columns,
             'totalAuthorized' => $catalog->sum('authorized'),
             'totalProgrammed' => $catalog->sum('programmed'),
             'allMatch' => $catalog->every(fn (array $row) => abs($row['authorized'] - $row['programmed']) < 0.001),

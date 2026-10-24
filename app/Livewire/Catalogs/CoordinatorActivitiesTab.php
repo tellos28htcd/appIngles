@@ -23,6 +23,12 @@ class CoordinatorActivitiesTab extends Component
 
     public ?float $authorizedHours = null;
 
+    /** Las HA son de cada teacher (p. ej. Evaluación de Club: 2 h al mes por teacher). */
+    public bool $perTeacher = false;
+
+    /** Columna de la tabla HA/HP: 1 = izquierda, 2 = derecha. */
+    public int $tableColumn = 2;
+
     /** Se programa con un teacher (sin ocupar su hora, salvo que también ocupe su hora). */
     public bool $requiresTeacher = false;
 
@@ -45,6 +51,8 @@ class CoordinatorActivitiesTab extends Component
         $this->activityId = $activity?->id;
         $this->name = (string) $activity?->name;
         $this->authorizedHours = $activity?->authorized_hours;
+        $this->perTeacher = (bool) $activity?->per_teacher;
+        $this->tableColumn = $activity?->table_column ?? 2;
         $this->requiresTeacher = (bool) $activity?->requires_teacher;
         $this->usesTeacherHour = (bool) $activity?->uses_teacher_hour;
         $this->panelMark = (string) $activity?->panel_mark;
@@ -58,6 +66,8 @@ class CoordinatorActivitiesTab extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:120', $this->uniqueInCatalog('coordinator_activities', 'name', $this->activityId)],
             'authorizedHours' => ['required', 'numeric', 'min:0', 'max:999'],
+            'perTeacher' => ['boolean'],
+            'tableColumn' => ['required', 'integer', 'in:1,2'],
             'requiresTeacher' => ['boolean'],
             'usesTeacherHour' => ['boolean'],
             'panelMark' => [$this->usesTeacherHour ? 'required' : 'nullable', 'string', 'max:3'],
@@ -75,7 +85,9 @@ class CoordinatorActivitiesTab extends Component
         $activity->fill([
             'name' => trim($data['name']),
             'authorized_hours' => $data['authorizedHours'],
-            'requires_teacher' => $data['requiresTeacher'] || $data['usesTeacherHour'],
+            'per_teacher' => $data['perTeacher'],
+            'table_column' => $data['tableColumn'],
+            'requires_teacher' => $data['requiresTeacher'] || $data['usesTeacherHour'] || $data['perTeacher'],
             'uses_teacher_hour' => $data['usesTeacherHour'],
             'panel_mark' => $data['usesTeacherHour'] ? Str::upper(trim($data['panelMark'])) : null,
         ])->save();

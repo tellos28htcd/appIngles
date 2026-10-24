@@ -57,51 +57,61 @@
         @endif
     </section>
 
-    {{-- Catálogo: horas autorizadas (HA) y programadas en el mes (HP) --}}
-    <section class="overflow-x-auto rounded-xl border border-line bg-white shadow-xs">
-        <table class="w-full text-sm">
-            <thead class="bg-ink-900 text-left text-on-primary">
-                <tr>
-                    <th scope="col" class="px-4 py-2 font-bold">{{ __('coordination.fields.activity') }}</th>
-                    <th scope="col" class="w-20 px-3 py-2 text-center font-bold" title="{{ __('coordination.authorized') }}">HA</th>
-                    <th scope="col" class="w-20 px-3 py-2 text-center font-bold" title="{{ __('coordination.programmed') }}">HP</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($catalog as $row)
-                    @php($state = abs($row['programmed'] - $row['authorized']) < 0.001 ? 'match' : ($row['programmed'] > $row['authorized'] ? 'over' : 'under'))
-                    <tr wire:key="activity-{{ $row['activity']->id }}" @class(['bg-white' => $loop->odd, 'bg-row-alt' => $loop->even])>
-                        <td class="px-4 py-1.5">
-                            <span class="font-semibold">{{ $row['activity']->name }}</span>
-                            @if ($row['activity']->uses_teacher_hour)
-                                <span class="ml-1 inline-flex size-5 items-center justify-center rounded bg-ink-900 text-[11px] font-extrabold text-white" title="{{ __('coordination.uses_teacher_hour') }}">{{ $row['activity']->panel_mark ?: '•' }}</span>
-                            @elseif (! $row['activity']->requires_teacher)
-                                <span class="ml-1 text-xs text-ink-500">· {{ __('coordination.coordination_short') }}</span>
+    {{-- Catálogo: horas autorizadas (HA) y programadas en el mes (HP), en dos columnas --}}
+    <section class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        @foreach ($columns as $number => $rows)
+            <div class="overflow-x-auto rounded-xl border border-line bg-white shadow-xs" wire:key="hours-column-{{ $number }}">
+                <table class="w-full text-sm">
+                    <thead class="bg-ink-900 text-left text-on-primary">
+                        <tr>
+                            <th scope="col" class="px-4 py-2 font-bold">{{ __('coordination.fields.activity') }}</th>
+                            <th scope="col" class="w-16 px-3 py-2 text-center font-bold" title="{{ __('coordination.authorized') }}">HA</th>
+                            <th scope="col" class="w-16 px-3 py-2 text-center font-bold" title="{{ __('coordination.programmed') }}">HP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($rows as $row)
+                            @if ($row === null)
+                                <tr class="h-8 bg-white" aria-hidden="true"><td colspan="3"></td></tr>
+                                @continue
                             @endif
-                        </td>
-                        <td class="px-3 py-1.5 text-center tabular-nums">{{ (float) $row['authorized'] }}</td>
-                        <td @class(['px-3 py-1.5 text-center font-bold tabular-nums',
-                            'text-success-700' => $state === 'match',
-                            'bg-danger-50 text-danger-700' => $state === 'over',
-                            'text-ink-700' => $state === 'under'])
-                            title="{{ __('coordination.state.'.$state) }}">{{ (float) $row['programmed'] }}</td>
-                    </tr>
-                @empty
-                    <tr><td colspan="3" class="px-4 py-3 text-ink-500">{{ __('coordination.no_activities') }}</td></tr>
-                @endforelse
-            </tbody>
-            <tfoot>
-                <tr class="border-t-2 border-ink-900">
-                    <th scope="row" class="px-4 py-2 text-left">
-                        <span @class(['inline-flex items-center gap-2', 'text-success-700' => $allMatch, 'text-warning-700' => ! $allMatch])>
-                            <x-ui.icon :name="$allMatch ? 'check' : 'close'" class="size-4" />{{ __($allMatch ? 'coordination.all_match' : 'coordination.not_matching') }}
-                        </span>
-                    </th>
-                    <td class="px-3 py-2 text-center font-extrabold tabular-nums">{{ (float) $totalAuthorized }}</td>
-                    <td class="px-3 py-2 text-center font-extrabold tabular-nums">{{ (float) $totalProgrammed }}</td>
-                </tr>
-            </tfoot>
-        </table>
+                            @php($state = abs($row['programmed'] - $row['authorized']) < 0.001 ? 'match' : ($row['programmed'] > $row['authorized'] ? 'over' : 'under'))
+                            <tr @class(['bg-white' => $loop->odd, 'bg-row-alt' => $loop->even])>
+                                <td class="px-4 py-1.5">
+                                    <span class="font-semibold">{{ $row['label'] }}</span>
+                                    @if ($row['activity']->uses_teacher_hour)
+                                        <span class="ml-1 inline-flex size-5 items-center justify-center rounded bg-ink-900 text-[11px] font-extrabold text-white" title="{{ __('coordination.uses_teacher_hour') }}">{{ $row['activity']->panel_mark ?: '•' }}</span>
+                                    @elseif (! $row['activity']->needsTeacher())
+                                        <span class="ml-1 text-xs text-ink-500">· {{ __('coordination.coordination_short') }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-1.5 text-center tabular-nums">{{ (float) $row['authorized'] }}</td>
+                                <td @class(['px-3 py-1.5 text-center font-bold tabular-nums',
+                                    'text-success-700' => $state === 'match',
+                                    'bg-danger-50 text-danger-700' => $state === 'over',
+                                    'text-ink-700' => $state === 'under'])
+                                    title="{{ __('coordination.state.'.$state) }}">{{ (float) $row['programmed'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="px-4 py-3 text-ink-500">{{ __('coordination.no_activities') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                    @if ($loop->last)
+                        <tfoot>
+                            <tr class="border-t-2 border-ink-900">
+                                <th scope="row" class="px-4 py-2 text-left">
+                                    <span @class(['inline-flex items-center gap-2', 'text-success-700' => $allMatch, 'text-warning-700' => ! $allMatch])>
+                                        <x-ui.icon :name="$allMatch ? 'check' : 'close'" class="size-4" />{{ __($allMatch ? 'coordination.all_match' : 'coordination.not_matching') }}
+                                    </span>
+                                </th>
+                                <td class="px-3 py-2 text-center font-extrabold tabular-nums">{{ (float) $totalAuthorized }}</td>
+                                <td class="px-3 py-2 text-center font-extrabold tabular-nums">{{ (float) $totalProgrammed }}</td>
+                            </tr>
+                        </tfoot>
+                    @endif
+                </table>
+            </div>
+        @endforeach
     </section>
 
     {{-- Una cuadrícula por semana --}}

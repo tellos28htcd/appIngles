@@ -17,7 +17,9 @@
                         <tr wire:key="coordination-{{ $activity->id }}" @class(['hover:bg-surface', 'opacity-60' => ! $activity->is_active])>
                             <td class="px-4 py-2 md:px-5">
                                 <span class="font-semibold">{{ $activity->name }}</span>
-                                @if ($activity->uses_teacher_hour)
+                                @if ($activity->per_teacher)
+                                    <x-ui.badge variant="success" class="ml-1">{{ __('catalogs.coordination.per_teacher_badge') }}</x-ui.badge>
+                                @elseif ($activity->uses_teacher_hour)
                                     <x-ui.badge variant="neutral" class="ml-1">{{ __('catalogs.coordination.uses_teacher_badge', ['mark' => $activity->panel_mark]) }}</x-ui.badge>
                                 @elseif ($activity->requires_teacher)
                                     <x-ui.badge variant="info" class="ml-1">{{ __('catalogs.coordination.requires_teacher_badge') }}</x-ui.badge>
@@ -45,6 +47,9 @@
     <x-ui.modal wire:model="editing" :title="__($activityId ? 'catalogs.coordination.edit' : 'catalogs.coordination.add')">
         <x-ui.input name="name" :label="__('catalogs.fields.name')" wire:model="name" maxlength="120" required />
         <x-ui.input name="authorizedHours" type="number" step="0.5" min="0" :label="__('catalogs.coordination.authorized_hours')" wire:model="authorizedHours" class="tabular-nums" required />
+        <x-ui.toggle name="perTeacher" :label="__('catalogs.coordination.per_teacher')" :description="__('catalogs.coordination.per_teacher_hint')" wire:model="perTeacher" />
+        <x-ui.choice name="tableColumn" :label="__('catalogs.coordination.table_column')"
+                     :options="[1 => __('catalogs.coordination.column_left'), 2 => __('catalogs.coordination.column_right')]" wire:model="tableColumn" />
         <x-ui.toggle name="requiresTeacher" :label="__('catalogs.coordination.requires_teacher')" :description="__('catalogs.coordination.requires_teacher_hint')" wire:model="requiresTeacher" />
         <x-ui.toggle name="usesTeacherHour" :label="__('catalogs.coordination.uses_teacher_hour')" :description="__('catalogs.coordination.uses_teacher_hour_hint')" wire:model.live="usesTeacherHour" />
         @if ($usesTeacherHour)
