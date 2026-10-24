@@ -91,6 +91,10 @@
                                         @if (! $cell && $absences->has($key))
                                             <span class="flex h-7 w-full items-center justify-center bg-warning-500 font-extrabold text-white"
                                                   title="{{ $teacher->panelName() }} · {{ $dayNames[$day->toDateString()] }} {{ $slot->range() }} · {{ __('availability.absent_uncovered') }}">A</span>
+                                        @elseif ($cell && $cell->coordinatorSession)
+                                            {{-- Revisión de Planeaciones (u otra actividad que ocupa la hora): letra blanca sobre negro. --}}
+                                            <span class="flex h-7 w-full items-center justify-center bg-ink-900 text-sm font-extrabold text-white"
+                                                  title="{{ $teacher->panelName() }} · {{ $dayNames[$day->toDateString()] }} {{ $slot->range() }} · {{ $cell->coordinatorSession->activity?->name }}">{{ $cell->coordinatorSession->activity?->panel_mark ?: 'R' }}</span>
                                         @elseif ($cell && $cell->clubSession)
                                             {{-- Hora de club: no sirve para clases normales; se cambia en Programación de clubs. --}}
                                             <span class="flex h-7 w-full items-center justify-center text-[11px] font-extrabold {{ \App\Support\RoomColors::for($cell->clubSession->color()) }}"

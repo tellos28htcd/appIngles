@@ -11,6 +11,7 @@ use App\Models\Book;
 use App\Models\ChargeConcept;
 use App\Models\Classroom;
 use App\Models\Club;
+use App\Models\CoordinatorActivity;
 use App\Models\Lesson;
 use App\Models\PaymentMethod;
 use App\Models\ScheduleSlot;
@@ -99,6 +100,7 @@ class CatalogBaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->seedCoordinatorActivities();
         DB::transaction(fn () => AuditLog::muted(function (): void {
             $this->seedShiftsAndSlots();
             $books = $this->seedBooksAndLessons();
@@ -236,6 +238,17 @@ class CatalogBaseSeeder extends Seeder
             }
 
             $club->books()->sync($hours);
+        }
+    }
+
+    /** Actividades del coordinador con sus horas autorizadas al mes. */
+    private function seedCoordinatorActivities(): void
+    {
+        foreach (CoordinatorActivity::DEFAULTS as $order => [$name, $hours, $usesTeacher, $mark]) {
+            CoordinatorActivity::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
+                'authorized_hours' => $hours, 'uses_teacher_hour' => $usesTeacher, 'panel_mark' => $mark,
+                'sort_order' => ($order + 1) * 10, 'is_active' => true,
+            ]);
         }
     }
 }

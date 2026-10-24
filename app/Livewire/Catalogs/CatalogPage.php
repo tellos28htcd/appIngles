@@ -19,10 +19,10 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 abstract class CatalogPage extends Component
 {
-    public const TABS = ['horarios', 'libros', 'actividades', 'clubes'];
+    public const TABS = ['horarios', 'libros', 'actividades', 'clubes', 'coordinacion'];
 
     /** Catálogos que se administran en esta página (los de Configuración tienen sus propias pantallas). */
-    public const ACADEMIC_CATALOGS = ['shifts', 'schedule_slots', 'books', 'lessons', 'activities', 'clubs'];
+    public const ACADEMIC_CATALOGS = ['shifts', 'schedule_slots', 'books', 'lessons', 'activities', 'clubs', 'coordinator_activities'];
 
     /** @return list<string> */
     protected function tabs(): array

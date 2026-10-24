@@ -158,7 +158,7 @@ class AvailabilityPanel extends Component
 
         $cells = TeacherAvailability::query()->where('school_id', $school->id)->where('is_absent', false)
             ->whereBetween('date', [$days[0]->toDateString(), end($days)->toDateString()])
-            ->with(['classroom:id,name', 'clubSession:id,club_id,code,modality', 'clubSession.club:id,codes'])
+            ->with(['classroom:id,name', 'clubSession:id,club_id,code,modality', 'clubSession.club:id,codes', 'coordinatorSession:id,coordinator_activity_id', 'coordinatorSession.activity:id,name,panel_mark'])
             ->get();
 
         // Columnas: los teachers del panel y, en semanas pasadas, también quien tuvo horas aunque hoy ya no esté.

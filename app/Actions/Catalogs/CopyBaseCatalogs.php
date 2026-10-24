@@ -10,6 +10,7 @@ use App\Models\Book;
 use App\Models\ChargeConcept;
 use App\Models\Classroom;
 use App\Models\Club;
+use App\Models\CoordinatorActivity;
 use App\Models\Holiday;
 use App\Models\InformationSource;
 use App\Models\Lesson;
@@ -40,6 +41,7 @@ final class CopyBaseCatalogs
         'lessons' => Lesson::class,
         'activities' => Activity::class,
         'clubs' => Club::class,
+        'coordinator_activities' => CoordinatorActivity::class,
         'classrooms' => Classroom::class,
         'payment_methods' => PaymentMethod::class,
         'charge_concepts' => ChargeConcept::class,
@@ -54,6 +56,7 @@ final class CopyBaseCatalogs
     /** Catálogos con un campo único por escuela: si ya existe uno igual, se vincula en vez de duplicar. */
     private const UNIQUE_BY = [
         Classroom::class => 'name',
+        CoordinatorActivity::class => 'name',
         PaymentMethod::class => 'name',
         ChargeConcept::class => 'name',
         StudentPlan::class => 'code',

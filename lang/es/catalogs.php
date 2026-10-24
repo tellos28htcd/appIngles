@@ -14,6 +14,7 @@ return [
         'libros' => 'Libros y lecciones',
         'actividades' => 'Actividades',
         'clubes' => 'Clubes',
+        'coordinacion' => 'Actividades de coordinación',
         'salones' => 'Aulas',
         'metodos' => 'Métodos de pago',
         'conceptos' => 'Conceptos de cobro',
@@ -71,6 +72,20 @@ return [
         'add' => 'Nueva actividad',
         'edit' => 'Editar actividad',
         'minutes_value' => ':minutes min',
+    ],
+
+    'coordination' => [
+        'title' => 'Actividades de coordinación',
+        'description' => 'Actividades del coordinador con sus horas autorizadas al mes (HA). Se programan en Teachers → Horas Coordinador.',
+        'add' => 'Nueva actividad',
+        'edit' => 'Editar actividad',
+        'authorized_hours' => 'Horas autorizadas al mes (HA)',
+        'authorized_short' => 'HA',
+        'uses_teacher_hour' => 'Ocupa la hora del teacher',
+        'uses_teacher_hour_hint' => 'Se elige el teacher y esa hora deja de estar disponible para clases y clubs (p. ej. Revisión de Planeaciones).',
+        'panel_mark' => 'Letra en el panel',
+        'panel_mark_hint' => 'Se ve en blanco sobre negro en el panel de disponibilidad (p. ej. R).',
+        'uses_teacher_badge' => 'Ocupa hora del teacher · :mark',
     ],
 
     'clubs' => [
@@ -164,6 +179,7 @@ return [
             'lessons' => 'Lecciones',
             'activities' => 'Actividades',
             'clubs' => 'Clubes',
+            'coordinator_activities' => 'Actividades de coordinación',
             'classrooms' => 'Aulas',
             'payment_methods' => 'Métodos de pago',
             'charge_concepts' => 'Conceptos de cobro',

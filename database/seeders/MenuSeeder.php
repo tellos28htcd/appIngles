@@ -27,6 +27,7 @@ class MenuSeeder extends Seeder
             'teachers-availability' => ['Disponibilidad de horarios', null, 'availability.index', MenuItemStatus::Active],
             'teachers-incidents' => ['Incidencias', null, 'teacher-incidents.index', MenuItemStatus::Active],
             'teachers-clubs' => ['Programación de clubs', null, 'clubs.schedule', MenuItemStatus::Active],
+            'teachers-coordinator' => ['Horas Coordinador', null, 'coordinator.schedule', MenuItemStatus::Active],
         ]],
         'students' => ['Alumnos', 'student', null, MenuItemStatus::Active, [
             'students-records' => ['Expedientes', null, 'students.index', MenuItemStatus::Active],
@@ -90,7 +91,7 @@ class MenuSeeder extends Seeder
             'billing-statements', 'billing-payments', 'billing-actions', 'reports',
         ],
         Role::ACADEMIC_COORDINATOR => [
-            'dashboard', 'agenda', 'teachers-list', 'teachers-availability', 'teachers-incidents', 'teachers-clubs', 'students-records', 'students-guardians',
+            'dashboard', 'agenda', 'teachers-list', 'teachers-availability', 'teachers-incidents', 'teachers-clubs', 'teachers-coordinator', 'students-records', 'students-guardians',
             'tracking-attendance', 'tracking-evaluations', 'tracking-risk', 'reports',
         ],
         Role::TEACHER => ['dashboard', 'agenda', 'tracking-attendance', 'tracking-evaluations'],

@@ -9,6 +9,7 @@ use App\Enums\TeacherStatus;
 use App\Models\AvailabilityWeek;
 use App\Models\Classroom;
 use App\Models\ClubSession;
+use App\Models\CoordinatorSession;
 use App\Models\Holiday;
 use App\Models\ScheduleSlot;
 use App\Models\School;
@@ -188,16 +189,18 @@ final class AvailabilityPlanner
     }
 
     /**
-     * Teachers que pueden dar una hora ese día (para programar un club): la tienen en su
-     * horario base o la cubren por incidencia, sin ausencia, festivo ni otro club.
+     * Teachers que pueden dar una hora ese día (para un club o una actividad del coordinador
+     * que ocupa su hora): la tienen en su horario base o la cubren por incidencia, sin ausencia,
+     * festivo, club ni actividad del coordinador (salvo la que se está editando).
      *
      * @return list<int>
      */
-    public function availableTeacherIds(School $school, CarbonInterface $date, ScheduleSlot $slot, ?int $exceptClubSessionId = null): array
+    public function availableTeacherIds(School $school, CarbonInterface $date, ScheduleSlot $slot, ?int $exceptClubSessionId = null, ?int $exceptCoordinatorSessionId = null): array
     {
         return collect($this->dayRows($school, $date))
             ->filter(fn (array $row) => $row['schedule_slot_id'] === $slot->id && ! $row['is_absent']
-                && ($row['club_session_id'] === null || $row['club_session_id'] === $exceptClubSessionId))
+                && ($row['club_session_id'] === null || $row['club_session_id'] === $exceptClubSessionId)
+                && ($row['coordinator_session_id'] === null || $row['coordinator_session_id'] === $exceptCoordinatorSessionId))
             ->pluck('teacher_id')->values()->all();
     }
 
@@ -240,20 +243,39 @@ final class AvailabilityPlanner
         $clubs = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $day)->get()
             ->keyBy(fn (ClubSession $session) => $session->teacher_id.'|'.$session->schedule_slot_id);
 
+        // Actividades del coordinador que ocupan la hora del teacher (Revisión de Planeaciones): sin aula,
+        // no sirven para clases ni clubs y en el panel llevan su letra.
+        $reviews = CoordinatorSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $day)
+            ->whereNotNull('teacher_id')->get()
+            ->keyBy(fn (CoordinatorSession $session) => $session->teacher_id.'|'.$session->schedule_slot_id);
+
         $rows = [];
         $usedClassrooms = [];
         foreach ($clubs as $session) {
             $usedClassrooms[$session->schedule_slot_id][$session->classroom_id] = true;
         }
         $now = now();
-        $add = function (int $teacherId, int $slotId, ?int $classroomId, ?int $coveredId = null, ?int $incidentId = null) use (&$rows, &$usedClassrooms, $school, $day, $now, $clubs): void {
+        $add = function (int $teacherId, int $slotId, ?int $classroomId, ?int $coveredId = null, ?int $incidentId = null) use (&$rows, &$usedClassrooms, $school, $day, $now, $clubs, $reviews): void {
+            $review = $reviews->get($teacherId.'|'.$slotId) ?? ($coveredId !== null ? $reviews->get($coveredId.'|'.$slotId) : null);
+
+            if ($review !== null) {
+                $rows[$teacherId.'|'.$slotId] = [
+                    'school_id' => $school->id, 'teacher_id' => $teacherId, 'date' => $day, 'schedule_slot_id' => $slotId,
+                    'classroom_id' => null, 'is_absent' => false, 'held_classroom_id' => null,
+                    'covered_teacher_id' => $coveredId, 'teacher_incident_id' => $incidentId, 'club_session_id' => null,
+                    'coordinator_session_id' => $review->id, 'created_at' => $now, 'updated_at' => $now,
+                ];
+
+                return;
+            }
+
             $club = $clubs->get($teacherId.'|'.$slotId) ?? ($coveredId !== null ? $clubs->get($coveredId.'|'.$slotId) : null);
 
             if ($club !== null) {
                 $rows[$teacherId.'|'.$slotId] = [
                     'school_id' => $school->id, 'teacher_id' => $teacherId, 'date' => $day, 'schedule_slot_id' => $slotId,
                     'classroom_id' => $club->classroom_id, 'is_absent' => false, 'held_classroom_id' => null,
-                    'covered_teacher_id' => $coveredId, 'teacher_incident_id' => $incidentId, 'club_session_id' => $club->id,
+                    'covered_teacher_id' => $coveredId, 'teacher_incident_id' => $incidentId, 'club_session_id' => $club->id, 'coordinator_session_id' => null,
                     'created_at' => $now, 'updated_at' => $now,
                 ];
 
@@ -272,7 +294,7 @@ final class AvailabilityPlanner
             $rows[$teacherId.'|'.$slotId] = [
                 'school_id' => $school->id, 'teacher_id' => $teacherId, 'date' => $day, 'schedule_slot_id' => $slotId,
                 'classroom_id' => $classroomId, 'is_absent' => false, 'held_classroom_id' => null,
-                'covered_teacher_id' => $coveredId, 'teacher_incident_id' => $incidentId, 'club_session_id' => null,
+                'covered_teacher_id' => $coveredId, 'teacher_incident_id' => $incidentId, 'club_session_id' => null, 'coordinator_session_id' => null,
                 'created_at' => $now, 'updated_at' => $now,
             ];
         };
@@ -281,7 +303,7 @@ final class AvailabilityPlanner
             $rows[$teacherId.'|'.$slotId] = [
                 'school_id' => $school->id, 'teacher_id' => $teacherId, 'date' => $day, 'schedule_slot_id' => $slotId,
                 'classroom_id' => null, 'is_absent' => true, 'held_classroom_id' => $heldClassroomId,
-                'covered_teacher_id' => null, 'teacher_incident_id' => $incidentId, 'club_session_id' => null,
+                'covered_teacher_id' => null, 'teacher_incident_id' => $incidentId, 'club_session_id' => null, 'coordinator_session_id' => null,
                 'created_at' => $now, 'updated_at' => $now,
             ];
         };
@@ -352,8 +374,8 @@ final class AvailabilityPlanner
     /** Asigna (o quita) el aula de una celda del panel. */
     public function setClassroom(TeacherAvailability $cell, ?int $classroomId): void
     {
-        // La hora de un club se cambia desde la programación de clubs.
-        if ($cell->club_session_id !== null) {
+        // La hora de un club o de una revisión del coordinador se cambia desde su programación.
+        if ($cell->club_session_id !== null || $cell->coordinator_session_id !== null) {
             throw ValidationException::withMessages(['classroom' => __('availability.validation.club_hour')]);
         }
 

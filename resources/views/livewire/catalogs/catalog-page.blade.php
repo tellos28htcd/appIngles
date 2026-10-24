@@ -39,6 +39,9 @@
             @case('clubes')
                 <livewire:catalogs.clubs-tab :school-id="$schoolId" wire:key="clubs-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
+            @case('coordinacion')
+                <livewire:catalogs.coordinator-activities-tab :school-id="$schoolId" wire:key="coordination-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
             @case('salones')
                 <livewire:settings.classroom-index :school-id="$schoolId" :embedded="true" wire:key="classrooms-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
