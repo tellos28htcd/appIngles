@@ -19,14 +19,19 @@
     <section class="flex flex-col rounded-xl border border-line bg-white shadow-xs">
         <div class="flex gap-1 border-b border-line px-3 pt-2" role="tablist">
             @foreach (['teacher', 'type'] as $tab)
-                <button type="button" role="tab" aria-selected="{{ $summaryTab === $tab ? 'true' : 'false' }}" wire:click="$set('summaryTab', '{{ $tab }}')"
+                <button type="button" role="tab" aria-selected="{{ $summaryTab === $tab ? 'true' : 'false' }}" aria-expanded="{{ $summaryTab === $tab ? 'true' : 'false' }}"
+                        wire:click="toggleSummary('{{ $tab }}')"
                         @class([
-                            '-mb-px border-b-2 px-3 py-2 text-sm font-bold transition',
+                            '-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-bold transition',
                             'border-primary-600 text-primary-700' => $summaryTab === $tab,
                             'border-transparent text-ink-500 hover:text-ink-900' => $summaryTab !== $tab,
-                        ])>{{ __('clubs.summary.'.$tab) }}</button>
+                        ])>
+                    {{ __('clubs.summary.'.$tab) }}
+                    <span aria-hidden="true" class="text-xs">{{ $summaryTab === $tab ? '▲' : '▼' }}</span>
+                </button>
             @endforeach
         </div>
+        @if ($summaryTab !== '')
         <div class="grid gap-4 p-4 lg:grid-cols-2">
             @foreach ($summaries as $index => $summary)
                 <div class="flex min-w-0 flex-col gap-2" wire:key="summary-{{ $summaryTab }}-{{ $index }}">
@@ -74,6 +79,7 @@
                 </div>
             @endforeach
         </div>
+        @endif
     </section>
 
     @if ($physical->isEmpty() && $virtual->isEmpty())
@@ -182,7 +188,8 @@
                          :placeholder="__($this->teacherOptions ? 'students.select' : 'clubs.no_teachers')" :hint="__('clubs.teacher_hint')" wire:model="teacherId" required />
             <x-ui.choice name="modality" :label="__('clubs.fields.modality')" :options="$modalities" wire:model.live="modality" />
             <x-ui.select name="classroomId" :label="__($modality === 'online' ? 'clubs.fields.virtual_room' : 'clubs.fields.room')" :options="$this->roomOptions"
-                         :placeholder="__($this->roomOptions ? 'clubs.any_room' : 'clubs.no_free_room')" wire:model="classroomId" wire:key="rooms-{{ $modality }}" />
+                         :placeholder="__($this->roomOptions ? 'clubs.any_room' : 'clubs.no_free_room')" wire:model="classroomId" wire:key="rooms-{{ $modality }}"
+                         :hint="$modality === 'online' && ! $this->roomOptions ? __('clubs.no_virtual_hint') : null" />
             <x-ui.toggle name="repeat" :label="__('clubs.repeat')" :description="__('clubs.repeat_hint')" wire:model="repeat" />
             <x-slot:footer>
                 @if ($sessionId)

@@ -35,10 +35,10 @@ return [
         'capacity_hint' => 'Cuántas personas caben. El cupo de cada sesión será el menor entre este y el cupo de la escuela.',
         'description_hint' => 'Opcional: piso, ubicación o equipo (proyector, pizarrón…).',
         'virtual' => 'Aula virtual',
-        'virtual_hint' => 'Sin marcar, el aula es física.',
+        'virtual_hint' => 'Sin marcar, el aula es física. Cada aula virtual permite un club en línea a la misma hora.',
         'virtual_badge' => 'Virtual',
         'club_room' => 'Aula para clubs (audiovisual)',
-        'club_room_hint' => 'Se usa en la programación de clubs: las físicas para los presenciales y las virtuales para los en línea. A la misma hora caben tantos clubs como aulas de cada tipo.',
+        'club_room_hint' => 'Aula física donde se dan los clubs presenciales. A la misma hora caben tantos clubs presenciales como aulas audiovisuales.',
         'club_room_badge' => 'Audiovisual · clubs',
     ],
 

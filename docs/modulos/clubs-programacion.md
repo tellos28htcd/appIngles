@@ -8,7 +8,7 @@ Decisiones del 21-oct-2026.
   se repiten entre los clubes de la escuela; cada instituto pone las que use. Iniciales: C12/C23, M12/M23, S12/S23,
   B12/B23, F12/F23 y T3.
 - **Aulas**: "Aula virtual" (`classrooms.is_virtual`; sin marcar = física) y "Aula para clubs (audiovisual)"
-  (`is_club_room`). Las aulas para clubs tienen **reservas para otra actividad** (`classroom_closures`: fechas, todo el
+  (`is_club_room`, físicas para los presenciales); los clubs en línea usan cualquier aula virtual. Las aulas para clubs tienen **reservas para otra actividad** (`classroom_closures`: fechas, todo el
   día o de una hora a otra, actividad), una por una, con su historial; en la programación aparecen como
   "Reservada para otra actividad" al recorrer los meses.
 

@@ -36,9 +36,15 @@ class ClubSchedule extends Component
     #[Url(as: 'mes', except: '')]
     public string $month = '';
 
-    /** Pestaña del resumen: teacher | type. */
-    #[Url(as: 'resumen', except: 'teacher')]
-    public string $summaryTab = 'teacher';
+    /** Pestaña del resumen abierta: teacher | type ('' = colapsado). */
+    #[Url(as: 'resumen', except: '')]
+    public string $summaryTab = '';
+
+    /** Abre la pestaña del resumen; si ya estaba abierta, la colapsa. */
+    public function toggleSummary(string $tab): void
+    {
+        $this->summaryTab = $this->summaryTab === $tab || ! in_array($tab, ['teacher', 'type'], true) ? '' : $tab;
+    }
 
     /** Club que se edita (null = nuevo). */
     public ?int $sessionId = null;
@@ -363,7 +369,7 @@ class ClubSchedule extends Component
             'virtual' => $virtual,
             'orphans' => $orphans,
             'codeHours' => $codeHours,
-            'summaries' => [$this->summary($this->month), $this->summary($first->subMonth()->format('Y-m'))],
+            'summaries' => $this->summaryTab === '' ? [] : [$this->summary($this->month), $this->summary($first->subMonth()->format('Y-m'))],
             'planner' => $planner,
             'canManage' => auth()->user()->can('manage', ClubSession::class),
             'modalities' => collect(ClubModality::cases())->mapWithKeys(fn (ClubModality $modality) => [$modality->value => $modality->label()])->all(),

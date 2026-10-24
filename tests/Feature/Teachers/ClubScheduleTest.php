@@ -106,7 +106,7 @@ class ClubScheduleTest extends TestCase
         $this->schedule('2026-07-27', 9, $dulce)->assertHasErrors('teacherId');
         // Sin aula virtual no hay club en línea.
         $this->schedule('2026-07-27', 9, $melissa, 'C12', 'online')->assertHasErrors('slot');
-        $virtual = Classroom::create(['school_id' => $this->school->id, 'name' => 'Zoom 1', 'capacity' => 30, 'is_club_room' => true, 'is_virtual' => true, 'is_active' => true]);
+        $virtual = Classroom::create(['school_id' => $this->school->id, 'name' => 'Zoom 1', 'capacity' => 30, 'is_virtual' => true, 'is_active' => true]);
         $this->schedule('2026-07-27', 9, $melissa, 'C12', 'online')->assertHasNoErrors();
 
         $session = ClubSession::sole();
@@ -131,7 +131,7 @@ class ClubScheduleTest extends TestCase
         $jesus = $this->teacher('JESUS', 3, [1 => [9]]);
         $ernesto = $this->teacher('ERNESTO', 4, [1 => [9]]);
         foreach (['Zoom 1', 'Zoom 2'] as $name) {
-            Classroom::create(['school_id' => $this->school->id, 'name' => $name, 'capacity' => 30, 'is_club_room' => true, 'is_virtual' => true, 'is_active' => true]);
+            Classroom::create(['school_id' => $this->school->id, 'name' => $name, 'capacity' => 30, 'is_virtual' => true, 'is_active' => true]);
         }
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
 
@@ -220,12 +220,16 @@ class ClubScheduleTest extends TestCase
         $this->schedule('2026-07-27', 9, $melissa)->assertHasNoErrors();
         $this->schedule('2026-07-27', 10, $melissa, 'C23')->assertHasNoErrors();
 
+        // Las pestañas empiezan colapsadas; al dar clic se muestra el resumen y al volver a dar clic se cierra.
         $page = Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class);
+        $this->assertSame([], $page->viewData('summaries'));
+        $page->call('toggleSummary', 'teacher');
         [$july, $june] = $page->viewData('summaries');
         $this->assertSame([2.0, 1.0], [(float) $july['total'], (float) $june['total']]);
         $this->assertSame(['C12' => 1.0, 'C23' => 1.0], array_map('floatval', $july['teachers'][0]['codes']));
         $this->assertEquals(1.0, $page->viewData('codeHours')[$this->conversation->id.'|C12']);
-        $page->set('summaryTab', 'type')->assertSee('Resumen por tipo')->assertSee('C23');
+        $page->call('toggleSummary', 'type')->assertSet('summaryTab', 'type')->assertSee('C23')
+            ->call('toggleSummary', 'type')->assertSet('summaryTab', '');
     }
 
     public function test_reception_only_consults_and_schools_are_isolated(): void

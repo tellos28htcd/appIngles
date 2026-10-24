@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
  * Programa (o cambia) un club en un día y hora:
  * - el teacher debe tener esa hora (horario base o "Cubre horas"), sin ausencia ni otro club;
  * - ocupa un aula "para clubs" activa, libre y sin reserva para otra actividad: el presencial,
- *   un aula audiovisual física; el en línea, un aula virtual. A la misma hora caben tantos clubs
+ *   un aula audiovisual física; el en línea, cualquier aula virtual. A la misma hora caben tantos clubs
  *   presenciales como aulas físicas y tantos en línea como aulas virtuales (cada uno con su teacher);
  * - no hay clubs en días festivos.
  * Después se recalcula el día en el panel: esa hora del teacher deja de servir para clases normales.
@@ -30,15 +30,19 @@ final class ScheduleClub
     public function __construct(private AvailabilityPlanner $planner) {}
 
     /**
-     * Aulas para clubs activas de la escuela: físicas (presencial), virtuales (en línea) o todas.
+     * Aulas activas para clubs: presencial = aulas audiovisuales físicas (marcadas "para clubs");
+     * en línea = cualquier aula virtual. Sin modalidad, ambas.
      *
      * @return Collection<int, Classroom>
      */
     public function clubRooms(School $school, ?ClubModality $modality = null): Collection
     {
-        return Classroom::withoutGlobalScope('school')->where('school_id', $school->id)
-            ->where('is_club_room', true)->where('is_active', true)
-            ->when($modality !== null, fn ($query) => $query->where('is_virtual', $modality === ClubModality::Online))
+        return Classroom::withoutGlobalScope('school')->where('school_id', $school->id)->where('is_active', true)
+            ->where(fn ($query) => match ($modality) {
+                ClubModality::InPerson => $query->where('is_club_room', true)->where('is_virtual', false),
+                ClubModality::Online => $query->where('is_virtual', true),
+                null => $query->where(fn ($q) => $q->where('is_club_room', true)->where('is_virtual', false))->orWhere('is_virtual', true),
+            })
             ->orderByRaw('CAST(name AS UNSIGNED)')->orderBy('name')->get();
     }
 
