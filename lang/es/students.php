@@ -287,6 +287,9 @@ return [
 
     'actions' => [
         'save' => 'Guardar alumno',
+        'save_enrollment' => 'Guardar inscripción',
+        'save_absence' => 'Guardar ausencia',
+        'save_movement' => 'Guardar movimiento',
         'cancel' => 'Cancelar',
         'back' => 'Volver',
         'view' => 'Ver expediente de :name',

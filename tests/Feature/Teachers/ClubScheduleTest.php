@@ -104,35 +104,48 @@ class ClubScheduleTest extends TestCase
         $this->assertSame([$melissa->id], array_keys($options));
 
         $this->schedule('2026-07-27', 9, $dulce)->assertHasErrors('teacherId');
+        // Sin aula virtual no hay club en línea.
+        $this->schedule('2026-07-27', 9, $melissa, 'C12', 'online')->assertHasErrors('slot');
+        $virtual = Classroom::create(['school_id' => $this->school->id, 'name' => 'Zoom 1', 'capacity' => 30, 'is_club_room' => true, 'is_virtual' => true, 'is_active' => true]);
         $this->schedule('2026-07-27', 9, $melissa, 'C12', 'online')->assertHasNoErrors();
 
         $session = ClubSession::sole();
-        $this->assertSame([$this->audiovisual->id, 'C12', 'online'], [$session->classroom_id, $session->code, $session->modality->value]);
+        $this->assertSame([$virtual->id, 'C12', 'online'], [$session->classroom_id, $session->code, $session->modality->value]);
 
-        // En el panel esa hora es de club, con el aula audiovisual, y no se le cambia el aula ahí.
+        // En el panel esa hora es de club, con su aula, y no se le cambia el aula ahí.
         $cell = TeacherAvailability::where('teacher_id', $melissa->id)->whereDate('date', '2026-07-27')->where('schedule_slot_id', $this->slots[9]->id)->sole();
-        $this->assertSame([$session->id, $this->audiovisual->id], [$cell->club_session_id, $cell->classroom_id]);
+        $this->assertSame([$session->id, $virtual->id], [$cell->club_session_id, $cell->classroom_id]);
         Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)
             ->call('setClassroom', $cell->id, null)->assertDispatched('toast', type: 'error', message: __('availability.validation.club_hour'));
-        $this->assertSame($this->audiovisual->id, $cell->fresh()->classroom_id);
+        $this->assertSame($virtual->id, $cell->fresh()->classroom_id);
 
         // Al eliminar el club la hora vuelve a ser de clases.
         Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)->call('edit', $session->id)->call('delete');
         $this->assertNull($cell->fresh()->club_session_id);
     }
 
-    public function test_clubs_at_the_same_hour_are_limited_by_the_free_audiovisual_rooms(): void
+    public function test_one_in_person_and_one_or_two_online_clubs_fit_at_the_same_hour_with_different_teachers(): void
     {
         $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
         $dulce = $this->teacher('DULCE', 2, [1 => [9]]);
+        $jesus = $this->teacher('JESUS', 3, [1 => [9]]);
+        $ernesto = $this->teacher('ERNESTO', 4, [1 => [9]]);
+        foreach (['Zoom 1', 'Zoom 2'] as $name) {
+            Classroom::create(['school_id' => $this->school->id, 'name' => $name, 'capacity' => 30, 'is_club_room' => true, 'is_virtual' => true, 'is_active' => true]);
+        }
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
 
         $this->schedule('2026-07-27', 9, $melissa)->assertHasNoErrors();
+        // Solo hay un aula audiovisual física: un segundo presencial no cabe.
         $this->schedule('2026-07-27', 9, $dulce, 'C23')->assertHasErrors('slot');
+        $this->schedule('2026-07-27', 9, $dulce, 'C23', 'online')->assertHasNoErrors();
+        // El mismo teacher no da dos clubs a la misma hora.
+        $this->schedule('2026-07-27', 9, $dulce, 'C12', 'online')->assertHasErrors('teacherId');
+        $this->schedule('2026-07-27', 9, $jesus, 'C12', 'online')->assertHasNoErrors();
+        // Dos aulas virtuales: un tercer club en línea ya no cabe.
+        $this->schedule('2026-07-27', 9, $ernesto, 'C23', 'online')->assertHasErrors('slot');
 
-        Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 20, 'is_club_room' => true, 'is_active' => true]);
-        $this->schedule('2026-07-27', 9, $dulce, 'C23')->assertHasNoErrors();
-        $this->assertSame(2, ClubSession::count());
+        $this->assertSame(['in_person' => 1, 'online' => 2], ClubSession::get()->countBy(fn ($session) => $session->modality->value)->all());
     }
 
     public function test_room_closures_and_holidays_block_clubs(): void
@@ -147,6 +160,10 @@ class ClubScheduleTest extends TestCase
 
         $this->schedule('2026-07-27', 9, $melissa)->assertHasErrors('slot');
         $this->schedule('2026-07-27', 10, $melissa)->assertHasNoErrors();
+
+        // La reserva aparece en la programación como "Reservada para otra actividad" y queda en el historial.
+        $this->get(route('clubs.schedule', ['mes' => '2026-07']))->assertOk()->assertSee('Reservada para otra actividad');
+        $this->assertSame(['Mantenimiento'], Livewire::test(ClassroomIndex::class)->call('openClosures', $this->audiovisual->id)->get('closures')->pluck('reason')->all());
 
         Holiday::create(['school_id' => $this->school->id, 'name' => 'Asueto', 'type' => HolidayType::School, 'starts_on' => '2026-07-28', 'ends_on' => '2026-07-28', 'is_active' => true]);
         $this->schedule('2026-07-28', 9, $melissa)->assertHasErrors('slot');
@@ -180,6 +197,35 @@ class ClubScheduleTest extends TestCase
 
         $this->assertSame(['2026-07-06', '2026-07-13', '2026-07-20', '2026-07-27'],
             ClubSession::orderBy('date')->get()->map(fn ($session) => $session->date->toDateString())->all());
+    }
+
+    public function test_repeat_also_works_when_editing_a_club(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $this->schedule('2026-07-13', 9, $melissa)->assertHasNoErrors();
+
+        Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)
+            ->call('edit', ClubSession::sole()->id)->set('codeKey', $this->conversation->id.'|C23')->set('repeat', true)->call('save')->assertHasNoErrors();
+
+        $this->assertSame([['2026-07-13', 'C23'], ['2026-07-20', 'C23'], ['2026-07-27', 'C23']],
+            ClubSession::orderBy('date')->get()->map(fn ($session) => [$session->date->toDateString(), $session->code])->all());
+    }
+
+    public function test_summaries_by_teacher_and_by_type_show_this_and_last_month(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10]]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $this->schedule('2026-06-29', 9, $melissa)->assertHasNoErrors();
+        $this->schedule('2026-07-27', 9, $melissa)->assertHasNoErrors();
+        $this->schedule('2026-07-27', 10, $melissa, 'C23')->assertHasNoErrors();
+
+        $page = Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class);
+        [$july, $june] = $page->viewData('summaries');
+        $this->assertSame([2.0, 1.0], [(float) $july['total'], (float) $june['total']]);
+        $this->assertSame(['C12' => 1.0, 'C23' => 1.0], array_map('floatval', $july['teachers'][0]['codes']));
+        $this->assertEquals(1.0, $page->viewData('codeHours')[$this->conversation->id.'|C12']);
+        $page->set('summaryTab', 'type')->assertSee('Resumen por tipo')->assertSee('C23');
     }
 
     public function test_reception_only_consults_and_schools_are_isolated(): void

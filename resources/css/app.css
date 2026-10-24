@@ -80,6 +80,8 @@
   --color-danger-700: #B42318;
 
   --color-info-50: #F4F3FF;
+  /* Renglón alterno de cuadrículas (azul muy claro, distinto del color al pasar el mouse). */
+  --color-row-alt: #EAF3FD;
   --color-info-200: #D9D6FE;
   --color-info-500: #7A5AF8;
   --color-info-600: #6938EF;

@@ -32,6 +32,9 @@
                         <tr wire:key="classroom-{{ $classroom->id }}" @class(['hover:bg-surface', 'opacity-60' => ! $classroom->is_active])>
                             <td class="px-4 py-2.5 md:px-5">
                                 <span class="font-semibold">{{ $classroom->name }}</span>
+                                @if ($classroom->is_virtual)
+                                    <x-ui.badge variant="neutral" class="ml-1">{{ __('settings.classrooms.virtual_badge') }}</x-ui.badge>
+                                @endif
                                 @if ($classroom->is_club_room)
                                     <x-ui.badge variant="info" class="ml-1">{{ __('settings.classrooms.club_room_badge') }}</x-ui.badge>
                                     @if ($schoolId !== null)
@@ -62,6 +65,7 @@
         </div>
         <p class="-mt-2 text-[13px] text-ink-500">{{ __('settings.classrooms.capacity_hint') }}</p>
         <x-ui.input name="description" :label="__('settings.fields.description')" :hint="__('settings.classrooms.description_hint')" wire:model="description" maxlength="255" />
+        <x-ui.toggle name="isVirtual" :label="__('settings.classrooms.virtual')" :description="__('settings.classrooms.virtual_hint')" wire:model="isVirtual" />
         <x-ui.toggle name="isClubRoom" :label="__('settings.classrooms.club_room')" :description="__('settings.classrooms.club_room_hint')" wire:model="isClubRoom" />
         <x-slot:footer>
             <x-ui.button variant="ghost" x-on:click="open = null">{{ __('settings.actions.cancel') }}</x-ui.button>

@@ -38,6 +38,9 @@ class ClassroomIndex extends Component
 
     public bool $isClubRoom = false;
 
+    /** Aula virtual (sin marcar = física). */
+    public bool $isVirtual = false;
+
     /** Aula audiovisual cuyos periodos sin disponibilidad se ven. */
     public ?int $closuresClassroomId = null;
 
@@ -69,6 +72,7 @@ class ClassroomIndex extends Component
         $this->capacity = $classroom?->capacity;
         $this->description = (string) $classroom?->description;
         $this->isClubRoom = (bool) $classroom?->is_club_room;
+        $this->isVirtual = (bool) $classroom?->is_virtual;
         $this->editing = true;
     }
 
@@ -81,6 +85,7 @@ class ClassroomIndex extends Component
             'capacity' => ['required', 'integer', 'min:1', 'max:999'],
             'description' => ['nullable', 'string', 'max:255'],
             'isClubRoom' => ['boolean'],
+            'isVirtual' => ['boolean'],
         ], attributes: [
             'name' => Str::lower(__('settings.fields.name')),
             'capacity' => Str::lower(__('settings.fields.capacity')),
@@ -96,6 +101,7 @@ class ClassroomIndex extends Component
             'capacity' => $data['capacity'],
             'description' => trim((string) $data['description']) ?: null,
             'is_club_room' => $data['isClubRoom'],
+            'is_virtual' => $data['isVirtual'],
         ])->save();
 
         $this->editing = null;

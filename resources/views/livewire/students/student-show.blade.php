@@ -285,7 +285,7 @@
             @include('livewire.students.partials.enrollment-fields')
             <x-slot:footer>
                 <x-ui.button variant="ghost" x-on:click="open = null">{{ __('students.actions.cancel') }}</x-ui.button>
-                <x-ui.button wire:click="saveEnrollment">{{ __('students.actions.save') }}</x-ui.button>
+                <x-ui.button wire:click="saveEnrollment">{{ __('students.actions.save_enrollment') }}</x-ui.button>
             </x-slot:footer>
         </x-ui.modal>
 
@@ -311,7 +311,7 @@
             <x-ui.input name="absenceReason" :label="__('students.absences.reason')" wire:model="absenceReason" maxlength="255" />
             <x-slot:footer>
                 <x-ui.button variant="ghost" x-on:click="open = null">{{ __('students.actions.cancel') }}</x-ui.button>
-                <x-ui.button wire:click="saveAbsence">{{ __('students.actions.save') }}</x-ui.button>
+                <x-ui.button wire:click="saveAbsence">{{ __('students.actions.save_absence') }}</x-ui.button>
             </x-slot:footer>
         </x-ui.modal>
 
@@ -327,7 +327,7 @@
             <x-ui.input name="movementReason" :label="__('students.term.reason')" wire:model="movementReason" maxlength="255" />
             <x-slot:footer>
                 <x-ui.button variant="ghost" x-on:click="open = null">{{ __('students.actions.cancel') }}</x-ui.button>
-                <x-ui.button wire:click="saveMovement">{{ __('students.actions.save') }}</x-ui.button>
+                <x-ui.button wire:click="saveMovement">{{ __('students.actions.save_movement') }}</x-ui.button>
             </x-slot:footer>
         </x-ui.modal>
 

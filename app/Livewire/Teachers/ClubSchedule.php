@@ -8,6 +8,7 @@ use App\Enums\ClubModality;
 use App\Models\ClassroomClosure;
 use App\Models\Club;
 use App\Models\ClubSession;
+use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Teacher;
 use App\Models\TeacherAvailability;
@@ -15,6 +16,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -24,14 +26,19 @@ use Livewire\Component;
 /**
  * Teachers → Programación de clubs: calendario del mes (una cuadrícula por semana,
  * días × horas). En cada hora se agrega el club (abreviatura), el teacher y si es
- * presencial o en línea; se cambia o se elimina desde la misma celda. Las reglas
- * las aplica ScheduleClub.
+ * presencial o en línea; se cambia o se elimina desde la misma celda. Arriba, el
+ * resumen de horas por teacher y por tipo de club (mes elegido y mes anterior).
+ * Las reglas las aplica ScheduleClub.
  */
 #[Layout('layouts.app')]
 class ClubSchedule extends Component
 {
     #[Url(as: 'mes', except: '')]
     public string $month = '';
+
+    /** Pestaña del resumen: teacher | type. */
+    #[Url(as: 'resumen', except: 'teacher')]
+    public string $summaryTab = 'teacher';
 
     /** Club que se edita (null = nuevo). */
     public ?int $sessionId = null;
@@ -51,7 +58,7 @@ class ClubSchedule extends Component
 
     public ?int $classroomId = null;
 
-    /** Repetir el mismo día y hora en las semanas siguientes del mes. */
+    /** Repetir el mismo club (día y hora) en las semanas siguientes del mes. */
     public bool $repeat = false;
 
     public function mount(): void
@@ -113,6 +120,12 @@ class ClubSchedule extends Component
         $this->editing = true;
     }
 
+    /** Al cambiar la modalidad cambia el tipo de aula (física o virtual). */
+    public function updatedModality(): void
+    {
+        $this->classroomId = null;
+    }
+
     public function save(ScheduleClub $scheduler): void
     {
         $this->authorize('manage', ClubSession::class);
@@ -137,11 +150,19 @@ class ClubSchedule extends Component
 
         $scheduler->save($school, $data, $this->sessionId ? $this->find($this->sessionId) : null, auth()->id());
 
-        // Repetir: mismo día de la semana y hora en las semanas siguientes del mes (las que no se puedan se avisan).
+        // Repetir (al agregar o al editar): mismo club, teacher y modalidad el mismo día y hora de las
+        // semanas siguientes del mes. Las semanas donde ya está o no se puede se avisan.
         $skipped = [];
-        if ($this->repeat && $this->sessionId === null) {
+        if ($this->repeat) {
             $start = CarbonImmutable::parse($this->date);
             for ($day = $start->addWeek(); $day->month === $start->month; $day = $day->addWeek()) {
+                $already = ClubSession::query()->where('school_id', $school->id)->whereDate('date', $day->toDateString())
+                    ->where('schedule_slot_id', $this->slotId)->where('teacher_id', $this->teacherId)->where('code', $code)->exists();
+
+                if ($already) {
+                    continue;
+                }
+
                 try {
                     $scheduler->save($school, [...$data, 'date' => $day->toDateString(), 'classroom_id' => null], null, auth()->id());
                 } catch (ValidationException $exception) {
@@ -172,15 +193,29 @@ class ClubSchedule extends Component
         return ClubSession::query()->where('school_id', auth()->user()->school_id)->findOrFail($sessionId);
     }
 
-    /** Clubs del mes. @return \Illuminate\Database\Eloquent\Collection<int, ClubSession> */
-    #[Computed]
-    public function sessions(): Collection
+    /** Clubs de un mes ("AAAA-MM"; por omisión el elegido). @return Collection<int, ClubSession> */
+    private function sessionsOf(string $month): Collection
     {
-        $first = CarbonImmutable::parse($this->month.'-01');
+        $first = CarbonImmutable::parse($month.'-01');
 
         return ClubSession::query()->where('school_id', auth()->user()->school_id)
             ->whereBetween('date', [$first->toDateString(), $first->endOfMonth()->toDateString()])
-            ->with(['club', 'teacher', 'classroom'])->get();
+            ->with(['club', 'teacher', 'classroom', 'slot'])->get();
+    }
+
+    /** Clubs del mes elegido. @return Collection<int, ClubSession> */
+    #[Computed]
+    public function sessions(): Collection
+    {
+        return $this->sessionsOf($this->month);
+    }
+
+    /** Horas de un club programado (duración de su bloque de horario). */
+    private static function hours(ClubSession $session): float
+    {
+        $slot = $session->slot;
+
+        return $slot === null ? 1.0 : max(0.0, (strtotime($slot->ends_at) - strtotime($slot->starts_at)) / 3600);
     }
 
     /**
@@ -212,37 +247,66 @@ class ClubSchedule extends Component
     #[Computed]
     public function teacherOptions(): array
     {
-        if (! $this->editing || $this->date === '' || $this->slotId === null) {
-            return [];
-        }
-
-        $planner = app(AvailabilityPlanner::class);
-        $school = $this->school();
-        $slot = $planner->slots($school)->firstWhere('id', $this->slotId);
+        $slot = $this->editingSlot();
 
         if ($slot === null) {
             return [];
         }
 
-        $ids = $planner->availableTeacherIds($school, CarbonImmutable::parse($this->date), $slot, $this->sessionId);
+        $school = $this->school();
+        $ids = app(AvailabilityPlanner::class)->availableTeacherIds($school, CarbonImmutable::parse($this->date), $slot, $this->sessionId);
 
         return Teacher::query()->where('school_id', $school->id)->whereKey($ids)->where('is_waitlist', false)
             ->orderBy('panel_number')->get()->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all();
     }
 
-    /** Aulas audiovisuales libres para la hora elegida. @return array<int, string> */
+    /** Aulas libres para la hora y modalidad elegidas (física o virtual). @return array<int, string> */
     #[Computed]
     public function roomOptions(): array
     {
-        if (! $this->editing || $this->date === '' || $this->slotId === null) {
+        $slot = $this->editingSlot();
+        $modality = ClubModality::tryFrom($this->modality);
+
+        if ($slot === null || $modality === null) {
             return [];
         }
 
-        $school = $this->school();
-        $slot = app(AvailabilityPlanner::class)->slots($school)->firstWhere('id', $this->slotId);
-
-        return $slot === null ? [] : app(ScheduleClub::class)->freeRooms($school, CarbonImmutable::parse($this->date), $slot, $this->sessionId)
+        return app(ScheduleClub::class)->freeRooms($this->school(), CarbonImmutable::parse($this->date), $slot, $modality, $this->sessionId)
             ->mapWithKeys(fn ($room) => [$room->id => __('clubs.room', ['name' => $room->name])])->all();
+    }
+
+    private function editingSlot(): ?ScheduleSlot
+    {
+        if (! $this->editing || $this->date === '' || $this->slotId === null) {
+            return null;
+        }
+
+        return app(AvailabilityPlanner::class)->slots($this->school())->firstWhere('id', $this->slotId);
+    }
+
+    /**
+     * Resumen de un mes: horas por teacher y por abreviatura.
+     *
+     * @return array{label: string, teachers: list<array{name: string, hours: float, codes: array<string, float>}>, codes: list<string>, total: float}
+     */
+    private function summary(string $month): array
+    {
+        $sessions = $month === $this->month ? $this->sessions : $this->sessionsOf($month);
+        $codes = $sessions->pluck('code')->unique()->sort()->values()->all();
+
+        $teachers = $sessions->groupBy('teacher_id')->map(fn (Collection $items) => [
+            'name' => $items->first()->teacher?->panelName() ?? '—',
+            'number' => $items->first()->teacher?->panel_number ?? 999,
+            'hours' => $items->sum(fn (ClubSession $session) => self::hours($session)),
+            'codes' => $items->groupBy('code')->map(fn (Collection $byCode) => $byCode->sum(fn (ClubSession $session) => self::hours($session)))->all(),
+        ])->sortBy([['number', 'asc'], ['name', 'asc']])->values()->all();
+
+        return [
+            'label' => Str::ucfirst(CarbonImmutable::parse($month.'-01')->translatedFormat('F Y')),
+            'teachers' => $teachers,
+            'codes' => $codes,
+            'total' => $sessions->sum(fn (ClubSession $session) => self::hours($session)),
+        ];
     }
 
     public function render(AvailabilityPlanner $planner, ScheduleClub $scheduler): View
@@ -250,23 +314,31 @@ class ClubSchedule extends Component
         $school = $this->school();
         $first = CarbonImmutable::parse($this->month.'-01');
         $slots = $planner->slots($school);
-        $rooms = $scheduler->clubRooms($school);
+        $physical = $scheduler->clubRooms($school, ClubModality::InPerson);
+        $virtual = $scheduler->clubRooms($school, ClubModality::Online);
 
         // Semanas del mes (de lunes a sábado/domingo); los días de otro mes se muestran vacíos.
         $weeks = [];
         for ($monday = $first->startOfWeek(CarbonInterface::MONDAY); $monday->lte($first->endOfMonth()); $monday = $monday->addWeek()) {
             $weeks[] = $planner->days($school, $monday);
         }
-        $allDays = collect($weeks)->flatten(1);
-        $holidays = $planner->holidays($school, $allDays->all());
+        $holidays = $planner->holidays($school, collect($weeks)->flatten(1)->all());
 
-        $closures = ClassroomClosure::query()->where('school_id', $school->id)->whereIn('classroom_id', $rooms->modelKeys())
-            ->whereDate('starts_on', '<=', $first->endOfMonth()->toDateString())->whereDate('ends_on', '>=', $first->toDateString())
-            ->with(['fromSlot', 'toSlot'])->get();
+        // Reservas de las aulas para clubs (otra actividad) que tocan el mes.
+        $closures = ClassroomClosure::query()->where('school_id', $school->id)->whereIn('classroom_id', $physical->merge($virtual)->modelKeys())
+            ->whereDate('starts_on', '<=', $first->endOfMonth()->toDateString())->whereDate('ends_on', '>=', $first->startOfWeek()->toDateString())
+            ->with(['fromSlot', 'toSlot', 'classroom:id,name'])->get();
+        $reservedAt = fn (CarbonImmutable $day, $slot) => $closures->filter(fn (ClassroomClosure $closure) => $closure->covers($day, $slot))->values();
 
-        // Cupo por hora: aulas audiovisuales sin cierre menos los clubs ya programados.
-        $capacity = fn (CarbonImmutable $day, $slot) => $rooms->reject(fn ($room) => $closures->contains(
-            fn (ClassroomClosure $closure) => $closure->classroom_id === $room->id && $closure->covers($day, $slot)))->count();
+        // Cupo por hora: aulas físicas (presencial) y virtuales (en línea) sin reserva, menos los clubs ya programados.
+        $grid = $this->sessions->groupBy(fn (ClubSession $session) => $session->date->toDateString().'|'.$session->schedule_slot_id);
+        $free = function (CarbonImmutable $day, $slot) use ($physical, $virtual, $reservedAt, $grid): int {
+            $reserved = $reservedAt($day, $slot)->pluck('classroom_id');
+            $sessions = $grid->get($day->toDateString().'|'.$slot->id, collect());
+
+            return max(0, $physical->whereNotIn('id', $reserved)->count() - $sessions->where('modality', ClubModality::InPerson)->count())
+                + max(0, $virtual->whereNotIn('id', $reserved)->count() - $sessions->where('modality', ClubModality::Online)->count());
+        };
 
         // Clubs cuyo teacher ya no tiene esa hora en el panel armado (p. ej. por una falta sin cubrir).
         $linked = TeacherAvailability::query()->where('school_id', $school->id)->whereIn('club_session_id', $this->sessions->modelKeys())->pluck('club_session_id');
@@ -274,16 +346,24 @@ class ClubSchedule extends Component
         $orphans = $this->sessions->filter(fn (ClubSession $session) => ($armed[$session->date->startOfWeek(CarbonInterface::MONDAY)->toDateString()] ?? false)
             && ! $linked->contains($session->id))->modelKeys();
 
+        // Horas programadas por abreviatura en el mes (para la leyenda).
+        $codeHours = $this->sessions->groupBy(fn (ClubSession $session) => $session->club_id.'|'.$session->code)
+            ->map(fn (Collection $items) => $items->sum(fn (ClubSession $session) => self::hours($session)));
+
         return view('livewire.teachers.club-schedule', [
             'school' => $school,
             'monthStart' => $first,
             'weeks' => $weeks,
             'scheduleSlots' => $slots,
             'holidays' => $holidays,
-            'grid' => $this->sessions->groupBy(fn (ClubSession $session) => $session->date->toDateString().'|'.$session->schedule_slot_id),
-            'capacity' => $capacity,
-            'rooms' => $rooms,
+            'grid' => $grid,
+            'free' => $free,
+            'reservedAt' => $reservedAt,
+            'physical' => $physical,
+            'virtual' => $virtual,
             'orphans' => $orphans,
+            'codeHours' => $codeHours,
+            'summaries' => [$this->summary($this->month), $this->summary($first->subMonth()->format('Y-m'))],
             'planner' => $planner,
             'canManage' => auth()->user()->can('manage', ClubSession::class),
             'modalities' => collect(ClubModality::cases())->mapWithKeys(fn (ClubModality $modality) => [$modality->value => $modality->label()])->all(),

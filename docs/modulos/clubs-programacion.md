@@ -7,19 +7,24 @@ Decisiones del 21-oct-2026.
   (`clubs.codes`, JSON): código (C12, B23, T3…), niveles que cubre, color del panel (1–9) y activa. Las abreviaturas no
   se repiten entre los clubes de la escuela; cada instituto pone las que use. Iniciales: C12/C23, M12/M23, S12/S23,
   B12/B23, F12/F23 y T3.
-- **Aulas**: "Aula audiovisual (para clubs)" (`classrooms.is_club_room`). Puede haber varias. Cada una tiene
-  **periodos sin disponibilidad** (`classroom_closures`: fechas, todo el día o de una hora a otra, motivo).
+- **Aulas**: "Aula virtual" (`classrooms.is_virtual`; sin marcar = física) y "Aula para clubs (audiovisual)"
+  (`is_club_room`). Las aulas para clubs tienen **reservas para otra actividad** (`classroom_closures`: fechas, todo el
+  día o de una hora a otra, actividad), una por una, con su historial; en la programación aparecen como
+  "Reservada para otra actividad" al recorrer los meses.
 
 ## Programación (Teachers → Programación de clubs)
 Calendario del mes: una cuadrícula por semana (días × horas del catálogo). En cada hora se agrega el club
 (abreviatura), el teacher y si es presencial o en línea; desde la misma celda se cambia o se elimina. Opción
-"Repetir en las semanas siguientes del mes" (avisa las semanas que no se pudieron).
+"Repetir en las semanas siguientes del mes" al agregar o al editar (avisa las semanas que no se pudieron). Arriba,
+pestañas "Resumen por teacher" (horas del mes y del mes anterior) y "Resumen por tipo" (horas por teacher y
+abreviatura); la leyenda muestra las horas programadas de cada abreviatura.
 
 Reglas (`App\Actions\Clubs\ScheduleClub`):
 - El teacher debe tener esa hora: horario base o "Cubre horas", sin ausencia, baja, fecha de ingreso posterior ni otro
   club (`AvailabilityPlanner::availableTeacherIds`). La Lista de espera no da clubs.
-- Cada club ocupa un aula audiovisual activa, libre y fuera de sus periodos sin disponibilidad: a la misma hora caben
-  tantos clubs como aulas audiovisuales (presencial o en línea, un teacher cada uno).
+- Cada club ocupa un aula para clubs activa, libre y sin reserva: el presencial, una física; el en línea, una virtual.
+  A la misma hora caben tantos presenciales como aulas físicas y tantos en línea como aulas virtuales, cada uno con
+  otro teacher (p. ej. 1 presencial + 2 en línea).
 - No hay clubs en días festivos ni en horas cuyo turno no aplica ese día.
 - La hora del club **deja de estar disponible para clases normales**: en el panel la celda queda ligada al club
   (`teacher_availabilities.club_session_id`) con el aula audiovisual y muestra la abreviatura; el aula no se cambia ahí.
