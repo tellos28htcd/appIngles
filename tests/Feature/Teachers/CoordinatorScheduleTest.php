@@ -134,6 +134,30 @@ class CoordinatorScheduleTest extends TestCase
         $this->program('2026-07-27', 10, $this->review, $this->teacher('MELISSA', 1, [1 => [10]]))->assertHasErrors('slot');
     }
 
+    public function test_session_evaluation_picks_a_working_teacher_without_taking_the_hour(): void
+    {
+        $evaluation = CoordinatorActivity::create(['school_id' => $this->school->id, 'name' => 'Evaluación de Sesión', 'authorized_hours' => 2,
+            'requires_teacher' => true, 'sort_order' => 15, 'is_active' => true]);
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
+        $dulce = $this->teacher('DULCE', 2, [2 => [9]]);
+        app(AvailabilityPlanner::class)->generateWeek($this->school, CarbonImmutable::parse('2026-07-27'));
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+
+        $component = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)
+            ->call('add', '2026-07-27', $this->slots[9]->id)->set('activityId', $evaluation->id);
+        $this->assertSame([$melissa->id], array_keys($component->get('teacherOptions')));
+        $component->assertSet('teacherKey', '');
+
+        $this->program('2026-07-27', 9, $evaluation, $dulce)->assertHasErrors('teacherKey');
+        $this->program('2026-07-27', 9, $evaluation, $melissa)->assertHasNoErrors();
+
+        // Se guarda con el teacher, pero su hora sigue siendo de clase (sin "R" ni bloqueo).
+        $this->assertSame($melissa->id, CoordinatorSession::sole()->teacher_id);
+        $cell = TeacherAvailability::where('teacher_id', $melissa->id)->whereDate('date', '2026-07-27')->where('schedule_slot_id', $this->slots[9]->id)->sole();
+        $this->assertNull($cell->coordinator_session_id);
+        $this->assertContains($melissa->id, app(AvailabilityPlanner::class)->availableTeacherIds($this->school, CarbonImmutable::parse('2026-07-27'), $this->slots[9]));
+    }
+
     public function test_authorized_hours_cannot_be_exceeded_and_totals_are_shown(): void
     {
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));

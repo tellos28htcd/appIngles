@@ -118,7 +118,7 @@ class CoordinatorSchedule extends Component
     /** Al cambiar la actividad cambia la lista: teachers (si ocupa su hora) o "Actividad Coordinación". */
     public function updatedActivityId(): void
     {
-        $this->teacherKey = $this->selectedActivity()?->uses_teacher_hour ? '' : self::COORDINATION;
+        $this->teacherKey = $this->selectedActivity()?->needsTeacher() ? '' : self::COORDINATION;
     }
 
     private function selectedActivity(): ?CoordinatorActivity
@@ -233,7 +233,7 @@ class CoordinatorSchedule extends Component
             return [];
         }
 
-        if (! $activity->uses_teacher_hour) {
+        if (! $activity->needsTeacher()) {
             return [self::COORDINATION => __('coordination.coordination_option')];
         }
 
@@ -242,8 +242,13 @@ class CoordinatorSchedule extends Component
             return [];
         }
 
+        // Si ocupa la hora: teachers con esa hora libre; si no: los que están trabajando a esa hora.
         $school = $this->school();
-        $ids = app(AvailabilityPlanner::class)->availableTeacherIds($school, CarbonImmutable::parse($this->date), $slot, null, $this->sessionId);
+        $planner = app(AvailabilityPlanner::class);
+        $date = CarbonImmutable::parse($this->date);
+        $ids = $activity->uses_teacher_hour
+            ? $planner->availableTeacherIds($school, $date, $slot, null, $this->sessionId)
+            : $planner->workingTeacherIds($school, $date, $slot);
 
         return Teacher::query()->where('school_id', $school->id)->whereKey($ids)->where('is_waitlist', false)->orderBy('panel_number')->get()
             ->mapWithKeys(fn (Teacher $teacher) => [(string) $teacher->id => $teacher->panelName()])->all();

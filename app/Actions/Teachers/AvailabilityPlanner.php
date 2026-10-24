@@ -9,6 +9,7 @@ use App\Enums\TeacherStatus;
 use App\Models\AvailabilityWeek;
 use App\Models\Classroom;
 use App\Models\ClubSession;
+use App\Models\CoordinatorActivity;
 use App\Models\CoordinatorSession;
 use App\Models\Holiday;
 use App\Models\ScheduleSlot;
@@ -205,6 +206,19 @@ final class AvailabilityPlanner
     }
 
     /**
+     * Teachers que están trabajando a esa hora (dando clase, club o con revisión): para las
+     * actividades del coordinador que se hacen en su clase (p. ej. Evaluación de Sesión).
+     *
+     * @return list<int>
+     */
+    public function workingTeacherIds(School $school, CarbonInterface $date, ScheduleSlot $slot): array
+    {
+        return collect($this->dayRows($school, $date))
+            ->filter(fn (array $row) => $row['schedule_slot_id'] === $slot->id && ! $row['is_absent'])
+            ->pluck('teacher_id')->values()->all();
+    }
+
+    /**
      * Celdas que le tocan al día (sin guardarlas).
      *
      * @return array<string, array<string, mixed>> "teacher|bloque" => valores
@@ -246,7 +260,9 @@ final class AvailabilityPlanner
         // Actividades del coordinador que ocupan la hora del teacher (Revisión de Planeaciones): sin aula,
         // no sirven para clases ni clubs y en el panel llevan su letra.
         $reviews = CoordinatorSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $day)
-            ->whereNotNull('teacher_id')->get()
+            ->whereNotNull('teacher_id')
+            ->whereIn('coordinator_activity_id', CoordinatorActivity::withoutGlobalScope('school')->where('uses_teacher_hour', true)->select('id'))
+            ->get()
             ->keyBy(fn (CoordinatorSession $session) => $session->teacher_id.'|'.$session->schedule_slot_id);
 
         $rows = [];

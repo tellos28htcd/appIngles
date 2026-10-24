@@ -4,8 +4,10 @@ Decisiones del 23-oct-2026.
 
 ## Catálogo (Catálogos académicos → Actividades de coordinación)
 `coordinator_activities` (base en Plataforma y copia por escuela): nombre, **horas autorizadas al mes (HA)**,
-"Ocupa la hora del teacher" y la letra que se ve en el panel. Iniciales: las 13 actividades del Excel; solo
-**Revisión de Planeaciones** ocupa la hora del teacher (letra **R**).
+"Se elige teacher", "Ocupa la hora del teacher" y la letra que se ve en el panel. Iniciales: las 13 actividades del
+Excel más **Evaluación de Sesión** (2 h). Sin teacher ("Actividad Coordinación"): Programación de Clubs, Elaboración
+de club en Canva, Elaboración de clubs, Preparación de junta Mensual y Junta mensual. Todas las demás llevan teacher;
+solo **Revisión de Planeaciones** ocupa su hora (letra **R**).
 
 ## Programación (Teachers → Horas Coordinador)
 Calendario del mes igual al de clubs (una cuadrícula por semana, renglones alternos). Arriba, la tabla del catálogo
@@ -18,7 +20,9 @@ Reglas (`App\Actions\Coordination\ScheduleCoordinatorHour`):
 - Si la actividad ocupa la hora del teacher (Revisión de Planeaciones): solo teachers con esa hora libre (horario
   base o "Cubre horas", sin ausencia, club ni otra actividad). Esa hora deja de servir para clases y clubs; en el panel
   se ve su letra en blanco sobre negro (`teacher_availabilities.coordinator_session_id`, sin aula).
-- Las demás actividades se programan como "Actividad Coordinación" (sin teacher) y no se ven en el panel.
+- Las que llevan teacher sin ocupar su hora (Evaluación de Sesión, de Club, retroalimentación, registros…): el teacher
+  que está trabajando a esa hora (la coordinadora entra a su clase); su hora no cambia ni se ve en el panel.
+- Las de planeación de clubs y juntas se programan como "Actividad Coordinación" (sin teacher).
 - Las horas del mes de una actividad no pasan de sus HA: al llegar ya no se agregan más; si se pasan (p. ej. al bajar
   las HA) se marcan en rojo.
 

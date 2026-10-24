@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\CoordinatorActivity;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +15,23 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
+    /** Actividades iniciales (versión de esta migración): [nombre, HA, ocupa la hora del teacher, letra en el panel]. */
+    private const ACTIVITIES = [
+        ['Evaluación de Club', 2, false, null],
+        ['Programación de Clubs', 4, false, null],
+        ['Elaboración de club en Canva', 4, false, null],
+        ['Elaboración de clubs', 1, false, null],
+        ['Preparación de junta Mensual', 2, false, null],
+        ['Junta mensual', 1, false, null],
+        ['Preparación de retroalimentación', 1, false, null],
+        ['Retroalimentación', 3, false, null],
+        ['Registro de resultados EA', 3, false, null],
+        ['Registro de resultados REA', 2, false, null],
+        ['Revisión de Planeaciones', 8, true, 'R'],
+        ['Revisión de WP', 4, false, null],
+        ['Registro de resultados WP', 2, false, null],
+    ];
+
     public function up(): void
     {
         Schema::create('coordinator_activities', function (Blueprint $table) {
@@ -57,7 +73,7 @@ return new class extends Migration
         $now = now();
         $schools = DB::table('schools')->pluck('id');
 
-        foreach (CoordinatorActivity::DEFAULTS as $order => [$name, $hours, $usesTeacher, $mark]) {
+        foreach (self::ACTIVITIES as $order => [$name, $hours, $usesTeacher, $mark]) {
             $row = ['name' => $name, 'authorized_hours' => $hours, 'uses_teacher_hour' => $usesTeacher, 'panel_mark' => $mark,
                 'sort_order' => ($order + 1) * 10, 'is_active' => true, 'created_at' => $now, 'updated_at' => $now];
             $baseId = DB::table('coordinator_activities')->insertGetId(['school_id' => null, 'base_id' => null, ...$row]);

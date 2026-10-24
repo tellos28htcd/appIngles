@@ -75,6 +75,8 @@
                             <span class="font-semibold">{{ $row['activity']->name }}</span>
                             @if ($row['activity']->uses_teacher_hour)
                                 <span class="ml-1 inline-flex size-5 items-center justify-center rounded bg-ink-900 text-[11px] font-extrabold text-white" title="{{ __('coordination.uses_teacher_hour') }}">{{ $row['activity']->panel_mark ?: '•' }}</span>
+                            @elseif (! $row['activity']->requires_teacher)
+                                <span class="ml-1 text-xs text-ink-500">· {{ __('coordination.coordination_short') }}</span>
                             @endif
                         </td>
                         <td class="px-3 py-1.5 text-center tabular-nums">{{ (float) $row['authorized'] }}</td>

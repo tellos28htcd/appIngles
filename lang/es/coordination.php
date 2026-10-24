@@ -13,7 +13,7 @@ return [
     'coordination_option' => 'Actividad Coordinación',
     'coordination_short' => 'Coordinación',
     'choose_activity_first' => 'Primero elige la actividad',
-    'teacher_hint' => 'Revisión de Planeaciones: solo teachers con esa hora libre. Las demás actividades: "Actividad Coordinación".',
+    'teacher_hint' => 'Revisión de Planeaciones: teachers con esa hora libre. Evaluaciones y demás: el teacher que está trabajando a esa hora. Programación de clubs y juntas: "Actividad Coordinación".',
     'repeat_hint' => 'Misma actividad (y teacher) el mismo día y hora; si alguna semana no se puede, se avisa.',
     'add' => 'Programar actividad',
     'edit' => 'Actividad programada',
@@ -45,6 +45,7 @@ return [
         'holiday' => 'Es día festivo.',
         'busy' => 'Ya hay una actividad del coordinador a esa hora.',
         'teacher' => 'El teacher no tiene esa hora libre (horario base, incidencias, club u otra actividad).',
+        'teacher_working' => 'El teacher no está trabajando a esa hora (horario base o incidencias).',
         'over' => 'No se pueden agregar más horas a ":activity": ya llegó a sus :hours h autorizadas del mes.',
     ],
 

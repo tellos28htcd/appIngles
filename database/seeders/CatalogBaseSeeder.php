@@ -244,9 +244,9 @@ class CatalogBaseSeeder extends Seeder
     /** Actividades del coordinador con sus horas autorizadas al mes. */
     private function seedCoordinatorActivities(): void
     {
-        foreach (CoordinatorActivity::DEFAULTS as $order => [$name, $hours, $usesTeacher, $mark]) {
+        foreach (CoordinatorActivity::DEFAULTS as $order => [$name, $hours, $requiresTeacher, $usesTeacher, $mark]) {
             CoordinatorActivity::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
-                'authorized_hours' => $hours, 'uses_teacher_hour' => $usesTeacher, 'panel_mark' => $mark,
+                'authorized_hours' => $hours, 'requires_teacher' => $requiresTeacher, 'uses_teacher_hour' => $usesTeacher, 'panel_mark' => $mark,
                 'sort_order' => ($order + 1) * 10, 'is_active' => true,
             ]);
         }

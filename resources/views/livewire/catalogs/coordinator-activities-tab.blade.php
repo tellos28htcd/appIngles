@@ -19,6 +19,8 @@
                                 <span class="font-semibold">{{ $activity->name }}</span>
                                 @if ($activity->uses_teacher_hour)
                                     <x-ui.badge variant="neutral" class="ml-1">{{ __('catalogs.coordination.uses_teacher_badge', ['mark' => $activity->panel_mark]) }}</x-ui.badge>
+                                @elseif ($activity->requires_teacher)
+                                    <x-ui.badge variant="info" class="ml-1">{{ __('catalogs.coordination.requires_teacher_badge') }}</x-ui.badge>
                                 @endif
                             </td>
                             <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ (float) $activity->authorized_hours }}</td>
@@ -43,6 +45,7 @@
     <x-ui.modal wire:model="editing" :title="__($activityId ? 'catalogs.coordination.edit' : 'catalogs.coordination.add')">
         <x-ui.input name="name" :label="__('catalogs.fields.name')" wire:model="name" maxlength="120" required />
         <x-ui.input name="authorizedHours" type="number" step="0.5" min="0" :label="__('catalogs.coordination.authorized_hours')" wire:model="authorizedHours" class="tabular-nums" required />
+        <x-ui.toggle name="requiresTeacher" :label="__('catalogs.coordination.requires_teacher')" :description="__('catalogs.coordination.requires_teacher_hint')" wire:model="requiresTeacher" />
         <x-ui.toggle name="usesTeacherHour" :label="__('catalogs.coordination.uses_teacher_hour')" :description="__('catalogs.coordination.uses_teacher_hour_hint')" wire:model.live="usesTeacherHour" />
         @if ($usesTeacherHour)
             <x-ui.input name="panelMark" :label="__('catalogs.coordination.panel_mark')" :hint="__('catalogs.coordination.panel_mark_hint')" wire:model="panelMark" maxlength="3" class="w-24 uppercase" required />

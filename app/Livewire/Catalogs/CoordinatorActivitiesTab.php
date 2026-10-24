@@ -23,6 +23,9 @@ class CoordinatorActivitiesTab extends Component
 
     public ?float $authorizedHours = null;
 
+    /** Se programa con un teacher (sin ocupar su hora, salvo que también ocupe su hora). */
+    public bool $requiresTeacher = false;
+
     public bool $usesTeacherHour = false;
 
     public string $panelMark = '';
@@ -42,6 +45,7 @@ class CoordinatorActivitiesTab extends Component
         $this->activityId = $activity?->id;
         $this->name = (string) $activity?->name;
         $this->authorizedHours = $activity?->authorized_hours;
+        $this->requiresTeacher = (bool) $activity?->requires_teacher;
         $this->usesTeacherHour = (bool) $activity?->uses_teacher_hour;
         $this->panelMark = (string) $activity?->panel_mark;
         $this->editing = true;
@@ -54,6 +58,7 @@ class CoordinatorActivitiesTab extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:120', $this->uniqueInCatalog('coordinator_activities', 'name', $this->activityId)],
             'authorizedHours' => ['required', 'numeric', 'min:0', 'max:999'],
+            'requiresTeacher' => ['boolean'],
             'usesTeacherHour' => ['boolean'],
             'panelMark' => [$this->usesTeacherHour ? 'required' : 'nullable', 'string', 'max:3'],
         ], attributes: [
@@ -70,6 +75,7 @@ class CoordinatorActivitiesTab extends Component
         $activity->fill([
             'name' => trim($data['name']),
             'authorized_hours' => $data['authorizedHours'],
+            'requires_teacher' => $data['requiresTeacher'] || $data['usesTeacherHour'],
             'uses_teacher_hour' => $data['usesTeacherHour'],
             'panel_mark' => $data['usesTeacherHour'] ? Str::upper(trim($data['panelMark'])) : null,
         ])->save();

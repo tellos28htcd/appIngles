@@ -17,7 +17,9 @@ use Illuminate\Validation\ValidationException;
  * - una actividad por hora (el coordinador hace una cosa a la vez); no en festivos;
  * - si la actividad ocupa la hora del teacher (Revisión de Planeaciones) se elige un teacher
  *   que tenga esa hora libre; esa hora deja de servir para clases y clubs y se marca en el panel;
- *   las demás actividades son "Actividad Coordinación" (sin teacher);
+ * - si solo "se elige teacher" (Evaluación de Sesión, de Club…) es un teacher que está trabajando
+ *   a esa hora (la coordinadora entra a su clase); su hora no cambia;
+ * - las demás actividades son "Actividad Coordinación" (sin teacher);
  * - las horas del mes de la actividad no pueden pasar de sus horas autorizadas (HA).
  */
 final class ScheduleCoordinatorHour
@@ -59,7 +61,7 @@ final class ScheduleCoordinatorHour
             $session ??= new CoordinatorSession(['school_id' => $school->id, 'user_id' => $userId]);
             $session->fill([
                 'coordinator_activity_id' => $activity->id,
-                'teacher_id' => $activity->uses_teacher_hour ? $data['teacher_id'] : null,
+                'teacher_id' => $activity->needsTeacher() ? $data['teacher_id'] : null,
                 'date' => $date->toDateString(),
                 'schedule_slot_id' => $data['schedule_slot_id'],
                 'repeats' => (bool) ($data['repeats'] ?? false),
@@ -107,9 +109,14 @@ final class ScheduleCoordinatorHour
             return ['slot', __('coordination.validation.busy')];
         }
 
-        if ($activity->uses_teacher_hour
-            && ! in_array((int) ($data['teacher_id'] ?? 0), $this->planner->availableTeacherIds($school, $date, $slot, null, $session?->id), true)) {
+        $teacherId = (int) ($data['teacher_id'] ?? 0);
+
+        if ($activity->uses_teacher_hour && ! in_array($teacherId, $this->planner->availableTeacherIds($school, $date, $slot, null, $session?->id), true)) {
             return ['teacherId', __('coordination.validation.teacher')];
+        }
+
+        if (! $activity->uses_teacher_hour && $activity->requires_teacher && ! in_array($teacherId, $this->planner->workingTeacherIds($school, $date, $slot), true)) {
+            return ['teacherId', __('coordination.validation.teacher_working')];
         }
 
         $hours = $this->monthHours($activity, $date, $session?->id) + self::slotHours($slot);
