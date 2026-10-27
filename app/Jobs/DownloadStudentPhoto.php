@@ -40,8 +40,9 @@ class DownloadStudentPhoto implements ShouldQueue
         }
 
         $url = self::directDownloadUrl($student->photo_source_url);
+        $ip = self::safeAddress($url);
 
-        if (! self::isSafeUrl($url)) {
+        if ($ip === null) {
             Log::warning('Foto de alumno omitida: enlace no permitido.', ['student_id' => $student->id]);
 
             return;
@@ -49,11 +50,16 @@ class DownloadStudentPhoto implements ShouldQueue
 
         try {
             // Google Drive redirige a su servidor de contenido: cada salto se vuelve a validar (máx. 3).
+            // La conexión se fija a la IP pública validada (CURLOPT_RESOLVE): un cambio de DNS entre la
+            // validación y la descarga no puede llevarla a la red interna del servidor.
             for ($hops = 0; ; $hops++) {
-                $response = Http::timeout(20)->withoutRedirecting()->get($url);
+                $host = (string) parse_url($url, PHP_URL_HOST);
+                $response = Http::timeout(20)->withoutRedirecting()
+                    ->withOptions(['curl' => [CURLOPT_RESOLVE => ["{$host}:443:{$ip}"]]])
+                    ->get($url);
                 $url = (string) $response->header('Location');
 
-                if (! $response->redirect() || $hops >= 3 || ! self::isSafeUrl($url)) {
+                if (! $response->redirect() || $hops >= 3 || ($ip = self::safeAddress($url)) === null) {
                     break;
                 }
             }
@@ -91,16 +97,27 @@ class DownloadStudentPhoto implements ShouldQueue
     /** Solo HTTPS hacia direcciones públicas (evita que un enlace apunte a la red interna del servidor). */
     public static function isSafeUrl(string $url): bool
     {
+        return self::safeAddress($url) !== null;
+    }
+
+    /**
+     * IP pública a la que se conecta (o null si el enlace no se permite): HTTPS, sin usuario ni
+     * puerto, sin IP escrita directamente y con todas sus direcciones públicas.
+     */
+    public static function safeAddress(string $url): ?string
+    {
         $parts = parse_url($url);
 
-        if (($parts['scheme'] ?? null) !== 'https' || empty($parts['host']) || isset($parts['user']) || isset($parts['port'])) {
-            return false;
+        if (($parts['scheme'] ?? null) !== 'https' || empty($parts['host']) || isset($parts['user']) || isset($parts['port'])
+            || filter_var(trim($parts['host'], '[]'), FILTER_VALIDATE_IP) !== false) {
+            return null;
         }
 
         $ips = gethostbynamel($parts['host']) ?: [];
-
-        return $ips !== [] && collect($ips)->every(fn (string $ip) => filter_var(
+        $public = $ips !== [] && collect($ips)->every(fn (string $ip) => filter_var(
             $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
         ) !== false);
+
+        return $public ? $ips[0] : null;
     }
 }

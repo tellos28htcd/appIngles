@@ -12,6 +12,7 @@ use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentSurveyAnswer;
 use App\Models\SurveyQuestion;
+use App\Rules\RealImage;
 use Closure;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -156,7 +157,7 @@ class StudentForm extends Form
             'learns_kinesthetic' => ['boolean'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'status' => ['required', Rule::enum(StudentStatus::class)],
-            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048', new RealImage],
             'answers' => ['array'],
             'answers.*' => ['nullable', 'string', 'max:500', $this->validAnswer()],
         ];

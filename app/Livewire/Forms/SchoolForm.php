@@ -10,6 +10,7 @@ use App\Enums\SelfBooking;
 use App\Models\Book;
 use App\Models\Municipality;
 use App\Models\School;
+use App\Rules\RealImage;
 use DateTimeZone;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -140,7 +141,7 @@ class SchoolForm extends Form
             'last_folio_series_b' => ['required', 'integer', 'min:0', 'max:4294967295'],
             'brand_primary' => $hex,
             'brand_accent' => $hex,
-            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:1024'],
+            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:1024', new RealImage],
             'session_capacity' => ['required', 'integer', 'min:1', 'max:'.School::MAX_SESSION_CAPACITY],
             'timezone' => ['required', Rule::in(DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, 'MX'))],
             'currency' => ['required', Rule::in(['MXN', 'USD'])],

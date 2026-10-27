@@ -10,6 +10,7 @@ use App\Models\Municipality;
 use App\Models\Role;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Rules\RealImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -136,7 +137,7 @@ class TeacherForm extends Form
                 Rule::requiredIf(fn () => $this->teacher?->user_id !== null),
                 'nullable', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($this->teacher?->user_id),
             ],
-            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048', new RealImage],
             'street' => ['nullable', 'string', 'max:150'],
             'exterior_number' => ['nullable', 'string', 'max:20'],
             'interior_number' => ['nullable', 'string', 'max:20'],
