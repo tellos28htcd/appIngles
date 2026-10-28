@@ -73,6 +73,16 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
+                                {{-- Total por tipo de club (abreviatura) y total general. --}}
+                                <tfoot>
+                                    <tr class="border-t border-line-strong">
+                                        <th scope="row" class="py-1 pr-2 text-left">{{ __('clubs.summary.total') }}</th>
+                                        @foreach ($summary['codes'] as $code)
+                                            <td class="px-1.5 py-1 text-right font-extrabold tabular-nums">{{ (float) collect($summary['teachers'])->sum(fn ($row) => $row['codes'][$code] ?? 0) }}</td>
+                                        @endforeach
+                                        <td class="py-1 pl-2 text-right font-extrabold tabular-nums">{{ (float) $summary['total'] }} h</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     @endif

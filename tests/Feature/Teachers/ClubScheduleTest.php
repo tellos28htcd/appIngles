@@ -246,6 +246,7 @@ class ClubScheduleTest extends TestCase
         $this->assertSame(['C12' => 1.0, 'C23' => 1.0], array_map('floatval', $july['teachers'][0]['codes']));
         $this->assertEquals(1.0, $page->viewData('codeHours')[$this->conversation->id.'|C12']);
         $page->call('toggleSummary', 'type')->assertSet('summaryTab', 'type')->assertSee('C23')
+            ->assertSeeInOrder(['MELISSA', 'Total', '1', '1', '2 h']) // total por tipo de club y total general
             ->call('toggleSummary', 'type')->assertSet('summaryTab', '');
     }
 
