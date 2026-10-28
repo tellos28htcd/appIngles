@@ -146,7 +146,8 @@
                             @foreach ($days as $day)
                                 @php($session = $grid->get($day->toDateString().'|'.$slot->id))
                                 @php($open = $day->month === $monthStart->month && ! isset($holidays[$day->toDateString()]) && $planner->slotAppliesOn($slot, $day->dayOfWeekIso))
-                                <td @class(['h-12 min-w-28 border-b border-l border-line p-1 align-top', 'bg-surface-2' => ! $open && ! $session])>
+                                {{-- Días de otro mes: deshabilitados pero con el renglón alterno; gris solo festivos y horas que no se trabajan. --}}
+                                <td @class(['h-12 min-w-28 border-b border-l border-line p-1 align-top', 'bg-surface-2' => ! $open && ! $session && $day->month === $monthStart->month])>
                                     @if ($session)
                                         <button type="button" @if ($canManage) wire:click="edit({{ $session->id }})" @else disabled @endif
                                                 @class([

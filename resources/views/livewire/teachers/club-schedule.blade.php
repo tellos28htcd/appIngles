@@ -136,7 +136,8 @@
                                 @php($open = $day->month === $monthStart->month && ! isset($holidays[$day->toDateString()]) && $planner->slotAppliesOn($slot, $day->dayOfWeekIso))
                                 @php($reserved = $day->month === $monthStart->month ? $reservedAt($day, $slot) : collect())
                                 @php($freeRooms = $open ? $free($day, $slot) : 0)
-                                <td @class(['h-12 min-w-28 border-b border-l border-line p-1 align-top', 'bg-surface-2' => ! $open])>
+                                {{-- Días de otro mes: deshabilitados pero con el renglón alterno; gris solo festivos y horas que no se trabajan. --}}
+                                <td @class(['h-12 min-w-28 border-b border-l border-line p-1 align-top', 'bg-surface-2' => ! $open && $day->month === $monthStart->month])>
                                     <div class="flex flex-col gap-1">
                                         @foreach ($reserved as $closure)
                                             <span class="rounded-md border border-dashed border-ink-400 bg-white px-1 py-0.5 text-[10px] font-bold uppercase leading-tight text-ink-700"
