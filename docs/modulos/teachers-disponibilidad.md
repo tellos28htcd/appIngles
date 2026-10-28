@@ -20,8 +20,8 @@ el Excel tiene días de 9 y 10 horas, por eso no bloquean. Al guardar, las seman
 ## Panel de disponibilidad
 Igual a la hoja "H de Teacher": por día una columna por teacher (número y nombre corto), por hora el **número de aula**
 con su color (paleta `--color-room-1…9`, como el Excel), horas por día, leyenda (asignadas / a cumplir) y gráfica del
-promedio de teachers por hora en todos los días del panel (x̄T; cada hora entre los días de su turno, sin festivos ni
-Lista de espera; ancho fijo ~600 px). Clic en el nombre del teacher (columna o leyenda) abre su **horario base** en una
+promedio por hora como el Excel (x̄T): aulas asignadas de la semana entre 5, o entre 6 si ese sábado hay aulas a esa
+hora (7 con domingo); sin Lista de espera; ancho fijo ~600 px. Clic en el nombre del teacher (columna o leyenda) abre su **horario base** en una
 ventana; al guardar se recalculan las semanas armadas desde hoy y se actualiza el panel. Selector de mes y
 semana = histórico. Una hora con incidencia que nadie cubre se muestra **A** (ausente) en naranja.
 - Cada semana se arma con el botón **Armar semana**: horario base + aulas de la **última semana armada** (aunque se haya

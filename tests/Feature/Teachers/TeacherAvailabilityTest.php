@@ -329,16 +329,29 @@ class TeacherAvailabilityTest extends TestCase
 
     public function test_the_chart_does_not_count_the_waitlist(): void
     {
-        // Lunes a viernes y sábado: el promedio cuenta todos los días del panel (6).
-        $this->teacher('MELISSA', 1, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9], 6 => [9]]);
-        $this->teacher('DULCE', 2, [6 => [9]]);
-        $this->teacher('ESPERA', 9, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9]], ['is_waitlist' => true]);
+        // Como el Excel: aulas asignadas de la semana entre 5, o entre 6 si ese sábado hay aulas a esa hora.
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9], 6 => [9]]);
+        $dulce = $this->teacher('DULCE', 2, [6 => [9], 1 => [10], 2 => [10], 3 => [10], 4 => [10], 5 => [10]]);
+        $this->teacher('ERNESTO', 3, [1 => [9]]); // sin aula: no cuenta
+        $waitlist = $this->teacher('ESPERA', 9, [1 => [9], 2 => [9], 3 => [9], 4 => [9], 5 => [9]], ['is_waitlist' => true]);
         $this->planner()->generateWeek($this->school, $this->monday);
+
+        foreach (range(0, 5) as $offset) {
+            $day = $this->monday->addDays($offset);
+            $this->planner()->setClassroom($this->cell($melissa, $day, 9), $this->rooms['1']->id);
+            if ($offset === 5) {
+                $this->planner()->setClassroom($this->cell($dulce, $day, 9), $this->rooms['2']->id);
+            } else {
+                $this->planner()->setClassroom($this->cell($dulce, $day, 10), $this->rooms['2']->id);
+                $this->planner()->setClassroom($this->cell($waitlist, $day, 9), $this->rooms['9']->id);
+            }
+        }
 
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
         $average = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)->viewData('average');
 
-        $this->assertEquals(1.2, $average[$this->slots[9]->id]);
+        $this->assertEquals(1.2, $average[$this->slots[9]->id]);  // 7 aulas (con sábado) / 6
+        $this->assertEquals(1.0, $average[$this->slots[10]->id]); // 5 aulas (sin sábado) / 5
     }
 
     public function test_a_sunday_shift_adds_sunday_and_its_hours_only_apply_that_day(): void

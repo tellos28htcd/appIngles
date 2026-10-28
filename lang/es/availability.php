@@ -29,7 +29,7 @@ return [
     'to_fulfill_short' => 'A cumplir',
     'to_fulfill_hint' => 'Horas que debe cumplir por semana según su contratación',
     'chart_title' => 'Promedio de teachers por hora',
-    'chart_hint' => 'Todos los días del panel, sin días festivos (saturación promedio de teachers; sin la Lista de espera).',
+    'chart_hint' => 'Aulas asignadas por hora entre 5 (lunes a viernes) o entre 6 si ese sábado hay aulas a esa hora; sin la Lista de espera.',
     'edit_schedule' => 'Editar el horario base de :teacher',
     'schedule_modal_title' => 'Horario base · :teacher',
     'schedule_modal_hint' => 'Al guardar se recalculan las semanas armadas desde hoy.',

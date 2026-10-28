@@ -181,18 +181,18 @@ class AvailabilityPanel extends Component
         $perDay = $cells->groupBy(fn (TeacherAvailability $cell) => $cell->date->toDateString().'|'.$cell->teacher_id)->map->count();
         $weekly = $cells->groupBy('teacher_id')->map->count();
 
-        // Gráfica: promedio de teachers disponibles por hora en los días que muestra el panel (como "x̄T" del Excel).
-        // Cada hora se promedia entre los días en que su turno aplica; los días festivos no cuentan (no hay clase).
+        // Gráfica (como "x̄T" del Excel): por cada hora se cuentan las aulas asignadas de la semana y se dividen
+        // entre 5 (lunes a viernes), o entre 6 si ese sábado hay aulas a esa hora (y 7 si también el domingo).
         // La Lista de espera no cuenta: no es un teacher que dé clase.
         $holidays = $planner->holidays($school, $days);
         $waitlist = $teachers->where('is_waitlist', true)->pluck('id');
-        $chartCells = $cells->whereNotIn('teacher_id', $waitlist);
-        $average = $slots->mapWithKeys(function ($slot) use ($days, $holidays, $chartCells, $planner) {
-            $slotDays = collect($days)->filter(fn (CarbonImmutable $day) => ! isset($holidays[$day->toDateString()]) && $planner->slotAppliesOn($slot, $day->dayOfWeekIso))
-                ->map->toDateString();
-            $count = $chartCells->where('schedule_slot_id', $slot->id)->filter(fn ($cell) => $slotDays->contains($cell->date->toDateString()))->count();
+        $chartCells = $cells->whereNotIn('teacher_id', $waitlist)->whereNotNull('classroom_id');
+        $average = $slots->mapWithKeys(function ($slot) use ($days, $chartCells) {
+            $slotCells = $chartCells->where('schedule_slot_id', $slot->id);
+            $weekend = collect($days)->filter(fn (CarbonImmutable $day) => $day->dayOfWeekIso >= 6
+                && $slotCells->contains(fn ($cell) => $cell->date->toDateString() === $day->toDateString()))->count();
 
-            return [$slot->id => $slotDays->isEmpty() ? 0 : round($count / $slotDays->count(), 1)];
+            return [$slot->id => round($slotCells->count() / (5 + $weekend), 1)];
         });
 
         // Horas con incidencia que nadie cubre: se marcan "A" (ausente) en el panel.
