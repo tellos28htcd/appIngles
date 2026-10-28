@@ -192,7 +192,7 @@
 
         {{-- Horario base del teacher (clic en su nombre); al guardar se recalcula el panel. --}}
         @php($scheduleTeacher = $editingScheduleTeacherId ? $teachers->firstWhere('id', $editingScheduleTeacherId) : null)
-        <x-ui.modal wire:model="editingScheduleTeacherId" size="lg"
+        <x-ui.modal wire:model="editingScheduleTeacherId" size="lg" :draggable="true"
                     :title="__('availability.schedule_modal_title', ['teacher' => $scheduleTeacher?->fullName() ?? ''])">
             @if ($scheduleTeacher)
                 <p class="-mt-3 text-sm text-ink-500">{{ $scheduleTeacher->contract_type?->label() }} · {{ __('availability.schedule_modal_hint') }}</p>

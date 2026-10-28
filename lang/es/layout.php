@@ -7,6 +7,7 @@ return [
     'more' => 'Más',
     'menu' => 'Menú',
     'close_menu' => 'Cerrar menú',
+    'drag_to_move' => 'Arrastra el título para mover la ventana',
     'user_menu' => 'Menú de usuario',
     'skip_to_content' => 'Saltar al contenido',
     'close' => 'Cerrar',
