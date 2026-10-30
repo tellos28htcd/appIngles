@@ -4,6 +4,7 @@ namespace App\Livewire\Teachers;
 
 use App\Actions\Coordination\ScheduleCoordinatorHour;
 use App\Actions\Teachers\AvailabilityPlanner;
+use App\Models\ClubSession;
 use App\Models\CoordinatorActivity;
 use App\Models\CoordinatorSession;
 use App\Models\ScheduleSlot;
@@ -53,6 +54,11 @@ class CoordinatorSchedule extends Component
     public string $teacherKey = '';
 
     public bool $repeat = false;
+
+    /** Ventana "Clubs del teacher" (Evaluación de Club): actividad y teacher elegidos. */
+    public ?int $clubPickerActivityId = null;
+
+    public ?int $clubPickerTeacherId = null;
 
     public function mount(): void
     {
@@ -124,6 +130,73 @@ class CoordinatorSchedule extends Component
     private function selectedActivity(): ?CoordinatorActivity
     {
         return $this->activityId ? $this->activities->firstWhere('id', $this->activityId) : null;
+    }
+
+    /** Abre la lista de clubs del teacher en el mes para programar su evaluación. */
+    public function openClubPicker(int $activityId, int $teacherId): void
+    {
+        $this->authorize('manage', CoordinatorSession::class);
+        $activity = $this->activities->firstWhere('id', $activityId);
+        abort_unless($activity?->evaluatesClubs(), 404);
+        Teacher::query()->where('school_id', auth()->user()->school_id)->findOrFail($teacherId);
+
+        $this->clubPickerActivityId = $activity->id;
+        $this->clubPickerTeacherId = $teacherId;
+    }
+
+    /** Programa la evaluación en la fecha y hora del club elegido (con su teacher). */
+    public function evaluateClub(int $clubSessionId, ScheduleCoordinatorHour $scheduler): void
+    {
+        $this->authorize('manage', CoordinatorSession::class);
+        $club = ClubSession::query()->where('school_id', auth()->user()->school_id)
+            ->where('teacher_id', $this->clubPickerTeacherId)->findOrFail($clubSessionId);
+
+        try {
+            $scheduler->save($this->school(), [
+                'coordinator_activity_id' => $this->clubPickerActivityId,
+                'teacher_id' => $club->teacher_id,
+                'date' => $club->date->toDateString(),
+                'schedule_slot_id' => $club->schedule_slot_id,
+            ], null, auth()->id());
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+
+            return;
+        }
+
+        unset($this->sessions, $this->teacherClubs);
+        $this->dispatch('toast', type: 'success', message: __('coordination.messages.saved'));
+    }
+
+    /**
+     * Clubs del teacher en el mes elegido, con si ya se evaluó o si el coordinador ya tiene otra actividad a esa hora.
+     *
+     * @return list<array{id: int, label: string, code: string, evaluated: bool, busy: bool}>
+     */
+    #[Computed]
+    public function teacherClubs(): array
+    {
+        if ($this->clubPickerTeacherId === null) {
+            return [];
+        }
+
+        $first = CarbonImmutable::parse($this->month.'-01');
+        $clubs = ClubSession::query()->where('school_id', auth()->user()->school_id)->where('teacher_id', $this->clubPickerTeacherId)
+            ->whereBetween('date', [$first->toDateString(), $first->endOfMonth()->toDateString()])
+            ->with('slot')->orderBy('date')->get()->sortBy(fn (ClubSession $club) => $club->date->toDateString().' '.$club->slot?->starts_at);
+        $taken = $this->sessions->keyBy(fn (CoordinatorSession $session) => $session->date->toDateString().'|'.$session->schedule_slot_id);
+
+        return $clubs->map(function (ClubSession $club) use ($taken) {
+            $session = $taken->get($club->date->toDateString().'|'.$club->schedule_slot_id);
+
+            return [
+                'id' => $club->id,
+                'label' => Str::lower($club->date->translatedFormat('j M')).' · '.substr((string) $club->slot?->starts_at, 0, 5).' · '.$club->code,
+                'code' => $club->code,
+                'evaluated' => $session !== null && $session->coordinator_activity_id === $this->clubPickerActivityId && $session->teacher_id === $club->teacher_id,
+                'busy' => $session !== null,
+            ];
+        })->values()->all();
     }
 
     public function save(ScheduleCoordinatorHour $scheduler): void
@@ -333,6 +406,7 @@ class CoordinatorSchedule extends Component
                     'label' => $activity->name.' '.__('coordination.teacher_prefix').' '.Str::title(Str::before(trim($teacher->first_name), ' ') ?: $teacher->panelName()),
                     'authorized' => (float) $activity->authorized_hours,
                     'programmed' => $hoursOf($activity, $teacher->id),
+                    'teacher_id' => $teacher->id,
                 ];
             }
         }

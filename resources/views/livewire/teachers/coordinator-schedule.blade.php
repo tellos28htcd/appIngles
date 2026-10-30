@@ -12,8 +12,8 @@
     </section>
 
     {{-- Resumen: por teacher y por actividad (mes elegido y mes anterior), colapsado --}}
-    <section class="flex flex-col rounded-xl border border-line bg-white shadow-xs">
-        <div class="flex gap-1 border-b border-line px-3 pt-2" role="tablist">
+    <section class="sticky top-0 z-30 flex flex-col rounded-xl border border-line bg-white shadow-pop">
+        <div class="flex flex-wrap gap-1 border-b border-line px-3 pt-2" role="tablist">
             @foreach (['teacher', 'activity'] as $tab)
                 <button type="button" role="tab" aria-selected="{{ $summaryTab === $tab ? 'true' : 'false' }}" aria-expanded="{{ $summaryTab === $tab ? 'true' : 'false' }}"
                         wire:click="toggleSummary('{{ $tab }}')"
@@ -26,9 +26,11 @@
                     <span aria-hidden="true" class="text-xs">{{ $summaryTab === $tab ? '▲' : '▼' }}</span>
                 </button>
             @endforeach
-        </div>
+            <span @class(['ml-auto self-center whitespace-nowrap px-2 pb-1 text-sm font-bold tabular-nums', 'text-success-700' => $allMatch, 'text-warning-700' => ! $allMatch])>
+                HP {{ (float) $totalProgrammed }} / HA {{ (float) $totalAuthorized }} · {{ __($allMatch ? 'coordination.all_match' : 'coordination.not_matching') }}
+            </span>        </div>
         @if ($summaryTab !== '')
-            <div class="grid gap-4 p-4 lg:grid-cols-2">
+            <div class="grid max-h-[45vh] gap-4 overflow-y-auto p-4 lg:grid-cols-2">
                 @foreach ($summaries as $index => $summary)
                     @php($rows = $summaryTab === 'teacher' ? $summary['teachers'] : $summary['activities'])
                     <div class="flex min-w-0 flex-col gap-2" wire:key="summary-{{ $summaryTab }}-{{ $index }}">
@@ -78,7 +80,14 @@
                             @php($state = abs($row['programmed'] - $row['authorized']) < 0.001 ? 'match' : ($row['programmed'] > $row['authorized'] ? 'over' : 'under'))
                             <tr @class(['bg-white' => $loop->odd, 'bg-row-alt' => $loop->even])>
                                 <td class="px-4 py-1.5">
-                                    <span class="font-semibold">{{ $row['label'] }}</span>
+                                    @if ($canManage && isset($row['teacher_id']) && $row['activity']->evaluatesClubs())
+                                        {{-- Evaluación de Club: abre los clubs del teacher en el mes para programarla en uno. --}}
+                                        <button type="button" wire:click="openClubPicker({{ $row['activity']->id }}, {{ $row['teacher_id'] }})"
+                                                class="rounded text-left font-semibold text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                                                title="{{ __('coordination.club_picker.open') }}">{{ $row['label'] }}</button>
+                                    @else
+                                        <span class="font-semibold">{{ $row['label'] }}</span>
+                                    @endif
                                     @if ($row['activity']->uses_teacher_hour)
                                         <span class="ml-1 inline-flex size-5 items-center justify-center rounded bg-ink-900 text-[11px] font-extrabold text-white" title="{{ __('coordination.uses_teacher_hour') }}">{{ $row['activity']->panel_mark ?: '•' }}</span>
                                     @elseif (! $row['activity']->needsTeacher())
@@ -177,6 +186,34 @@
     @endforeach
 
     @if ($canManage)
+        {{-- Clubs del teacher en el mes: clic para programar la Evaluación de Club en esa fecha y hora. --}}
+        <x-ui.modal wire:model="clubPickerTeacherId" size="md" :title="__('coordination.club_picker.title')">
+            <p class="-mt-3 text-sm text-ink-500">{{ __('coordination.club_picker.hint') }}</p>
+            <ul class="flex flex-col gap-1.5">
+                @forelse ($this->teacherClubs as $club)
+                    <li wire:key="picker-club-{{ $club['id'] }}">
+                        <button type="button" wire:click="evaluateClub({{ $club['id'] }})" @disabled($club['busy'])
+                                @class([
+                                    'flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left font-semibold tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                                    'border-success-200 bg-success-50 text-success-700' => $club['evaluated'],
+                                    'border-line bg-surface-2 text-ink-400' => $club['busy'] && ! $club['evaluated'],
+                                    'border-line hover:border-primary-500 hover:bg-primary-50' => ! $club['busy'],
+                                ])>
+                            <span>{{ $club['label'] }}</span>
+                            <span class="text-xs font-bold">
+                                {{ $club['evaluated'] ? __('coordination.club_picker.evaluated') : ($club['busy'] ? __('coordination.club_picker.busy') : __('coordination.club_picker.add')) }}
+                            </span>
+                        </button>
+                    </li>
+                @empty
+                    <li class="text-sm text-ink-500">{{ __('coordination.club_picker.empty') }}</li>
+                @endforelse
+            </ul>
+            <x-slot:footer>
+                <x-ui.button variant="ghost" x-on:click="open = null">{{ __('coordination.club_picker.close') }}</x-ui.button>
+            </x-slot:footer>
+        </x-ui.modal>
+
         <x-ui.modal wire:model="editing" size="md" :title="__($sessionId ? 'coordination.edit' : 'coordination.add')">
             <p class="-mt-3 text-sm font-semibold text-ink-500">
                 {{ $date ? \Illuminate\Support\Str::ucfirst(\Carbon\CarbonImmutable::parse($date)->translatedFormat('l j \d\e F')) : '' }} · {{ $slotLabel }}

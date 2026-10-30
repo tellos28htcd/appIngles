@@ -29,6 +29,11 @@ Reglas (`App\Actions\Coordination\ScheduleCoordinatorHour`):
 - Las horas del mes de una actividad no pasan de sus HA: al llegar ya no se agregan más; si se pasan (p. ej. al bajar
   las HA) se marcan en rojo.
 
+- La barra de resúmenes queda fija arriba al bajar al calendario (con HP/HA y "Todo coincide"); lo mismo en
+  Programación de clubs (clubs y horas del mes).
+- Clic en "Evaluación de Club T. …": ventana con los clubs de ese teacher en el mes (fecha · hora · abreviatura); al
+  elegir uno se programa la Evaluación de Club con ese teacher en la fecha y hora del club (marca los ya evaluados).
+
 ## Tablas
 `coordinator_activities`, `coordinator_sessions` (school_id, coordinator_activity_id, teacher_id nulo, date,
 schedule_slot_id, repeats, user_id; único escuela+fecha+hora), `teacher_availabilities.coordinator_session_id`.

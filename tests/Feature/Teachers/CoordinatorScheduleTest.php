@@ -9,6 +9,7 @@ use App\Livewire\Teachers\ClubSchedule;
 use App\Livewire\Teachers\CoordinatorSchedule;
 use App\Models\Classroom;
 use App\Models\Club;
+use App\Models\ClubSession;
 use App\Models\CoordinatorActivity;
 use App\Models\CoordinatorSession;
 use App\Models\Role;
@@ -175,6 +176,33 @@ class CoordinatorScheduleTest extends TestCase
         $columns = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)->viewData('columns');
         $left = collect($columns[1])->filter()->mapWithKeys(fn ($row) => [$row['label'] => [$row['authorized'], $row['programmed']]])->all();
         $this->assertSame(['Evaluación de Club T. Melissa' => [2.0, 2.0], 'Evaluación de Club T. Dulce' => [2.0, 1.0]], $left);
+    }
+
+    public function test_club_evaluation_is_scheduled_from_the_teachers_clubs_of_the_month(): void
+    {
+        $evaluation = CoordinatorActivity::create(['school_id' => $this->school->id, 'name' => 'Evaluación de Club', 'authorized_hours' => 2,
+            'per_teacher' => true, 'requires_teacher' => true, 'table_column' => 1, 'sort_order' => 3, 'is_active' => true]);
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9], 3 => [11]]);
+        $room = Classroom::create(['school_id' => $this->school->id, 'name' => '7', 'capacity' => 20, 'is_club_room' => true, 'is_active' => true]);
+        $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 1, 'is_active' => true,
+            'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true]]]);
+        $first = ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => $melissa->id,
+            'classroom_id' => $room->id, 'date' => '2026-07-27', 'schedule_slot_id' => $this->slots[9]->id, 'modality' => 'in_person']);
+        ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => $melissa->id,
+            'classroom_id' => $room->id, 'date' => '2026-07-29', 'schedule_slot_id' => $this->slots[11]->id, 'modality' => 'in_person']);
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+
+        $page = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)
+            ->assertSeeHtml('sticky top-0') // la barra de resúmenes queda fija al bajar
+            ->call('openClubPicker', $evaluation->id, $melissa->id);
+        $this->assertSame(['27 jul. · 09:00 · C12', '29 jul. · 11:00 · C12'], array_column($page->get('teacherClubs'), 'label'));
+
+        $page->call('evaluateClub', $first->id)->assertDispatched('toast', type: 'success');
+
+        $session = CoordinatorSession::sole();
+        $this->assertSame([$evaluation->id, $melissa->id, '2026-07-27', $this->slots[9]->id],
+            [$session->coordinator_activity_id, $session->teacher_id, $session->date->toDateString(), $session->schedule_slot_id]);
+        $this->assertSame([true, false], array_column($page->get('teacherClubs'), 'evaluated'));
     }
 
     public function test_authorized_hours_cannot_be_exceeded_and_totals_are_shown(): void

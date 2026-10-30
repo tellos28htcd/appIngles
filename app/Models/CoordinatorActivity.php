@@ -6,6 +6,7 @@ use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * Actividad del coordinador con sus horas autorizadas al mes (HA). Si "se elige teacher"
@@ -59,6 +60,12 @@ class CoordinatorActivity extends Model
     public function needsTeacher(): bool
     {
         return $this->requires_teacher || $this->uses_teacher_hour || $this->per_teacher;
+    }
+
+    /** Actividad por teacher que se programa desde sus clubs (p. ej. "Evaluación de Club"). */
+    public function evaluatesClubs(): bool
+    {
+        return $this->per_teacher && str_contains(Str::lower(Str::ascii($this->name)), 'club');
     }
 
     /** Si ya tiene horas programadas, solo se desactiva. */

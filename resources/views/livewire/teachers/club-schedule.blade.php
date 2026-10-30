@@ -16,8 +16,8 @@
     </section>
 
     {{-- Resumen: por teacher y por tipo (mes elegido y mes anterior) --}}
-    <section class="flex flex-col rounded-xl border border-line bg-white shadow-xs">
-        <div class="flex gap-1 border-b border-line px-3 pt-2" role="tablist">
+    <section class="sticky top-0 z-30 flex flex-col rounded-xl border border-line bg-white shadow-pop">
+        <div class="flex flex-wrap gap-1 border-b border-line px-3 pt-2" role="tablist">
             @foreach (['teacher', 'type'] as $tab)
                 <button type="button" role="tab" aria-selected="{{ $summaryTab === $tab ? 'true' : 'false' }}" aria-expanded="{{ $summaryTab === $tab ? 'true' : 'false' }}"
                         wire:click="toggleSummary('{{ $tab }}')"
@@ -30,9 +30,11 @@
                     <span aria-hidden="true" class="text-xs">{{ $summaryTab === $tab ? '▲' : '▼' }}</span>
                 </button>
             @endforeach
-        </div>
+            <span class="ml-auto self-center whitespace-nowrap px-2 pb-1 text-sm font-bold tabular-nums text-ink-700">
+                {{ trans_choice('clubs.sessions_count', $this->sessions->count()) }} · {{ (float) $codeHours->sum() }} h
+            </span>        </div>
         @if ($summaryTab !== '')
-        <div class="grid gap-4 p-4 lg:grid-cols-2">
+        <div class="grid max-h-[45vh] gap-4 overflow-y-auto p-4 lg:grid-cols-2">
             @foreach ($summaries as $index => $summary)
                 <div class="flex min-w-0 flex-col gap-2" wire:key="summary-{{ $summaryTab }}-{{ $index }}">
                     <h3 class="text-sm font-bold uppercase tracking-wide text-ink-500">{{ $summary['label'] }}{{ $index === 1 ? ' · '.__('clubs.summary.previous') : '' }}</h3>

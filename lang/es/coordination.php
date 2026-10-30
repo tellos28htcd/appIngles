@@ -34,6 +34,17 @@ return [
         'teacher' => 'Teacher',
     ],
 
+    'club_picker' => [
+        'open' => 'Ver sus clubs del mes para programar la evaluación',
+        'title' => 'Clubs del teacher en el mes',
+        'hint' => 'Elige el club que se evaluará: la Evaluación de Club se programa en su fecha y hora.',
+        'add' => 'Evaluar',
+        'evaluated' => 'Evaluado',
+        'busy' => 'Hay otra actividad',
+        'empty' => 'Este teacher no tiene clubs programados en el mes.',
+        'close' => 'Cerrar',
+    ],
+
     'summary' => [
         'teacher' => 'Resumen por teacher',
         'activity' => 'Resumen por actividad',
