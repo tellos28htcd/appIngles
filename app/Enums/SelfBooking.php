@@ -3,8 +3,8 @@
 namespace App\Enums;
 
 /**
- * Quién reserva las sesiones: "No permitir" = solo recepción; "Día anterior" = el
- * alumno (hasta el día anterior) y también recepción; "A cualquier hora" = el alumno.
+ * Quién reserva las sesiones: recepción siempre puede; el alumno según la opción:
+ * "No permitir" = no; "Día anterior" = hasta el día anterior; "A cualquier hora" = sí.
  */
 enum SelfBooking: string
 {
@@ -27,6 +27,6 @@ enum SelfBooking: string
     /** ¿Recepción puede agendar por el alumno? */
     public function receptionCanBook(): bool
     {
-        return $this !== self::AnyTime;
+        return true;
     }
 }

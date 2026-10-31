@@ -1,0 +1,116 @@
+<?php
+
+return [
+    'title' => 'Agenda',
+    'subtitle' => 'Reservaciones del día por hora: aula, teacher, alumnos y actividad. Aquí se marca la asistencia.',
+    'my_title' => 'Mi agenda',
+    'my_subtitle' => 'Reserva tus asesorías y clubs. El sistema te asigna el aula.',
+    'my_clubs_title' => 'Agendar club',
+
+    'kinds' => [
+        'session' => 'Asesoría',
+        'club' => 'Club',
+    ],
+
+    'statuses' => [
+        'booked' => 'Reservada',
+        'attended' => 'Asistió',
+        'cancelled' => 'Cancelada',
+    ],
+
+    'reasons' => [
+        'no_show' => 'No se presentó',
+        'notice' => 'Aviso para cancelar',
+        'unfinished' => 'No terminó la actividad',
+        'attended_cancelled' => 'Asistió, decidió cancelar',
+    ],
+
+    'events' => [
+        'booked' => 'Reservó',
+        'waitlisted' => 'Entró a lista de espera',
+        'promoted' => 'Pasó de lista de espera a aula',
+        'cancelled' => 'Canceló',
+        'attended' => 'Marcó asistencia',
+    ],
+
+    'waitlist' => 'Lista de espera',
+    'virtual_room' => 'Aula virtual :number',
+    'room' => 'Aula :name',
+    'online' => 'En línea',
+    'in_person' => 'Presencial',
+    'option_session' => 'Asesoría',
+    'option_club' => 'Club :code · :name',
+    'seats' => '{1} 1 lugar|[2,*] :count lugares',
+    'goes_to_waitlist' => 'Lleno: entra a lista de espera',
+
+    'date' => 'Fecha',
+    'today' => 'Hoy',
+    'previous_day' => 'Día anterior',
+    'next_day' => 'Día siguiente',
+    'hour' => 'Hora',
+    'place' => 'Aula',
+    'teacher' => 'Teacher',
+    'student' => 'Alumno',
+    'activity' => 'Actividad',
+    'status' => 'Estado',
+    'by_reception' => 'Agendó recepción',
+    'history' => 'Historial',
+
+    'empty' => 'No hay reservaciones este día.',
+    'empty_hint' => 'Agenda a un alumno con "Nueva reservación".',
+    'week_not_ready' => 'La semana de esta fecha aún no está armada en el panel de disponibilidad.',
+    'no_options' => 'No hay lugares disponibles este día.',
+    'no_student' => 'Tu usuario no está ligado a un expediente de alumno. Acude a recepción.',
+    'my_bookings' => 'Mis reservaciones',
+    'my_bookings_empty' => 'No tienes reservaciones próximas.',
+    'available' => 'Lugares disponibles',
+    'waitlist_note' => 'Estás en lista de espera: recepción te avisará si se libera un lugar.',
+    'daily_limit_note' => 'Puedes reservar hasta :hours h por día.',
+    'next_activity' => 'Tu siguiente actividad: :label',
+
+    'proposals' => 'Lugares liberados',
+    'proposals_hint' => 'Se liberó un lugar a esa hora: propón al siguiente alumno de la lista de espera.',
+
+    'actions' => [
+        'new' => 'Nueva reservación',
+        'book' => 'Reservar',
+        'attended' => 'Asistió',
+        'cancel' => 'Cancelar',
+        'promote' => 'Pasar a aula',
+        'close' => 'Cerrar',
+        'confirm_cancel' => 'Cancelar reservación',
+        'change_student' => 'Cambiar alumno',
+    ],
+
+    'form' => [
+        'title' => 'Nueva reservación',
+        'search' => 'Buscar alumno',
+        'search_placeholder' => 'Nombre, matrícula, correo o teléfono',
+        'no_results' => 'Sin resultados.',
+        'cancel_title' => 'Cancelar reservación',
+        'reason' => 'Motivo',
+    ],
+
+    'messages' => [
+        'booked' => 'Reservación guardada: :place.',
+        'waitlisted' => 'Aulas llenas: quedó en lista de espera.',
+        'cancelled' => 'Reservación cancelada.',
+        'attended' => 'Asistencia registrada.',
+        'promoted' => 'El alumno pasó a :place.',
+    ],
+
+    'validation' => [
+        'week_not_ready' => 'La semana aún no está armada en el panel de disponibilidad.',
+        'past' => 'Esa hora ya pasó.',
+        'self_disabled' => 'Las reservaciones las hace recepción.',
+        'day_before' => 'Solo puedes reservar a partir del día siguiente.',
+        'duplicate' => 'Ya tiene una reservación a esa hora.',
+        'daily_limit' => 'Llegó al límite de :hours h por día (según su asistencia de los últimos 7 días).',
+        'max_sessions' => 'Llegó al máximo de :max asesorías por día.',
+        'max_clubs' => 'Llegó al máximo de :max clubs por día.',
+        'club_not_allowed' => 'Ese club no corresponde a su nivel o avance.',
+        'full' => 'Ya no hay lugar a esa hora.',
+        'no_activity' => 'No se encontró su siguiente actividad: revisa el punto de inicio de su ficha.',
+        'option' => 'Elige una opción disponible.',
+    ],
+];

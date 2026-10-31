@@ -5,6 +5,8 @@ use App\Http\Controllers\StudentAbsencePrintController;
 use App\Http\Controllers\StudentImportTemplateController;
 use App\Http\Controllers\StudentPhotoController;
 use App\Http\Controllers\TeacherPhotoController;
+use App\Livewire\Agenda\AgendaDay;
+use App\Livewire\Agenda\MyAgenda;
 use App\Livewire\Audit\AuditLogIndex;
 use App\Livewire\Auth\AcceptInvitation;
 use App\Livewire\Auth\ForgotPassword;
@@ -54,6 +56,10 @@ Route::livewire('/crear-contrasena/{token}', AcceptInvitation::class)->name('inv
 
 Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(function () {
     Route::livewire('/inicio', Dashboard::class)->name('dashboard');
+
+    Route::livewire('/agenda', AgendaDay::class)->name('agenda.index');
+    Route::livewire('/mi-agenda', MyAgenda::class)->name('my-agenda.index');
+    Route::livewire('/mi-agenda/clubs', MyAgenda::class)->name('my-agenda.clubs');
 
     Route::livewire('/escuelas', SchoolIndex::class)->name('schools.index');
     Route::livewire('/escuelas/nueva', SchoolEditor::class)->name('schools.create');

@@ -64,6 +64,15 @@ class SchoolForm extends Form
 
     public ?int $session_capacity = null;
 
+    /** Cupo de alumnos por club presencial (vacío = el cupo del aula). */
+    public ?int $club_capacity = null;
+
+    /** Alumnos por aula virtual (asesorías y clubs en línea). */
+    public ?int $virtual_room_capacity = null;
+
+    /** Aulas virtuales disponibles por horario para asesoría en línea (0 = sin asesoría en línea). */
+    public int $virtual_rooms_per_slot = 0;
+
     public string $timezone = 'America/Mexico_City';
 
     public string $currency = 'MXN';
@@ -101,7 +110,7 @@ class SchoolForm extends Form
         $this->fill([
             ...$school->only([
                 'code', 'enrollment_prefix', 'name', 'state_id', 'municipality_id', 'last_folio_series_a', 'last_folio_series_b',
-                'brand_primary', 'session_capacity', 'timezone', 'currency', 'max_sessions', 'max_clubs', 'club_min_lesson_number',
+                'brand_primary', 'session_capacity', 'club_capacity', 'virtual_room_capacity', 'virtual_rooms_per_slot', 'timezone', 'currency', 'max_sessions', 'max_clubs', 'club_min_lesson_number',
                 'works_sundays', 'schedules_classrooms', 'books_without_classroom', 'hybrid_clubs', 'requires_progress',
             ]),
             ...array_map(fn ($value) => (string) $value, $school->only([
@@ -143,6 +152,9 @@ class SchoolForm extends Form
             'brand_accent' => $hex,
             'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:1024', new RealImage],
             'session_capacity' => ['required', 'integer', 'min:1', 'max:'.School::MAX_SESSION_CAPACITY],
+            'club_capacity' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'virtual_room_capacity' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'virtual_rooms_per_slot' => ['required', 'integer', 'min:0', 'max:20'],
             'timezone' => ['required', Rule::in(DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, 'MX'))],
             'currency' => ['required', Rule::in(['MXN', 'USD'])],
             'works_sundays' => ['boolean'],

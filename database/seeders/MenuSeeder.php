@@ -21,7 +21,7 @@ class MenuSeeder extends Seeder
      */
     private const TREE = [
         'dashboard' => ['Inicio', 'home', 'dashboard', MenuItemStatus::Active],
-        'agenda' => ['Agenda', 'calendar', null, MenuItemStatus::ComingSoon],
+        'agenda' => ['Agenda', 'calendar', 'agenda.index', MenuItemStatus::Active],
         'teachers' => ['Teachers', 'users', null, MenuItemStatus::Active, [
             'teachers-list' => ['Teachers', null, 'teachers.index', MenuItemStatus::Active],
             'teachers-availability' => ['Disponibilidad de horarios', null, 'availability.index', MenuItemStatus::Active],
@@ -50,8 +50,8 @@ class MenuSeeder extends Seeder
         ]],
         'student-portal' => ['Mi aprendizaje', 'book', null, MenuItemStatus::Active, [
             'student-portal-progress' => ['Mi avance', null, null, MenuItemStatus::ComingSoon],
-            'student-portal-book-class' => ['Agendar clase', null, null, MenuItemStatus::ComingSoon],
-            'student-portal-book-club' => ['Agendar club', null, null, MenuItemStatus::ComingSoon],
+            'student-portal-book-class' => ['Agendar clase', null, 'my-agenda.index', MenuItemStatus::Active],
+            'student-portal-book-club' => ['Agendar club', null, 'my-agenda.clubs', MenuItemStatus::Active],
             'student-portal-account' => ['Mi estado de cuenta', null, null, MenuItemStatus::ComingSoon],
         ]],
         'reports' => ['Reportes', 'chart', null, MenuItemStatus::ComingSoon],

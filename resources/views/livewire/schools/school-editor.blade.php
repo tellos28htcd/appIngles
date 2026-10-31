@@ -129,6 +129,14 @@
                     <x-ui.input name="form.session_capacity" type="number" :label="__('schools.fields.session_capacity')"
                                 :hint="__('schools.fields.session_capacity_hint', ['max' => \App\Models\School::MAX_SESSION_CAPACITY])"
                                 wire:model="form.session_capacity" min="1" max="{{ \App\Models\School::MAX_SESSION_CAPACITY }}" inputmode="numeric" class="tabular-nums" required />
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        <x-ui.input name="form.club_capacity" type="number" :label="__('schools.fields.club_capacity')" :hint="__('schools.fields.club_capacity_hint')"
+                                    wire:model="form.club_capacity" min="1" max="99" inputmode="numeric" class="tabular-nums" />
+                        <x-ui.input name="form.virtual_room_capacity" type="number" :label="__('schools.fields.virtual_room_capacity')" :hint="__('schools.fields.virtual_room_capacity_hint')"
+                                    wire:model="form.virtual_room_capacity" min="1" max="99" inputmode="numeric" class="tabular-nums" />
+                        <x-ui.input name="form.virtual_rooms_per_slot" type="number" :label="__('schools.fields.virtual_rooms_per_slot')" :hint="__('schools.fields.virtual_rooms_per_slot_hint')"
+                                    wire:model="form.virtual_rooms_per_slot" min="0" max="20" inputmode="numeric" class="tabular-nums" required />
+                    </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <x-ui.select name="form.timezone" :label="__('schools.fields.timezone')" :options="$timezones" wire:model="form.timezone" />
                         <x-ui.select name="form.currency" :label="__('schools.fields.currency')" :options="['MXN' => 'MXN · Peso mexicano', 'USD' => 'USD · Dólar']" wire:model="form.currency" />
