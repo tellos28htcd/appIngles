@@ -11,6 +11,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 | Mi agenda | `/mi-agenda` (`my-agenda.index`) | Alumno ligado a su usuario. |
 | Agendar club | `/mi-agenda/clubs` (`my-agenda.clubs`) | Igual que Mi agenda, pero solo muestra clubs. |
 
+- **Calendario semanal** (en Agenda y en Mi agenda): horas × días, como Programación de clubs. Cada celda muestra los lugares libres/cupo de asesoría presencial, en línea y de cada club (abreviatura), "Lista de espera" o "Lleno". Clic en la celda: agendar en ese día y hora. En Agenda, clic en el día: su listado.
 - **Agenda del día:** las reservaciones se agrupan por hora y se ordenan por aula → teacher → alumno, con su actividad (LLA) o club.
   - Recepción agenda: elige al alumno y una opción; el aula la asigna el sistema.
   - Desde aquí se marca la asistencia, se cancela con motivo y se pasa a un aula al alumno de la lista de espera cuando se libera un lugar ("Lugares liberados").

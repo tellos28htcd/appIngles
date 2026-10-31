@@ -3,6 +3,7 @@
 namespace App\Livewire\Agenda;
 
 use App\Actions\Agenda\AgendaService;
+use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\BookingKind;
 use App\Enums\CancellationReason;
 use App\Enums\ClubModality;
@@ -20,19 +21,27 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Mi agenda (alumno): elige un día de la semana siguiente, ve los lugares disponibles y
- * reserva; el sistema le asigna el aula (o la lista de espera). Puede cancelar sus reservaciones.
- * Desde "Agendar club" solo se muestran los clubs.
+ * Mi agenda (alumno): calendario semanal con los lugares libres por día y hora (asesoría y
+ * clubs); clic en una celda para elegir y reservar; el sistema le asigna el aula (o la lista
+ * de espera). Puede cancelar sus reservaciones. Desde "Agendar club" solo se reservan clubs.
  */
 #[Layout('layouts.app')]
 class MyAgenda extends Component
 {
-    public const DAYS_AHEAD = 7;
+    /** Semanas hacia adelante que puede consultar. */
+    public const WEEKS_AHEAD = 2;
 
     #[Locked]
     public bool $clubsOnly = false;
 
+    /** Lunes de la semana que se muestra. */
+    public string $week = '';
+
     public string $date = '';
+
+    public ?int $slotId = null;
+
+    public ?bool $choosing = null;
 
     public string $option = '';
 
@@ -40,13 +49,30 @@ class MyAgenda extends Component
     {
         $this->authorize('bookOwn', Booking::class);
         $this->clubsOnly = request()->routeIs('my-agenda.clubs');
-        $this->date = $this->days()[0]->toDateString();
+        $this->week = $this->today()->startOfWeek(CarbonImmutable::MONDAY)->toDateString();
     }
 
-    public function selectDay(string $date): void
+    public function shiftWeek(int $weeks): void
     {
-        $this->date = collect($this->days())->first(fn (CarbonImmutable $day) => $day->toDateString() === $date)?->toDateString() ?? $this->date;
+        $current = $this->today()->startOfWeek(CarbonImmutable::MONDAY);
+        $target = CarbonImmutable::parse($this->week)->addWeeks(max(-1, min(1, $weeks)));
+
+        if ($target->gte($current) && $target->lte($current->addWeeks(self::WEEKS_AHEAD))) {
+            $this->week = $target->toDateString();
+        }
+    }
+
+    /** Clic en una celda del calendario: opciones de esa hora. */
+    public function openSlot(string $date, int $slotId): void
+    {
+        $this->authorize('bookOwn', Booking::class);
+        $day = CarbonImmutable::parse($date);
+        abort_unless($day->startOfWeek(CarbonImmutable::MONDAY)->toDateString() === $this->week, 404);
+
+        $this->date = $day->toDateString();
+        $this->slotId = ScheduleSlot::query()->findOrFail($slotId)->id;
         $this->option = '';
+        $this->choosing = true;
         unset($this->options);
     }
 
@@ -59,7 +85,7 @@ class MyAgenda extends Component
         $kind = BookingKind::tryFrom($kind);
         $modality = ClubModality::tryFrom($modality);
 
-        if (! $slot || ! $kind || ! $modality || ($this->clubsOnly && $kind !== BookingKind::Club)) {
+        if (! $slot || ! $kind || ! $modality || $this->date === '' || ($this->clubsOnly && $kind !== BookingKind::Club)) {
             $this->dispatch('toast', type: 'error', message: __('agenda.validation.option'));
 
             return;
@@ -74,6 +100,7 @@ class MyAgenda extends Component
             return;
         }
 
+        $this->choosing = null;
         $this->option = '';
         unset($this->options, $this->bookings);
         $this->dispatch('toast', type: $booking->is_waitlist ? 'warning' : 'success', message: $booking->is_waitlist
@@ -99,23 +126,19 @@ class MyAgenda extends Component
         return Student::query()->where('user_id', auth()->id())->first();
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** Opciones de la hora elegida. @return array<int, array<string, mixed>> */
     #[Computed]
     public function options(): array
     {
-        if (! $this->student) {
+        if (! $this->student || $this->date === '' || $this->slotId === null) {
             return [];
         }
 
-        $options = app(AgendaService::class)->options($this->school(), $this->student, CarbonImmutable::parse($this->date));
-
-        if ($this->clubsOnly) {
-            $options = collect($options)
-                ->map(fn (array $hour) => [...$hour, 'options' => array_values(array_filter($hour['options'], fn (array $item) => $item['kind'] === BookingKind::Club->value))])
-                ->filter(fn (array $hour) => $hour['options'] !== [])->values()->all();
-        }
-
-        return $options;
+        return collect(app(AgendaService::class)->options($this->school(), $this->student, CarbonImmutable::parse($this->date)))
+            ->filter(fn (array $hour) => $hour['slot']->id === $this->slotId)
+            ->map(fn (array $hour) => [...$hour, 'options' => array_values(array_filter($hour['options'],
+                fn (array $item) => ! $this->clubsOnly || $item['kind'] === BookingKind::Club->value))])
+            ->filter(fn (array $hour) => $hour['options'] !== [])->values()->all();
     }
 
     /** Próximas reservaciones del alumno (de hoy en adelante, sin canceladas). @return Collection<int, Booking> */
@@ -132,19 +155,33 @@ class MyAgenda extends Component
             ->get()->sortBy(fn (Booking $booking) => $booking->date->toDateString().' '.$booking->slot?->starts_at)->values();
     }
 
-    public function render(AgendaService $agenda): View
+    public function render(AgendaService $agenda, AvailabilityPlanner $planner): View
     {
+        $school = $this->school();
+        $days = $planner->days($school, CarbonImmutable::parse($this->week));
+        $isReady = $planner->isGenerated($school, $days[0]);
+        $availability = $isReady ? $agenda->weekAvailability($school, $days) : [];
+
+        if ($this->clubsOnly) {
+            $availability = array_map(fn (array $cell) => [...$cell,
+                'session' => ['free' => 0, 'capacity' => 0], 'online' => ['free' => 0, 'capacity' => 0]], $availability);
+        }
+
+        $current = $this->today()->startOfWeek(CarbonImmutable::MONDAY);
+
         return view('livewire.agenda.my-agenda', [
-            'days' => $this->days(),
+            'days' => $days,
+            'planner' => $planner,
+            'scheduleSlots' => $planner->slots($school),
+            'holidays' => $planner->holidays($school, $days),
+            'availability' => $availability,
+            'isReady' => $isReady,
+            'canGoBack' => $days[0]->gt($current),
+            'canGoForward' => $days[0]->lt($current->addWeeks(self::WEEKS_AHEAD)),
+            'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'nextActivity' => $this->student ? $agenda->nextActivity($this->student) : null,
             'dailyLimit' => $this->student ? $agenda->dailyLimit($this->student, $this->today()) : null,
         ])->title(__($this->clubsOnly ? 'agenda.my_clubs_title' : 'agenda.my_title'));
-    }
-
-    /** Hoy y los días siguientes. @return list<CarbonImmutable> */
-    private function days(): array
-    {
-        return collect(range(0, self::DAYS_AHEAD - 1))->map(fn (int $offset) => $this->today()->addDays($offset))->all();
     }
 
     private function school(): School

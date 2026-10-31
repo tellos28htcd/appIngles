@@ -166,6 +166,62 @@ final class AgendaService
         return max(0, $this->clubCapacity($school, $club) - $taken);
     }
 
+    /**
+     * Disponibilidad de la semana para el calendario, por "fecha|hora": lugares de asesoría
+     * presencial y en línea, si se puede agendar en lista de espera, clubs con sus lugares y
+     * reservaciones. Todo en pocas consultas (no por celda).
+     *
+     * @param  list<CarbonImmutable>  $days
+     * @return array<string, array{past: bool, session: array{free: int, capacity: int}, online: array{free: int, capacity: int}, waitlist: bool, waiting: int, booked: int, clubs: list<array{id: int, code: string, name: ?string, modality: ClubModality, color: int, free: int, capacity: int}>}>
+     */
+    public function weekAvailability(School $school, array $days): array
+    {
+        $from = $days[0]->toDateString();
+        $to = end($days)->toDateString();
+        $cells = TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id)->whereBetween('date', [$from, $to])
+            ->where('is_absent', false)->whereNotNull('classroom_id')->whereNull('club_session_id')->whereNull('coordinator_session_id')
+            ->with(['teacher:id,is_waitlist', 'classroom:id,capacity'])->get();
+        $bookings = Booking::withoutGlobalScope('school')->where('school_id', $school->id)->whereBetween('date', [$from, $to])->active()
+            ->get(['id', 'date', 'schedule_slot_id', 'kind', 'modality', 'teacher_availability_id', 'club_session_id', 'is_waitlist']);
+        $clubs = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereBetween('date', [$from, $to])
+            ->with(['club', 'classroom:id,capacity'])->get();
+
+        $placed = $bookings->reject(fn (Booking $booking) => $booking->is_waitlist);
+        $perCell = $placed->whereNotNull('teacher_availability_id')->countBy('teacher_availability_id');
+        $perClub = $placed->whereNotNull('club_session_id')->countBy('club_session_id');
+        $key = fn ($model) => $model->date->toDateString().'|'.$model->schedule_slot_id;
+        $bookingsAt = $bookings->groupBy($key);
+        $clubsAt = $clubs->groupBy($key);
+        $virtualCapacity = (int) $school->virtual_rooms_per_slot * max(1, (int) ($school->virtual_room_capacity ?: $school->session_capacity ?: 1));
+        $slots = ScheduleSlot::withoutGlobalScope('school')->where('school_id', $school->id)->get()->keyBy('id');
+        $result = [];
+
+        foreach ($cells->groupBy($key)->keys()->merge($clubsAt->keys())->merge($bookingsAt->keys())->unique() as $at) {
+            [$date, $slotId] = explode('|', $at);
+            $group = $cells->filter(fn (TeacherAvailability $cell) => $key($cell) === $at);
+            $rooms = $group->reject(fn (TeacherAvailability $cell) => $cell->teacher?->is_waitlist);
+            $here = $bookingsAt->get($at, collect());
+            $capacity = $rooms->sum(fn (TeacherAvailability $cell) => $this->cellCapacity($school, $cell));
+            $online = $rooms->isNotEmpty() ? $virtualCapacity : 0;
+            $onlineTaken = $here->filter(fn (Booking $booking) => $booking->kind === BookingKind::Session && $booking->modality === ClubModality::Online)->count();
+
+            $result[$at] = [
+                'past' => ! isset($slots[$slotId]) || ! $this->isFuture($school, CarbonImmutable::parse($date), $slots[$slotId]),
+                'session' => ['free' => (int) $rooms->sum(fn (TeacherAvailability $cell) => max(0, $this->cellCapacity($school, $cell) - ($perCell[$cell->id] ?? 0))), 'capacity' => (int) $capacity],
+                'online' => ['free' => max(0, $online - $onlineTaken), 'capacity' => $online],
+                'waitlist' => (bool) $school->books_without_classroom && $group->isNotEmpty(),
+                'waiting' => $here->filter(fn (Booking $booking) => $booking->is_waitlist)->count(),
+                'booked' => $here->count(),
+                'clubs' => $clubsAt->get($at, collect())->map(fn (ClubSession $club) => [
+                    'id' => $club->id, 'code' => $club->code, 'name' => $club->club?->name, 'modality' => $club->modality, 'color' => $club->color(),
+                    'free' => max(0, $this->clubCapacity($school, $club) - ($perClub[$club->id] ?? 0)), 'capacity' => $this->clubCapacity($school, $club),
+                ])->values()->all(),
+            ];
+        }
+
+        return $result;
+    }
+
     /** ¿El alumno puede ir a ese club? (nivel de la abreviatura y lección mínima para clubs). */
     public function clubAllows(School $school, ClubSession $club, ?array $step, ProgressPath $path): bool
     {

@@ -7,21 +7,31 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    {{-- Semana: navegación, fecha y leyenda --}}
+    @php($nav = 'flex size-11 items-center justify-center rounded-md border-[1.5px] border-line-strong bg-white text-ink-700 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200')
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" wire:click="shiftWeek(-1)" class="{{ $nav }}" aria-label="{{ __('agenda.previous_week') }}" title="{{ __('agenda.previous_week') }}">‹</button>
+        <h2 class="min-w-56 text-center font-display text-h3 font-bold">{{ __('agenda.week_of', ['from' => $days[0]->translatedFormat('j M'), 'to' => end($days)->translatedFormat('j M Y')]) }}</h2>
+        <button type="button" wire:click="shiftWeek(1)" class="{{ $nav }}" aria-label="{{ __('agenda.next_week') }}" title="{{ __('agenda.next_week') }}">›</button>
+        <label for="agenda-date" class="sr-only">{{ __('agenda.date') }}</label>
+        <input id="agenda-date" type="date" wire:model.live="date"
+               class="h-11 rounded-md border-[1.5px] border-line-strong bg-white px-3 text-[15px] tabular-nums focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-100">
+        <x-ui.button variant="ghost" size="sm" wire:click="goToday">{{ __('agenda.today') }}</x-ui.button>
+        @include('livewire.agenda.partials.legend')
+    </div>
+
+    @if ($isReady)
+        <div wire:loading.delay.class="opacity-60" class="transition-opacity">
+            @include('livewire.agenda.partials.week-grid', ['selectedDate' => $day->toDateString(), 'canPick' => $canManage, 'canSelectDay' => true])
+        </div>
+    @endif
+
     <section class="flex flex-col rounded-xl border border-line bg-white shadow-xs">
-        {{-- Fecha --}}
+        {{-- Día elegido --}}
         <div class="flex flex-wrap items-center gap-2 border-b border-line p-4">
-            @php($nav = 'flex size-11 items-center justify-center rounded-md border-[1.5px] border-line-strong bg-white text-ink-700 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200')
-            <button type="button" wire:click="shiftDay(-1)" class="{{ $nav }}" aria-label="{{ __('agenda.previous_day') }}" title="{{ __('agenda.previous_day') }}">
-                ‹
-            </button>
-            <label for="agenda-date" class="sr-only">{{ __('agenda.date') }}</label>
-            <input id="agenda-date" type="date" wire:model.live="date"
-                   class="h-11 rounded-md border-[1.5px] border-line-strong bg-white px-3 text-[15px] tabular-nums focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-100">
-            <button type="button" wire:click="shiftDay(1)" class="{{ $nav }}" aria-label="{{ __('agenda.next_day') }}" title="{{ __('agenda.next_day') }}">
-                ›
-            </button>
-            <x-ui.button variant="ghost" size="sm" wire:click="goToday">{{ __('agenda.today') }}</x-ui.button>
-            <span class="ml-auto font-display text-lg font-bold first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}</span>
+            <button type="button" wire:click="shiftDay(-1)" class="{{ $nav }}" aria-label="{{ __('agenda.previous_day') }}" title="{{ __('agenda.previous_day') }}">‹</button>
+            <button type="button" wire:click="shiftDay(1)" class="{{ $nav }}" aria-label="{{ __('agenda.next_day') }}" title="{{ __('agenda.next_day') }}">›</button>
+            <h2 class="font-display text-lg font-bold first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}</h2>
         </div>
 
         {{-- Lugares liberados con alumnos en lista de espera --}}
@@ -116,7 +126,7 @@
     @if ($canManage)
         {{-- Nueva reservación: se elige al alumno y una opción; el aula la asigna el sistema. --}}
         <x-ui.modal wire:model="creating" size="md" :title="__('agenda.form.title')">
-            <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}</p>
+            <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}@if ($slotLabel) · {{ $slotLabel }}@endif</p>
 
             @if ($this->selectedStudent)
                 <div class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">

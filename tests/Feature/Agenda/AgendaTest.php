@@ -145,6 +145,29 @@ class AgendaTest extends TestCase
         $this->assertSame(['booked', 'cancelled'], $freed->events()->pluck('event')->all());
     }
 
+    public function test_the_week_calendar_shows_free_places_by_day_and_hour(): void
+    {
+        $this->school->update(['virtual_rooms_per_slot' => 2, 'virtual_room_capacity' => 3]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
+
+        $days = app(AvailabilityPlanner::class)->days($this->school, CarbonImmutable::parse(self::MONDAY));
+        $week = app(AgendaService::class)->weekAvailability($this->school, $days);
+        $nine = $week[self::MONDAY.'|'.$this->slots[9]->id];
+
+        // 2 aulas × cupo 2 = 4 lugares (1 ocupado); en línea 2 aulas × 3 = 6.
+        $this->assertSame(['free' => 3, 'capacity' => 4], $nine['session']);
+        $this->assertSame(['free' => 6, 'capacity' => 6], $nine['online']);
+        $this->assertSame(1, $nine['booked']);
+        $this->assertSame(['free' => 4, 'capacity' => 4], $week[self::MONDAY.'|'.$this->slots[10]->id]['session']);
+        $this->assertArrayNotHasKey('2026-07-28|'.$this->slots[9]->id, $week);
+
+        // El calendario lo muestra y la celda abre la reservación de esa hora.
+        Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)
+            ->assertSee('3/4')->assertSee('6/6')
+            ->call('openSlot', self::MONDAY, $this->slots[10]->id)->assertSet('creating', true)->assertSet('slotId', $this->slots[10]->id);
+    }
+
     public function test_each_hour_takes_the_next_activity_and_the_same_hour_cannot_be_booked_twice(): void
     {
         $this->actingAs($this->user(Role::RECEPTION));
@@ -204,12 +227,12 @@ class AgendaTest extends TestCase
         $option = $this->slots[9]->id.'|session|in_person|';
 
         $this->school->update(['self_booking' => SelfBooking::Disabled]);
-        Livewire::test(MyAgenda::class)->call('selectDay', self::MONDAY)->set('option', $option)->call('book')
+        Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $option)->call('book')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.self_disabled'));
 
         // "Día anterior": hoy (domingo) puede reservar el lunes.
         $this->school->update(['self_booking' => SelfBooking::DayBefore]);
-        Livewire::test(MyAgenda::class)->call('selectDay', self::MONDAY)->set('option', $option)->call('book')
+        Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $option)->call('book')
             ->assertDispatched('toast', type: 'success');
         $mine = Booking::with('classroom')->sole();
         $this->assertFalse($mine->booked_by_reception);
@@ -230,7 +253,7 @@ class AgendaTest extends TestCase
         $this->student($user);
         $this->actingAs($user);
 
-        Livewire::test(MyAgenda::class)->set('option', $this->slots[9]->id.'|session|in_person|')->call('book')
+        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $this->slots[9]->id.'|session|in_person|')->call('book')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.day_before'));
     }
 

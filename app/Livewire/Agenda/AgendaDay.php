@@ -35,6 +35,9 @@ class AgendaDay extends Component
 
     public ?bool $creating = null;
 
+    /** Hora elegida en el calendario (la reservación se limita a esa hora). */
+    public ?int $slotId = null;
+
     public string $search = '';
 
     public ?int $studentId = null;
@@ -69,6 +72,31 @@ class AgendaDay extends Component
         unset($this->bookings, $this->proposals);
     }
 
+    /** Semana anterior o siguiente (conserva el día de la semana elegido). */
+    public function shiftWeek(int $weeks): void
+    {
+        $this->date = $this->day()->addWeeks(max(-1, min(1, $weeks)))->toDateString();
+        unset($this->bookings, $this->proposals);
+    }
+
+    /** Clic en el encabezado del día: muestra su listado. */
+    public function selectDay(string $date): void
+    {
+        if ($this->validDate($date)) {
+            $this->date = $date;
+            unset($this->bookings, $this->proposals);
+        }
+    }
+
+    /** Clic en una celda del calendario: agenda a un alumno en ese día y hora. */
+    public function openSlot(string $date, int $slotId): void
+    {
+        $this->authorize('manage', Booking::class);
+        $this->selectDay($date);
+        $this->create();
+        $this->slotId = ScheduleSlot::query()->findOrFail($slotId)->id;
+    }
+
     public function goToday(): void
     {
         $this->date = $this->today()->toDateString();
@@ -80,7 +108,7 @@ class AgendaDay extends Component
     public function create(): void
     {
         $this->authorize('manage', Booking::class);
-        $this->reset('search', 'studentId', 'option');
+        $this->reset('search', 'studentId', 'option', 'slotId');
         $this->resetValidation();
         $this->creating = true;
     }
@@ -217,7 +245,9 @@ class AgendaDay extends Component
     {
         $student = $this->studentId ? Student::query()->find($this->studentId) : null;
 
-        return $student ? app(AgendaService::class)->options($this->school(), $student, $this->day()) : [];
+        $options = $student ? app(AgendaService::class)->options($this->school(), $student, $this->day()) : [];
+
+        return $this->slotId === null ? $options : array_values(array_filter($options, fn (array $hour) => $hour['slot']->id === $this->slotId));
     }
 
     #[Computed]
@@ -229,11 +259,20 @@ class AgendaDay extends Component
     public function render(AgendaService $agenda): View
     {
         $school = $this->school();
+        $planner = app(AvailabilityPlanner::class);
+        $days = $planner->days($school, $this->day());
+        $isReady = $planner->isGenerated($school, $days[0]);
 
         return view('livewire.agenda.agenda-day', [
             'canManage' => auth()->user()->can('manage', Booking::class),
             'day' => $this->day(),
-            'isReady' => app(AvailabilityPlanner::class)->isGenerated($school, $this->day()->startOfWeek(CarbonImmutable::MONDAY)),
+            'days' => $days,
+            'planner' => $planner,
+            'scheduleSlots' => $planner->slots($school),
+            'holidays' => $planner->holidays($school, $days),
+            'availability' => $isReady ? $agenda->weekAvailability($school, $days) : [],
+            'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
+            'isReady' => $isReady,
             'reasonOptions' => collect(CancellationReason::cases())->mapWithKeys(fn (CancellationReason $reason) => [$reason->value => $reason->label()])->all(),
             'nextActivity' => $this->selectedStudent ? $agenda->nextActivity($this->selectedStudent) : null,
             'dailyLimit' => $this->selectedStudent ? $agenda->dailyLimit($this->selectedStudent, $this->today()) : null,

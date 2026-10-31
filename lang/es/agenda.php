@@ -2,9 +2,9 @@
 
 return [
     'title' => 'Agenda',
-    'subtitle' => 'Reservaciones del día por hora: aula, teacher, alumnos y actividad. Aquí se marca la asistencia.',
+    'subtitle' => 'Lugares libres por día y hora. Clic en una celda para agendar; clic en el día para ver su listado y marcar asistencia.',
     'my_title' => 'Mi agenda',
-    'my_subtitle' => 'Reserva tus asesorías y clubs. El sistema te asigna el aula.',
+    'my_subtitle' => 'Elige en el calendario el día y la hora con lugar. El sistema te asigna el aula.',
     'my_clubs_title' => 'Agendar club',
 
     'kinds' => [
@@ -46,6 +46,25 @@ return [
     'date' => 'Fecha',
     'today' => 'Hoy',
     'previous_day' => 'Día anterior',
+    'previous_week' => 'Semana anterior',
+    'next_week' => 'Semana siguiente',
+    'week_of' => 'Semana del :from al :to',
+    'see_day' => 'Ver el listado del día',
+    'book_at' => 'Agendar el :day a las :hour',
+
+    'grid' => [
+        'session' => 'Asesoría',
+        'online' => 'En línea',
+        'online_short' => 'en línea',
+        'waitlist' => 'Lista de espera',
+        'full' => 'Lleno',
+        'booked' => '{1} 1 reservada|[2,*] :count reservadas',
+        'waiting' => ':count en espera',
+        'legend' => 'Leyenda',
+        'legend_session' => 'Asesoría presencial (libres/cupo)',
+        'legend_online' => 'Asesoría en línea',
+        'legend_hint' => 'Los clubs se muestran con su abreviatura.',
+    ],
     'next_day' => 'Día siguiente',
     'hour' => 'Hora',
     'place' => 'Aula',
@@ -84,6 +103,7 @@ return [
 
     'form' => [
         'title' => 'Nueva reservación',
+        'choose_title' => 'Reservar',
         'search' => 'Buscar alumno',
         'search_placeholder' => 'Nombre, matrícula, correo o teléfono',
         'no_results' => 'Sin resultados.',
