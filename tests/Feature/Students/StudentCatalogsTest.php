@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Students;
 
+use App\Livewire\Catalogs\BaseCatalogs;
 use App\Livewire\Catalogs\SalesAdvisorsTab;
 use App\Livewire\Catalogs\StudentCatalogs;
 use App\Livewire\Catalogs\StudentCatalogTab;
@@ -99,7 +100,7 @@ class StudentCatalogsTest extends TestCase
     public function test_platform_admin_manages_the_base_and_schools_receive_it_as_an_update(): void
     {
         $this->actingAs($this->user(Role::PLATFORM_ADMIN, null));
-        $this->get(route('base-catalogs.index', ['pestana' => 'encuesta']))->assertOk()->assertSee('Encuesta del alumno');
+        $this->withFilters(BaseCatalogs::class, ['tab' => 'encuesta'])->get(route('base-catalogs.index'))->assertOk()->assertSee('Encuesta del alumno');
 
         Livewire::test(StudentCatalogTab::class, ['schoolId' => null, 'catalog' => 'tipos'])
             ->call('edit')

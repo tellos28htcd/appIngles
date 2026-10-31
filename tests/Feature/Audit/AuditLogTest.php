@@ -116,11 +116,10 @@ class AuditLogTest extends TestCase
         $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
 
         $this->get($this->schoolAuditUrl())->assertOk()->assertSee('SALÓN AZUL')->assertDontSee('SALÓN ROJO');
-        $this->get($this->schoolAuditUrl().'?vista=accesos')->assertOk()->assertSee('propio@appingles.com')->assertDontSee('ajeno@appingles.com');
+        $this->withFilters(AuditLogIndex::class, ['tab' => 'accesos'])->get($this->schoolAuditUrl())->assertOk()->assertSee('propio@appingles.com')->assertDontSee('ajeno@appingles.com');
 
         // Ni manipulando el filtro de escuela ni pidiendo el detalle de un registro ajeno.
-        Livewire::withQueryParams(['escuela' => (string) $this->schoolB->id])
-            ->test(AuditLogIndex::class)
+        Livewire::test(AuditLogIndex::class)->set('school', (string) $this->schoolB->id)
             ->assertSet('school', '')
             ->assertDontSee('SALÓN ROJO')
             ->call('showDetail', $foreignLog->id)
@@ -144,8 +143,8 @@ class AuditLogTest extends TestCase
         Classroom::create(['school_id' => $this->schoolB->id, 'name' => 'SALÓN ROJO', 'capacity' => 5]);
 
         $this->get(route('audit-logs.index'))->assertOk()->assertSee('SALÓN AZUL')->assertSee('SALÓN ROJO');
-        $this->get(route('audit-logs.index', ['escuela' => $this->schoolB->id]))->assertOk()->assertDontSee('SALÓN AZUL')->assertSee('SALÓN ROJO');
-        $this->get(route('audit-logs.index', ['modulo' => 'classroom', 'accion' => 'deleted']))->assertOk()->assertDontSee('SALÓN AZUL');
+        $this->withFilters(AuditLogIndex::class, ['school' => (string) $this->schoolB->id])->get(route('audit-logs.index'))->assertOk()->assertDontSee('SALÓN AZUL')->assertSee('SALÓN ROJO');
+        $this->withFilters(AuditLogIndex::class, ['school' => '', 'module' => 'classroom', 'event' => 'deleted'])->get(route('audit-logs.index'))->assertOk()->assertDontSee('SALÓN AZUL');
     }
 
     public function test_detail_shows_field_changes(): void
@@ -155,7 +154,7 @@ class AuditLogTest extends TestCase
         $classroom->update(['capacity' => 6]);
         $log = AuditLog::where('event', 'updated')->sole();
 
-        Livewire::withQueryParams([])->test(AuditLogIndex::class)
+        Livewire::test(AuditLogIndex::class)
             ->call('showDetail', $log->id)
             ->assertSet('viewingId', $log->id)
             ->assertSee('Capacidad');

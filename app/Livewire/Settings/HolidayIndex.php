@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 
 /**
@@ -25,7 +25,7 @@ class HolidayIndex extends Component
 {
     use ManagesOwnSchool;
 
-    #[Url(as: 'anio')]
+    #[Session]
     public int $year = 0;
 
     public ?bool $editing = null;

@@ -6,6 +6,7 @@ use App\Enums\CourseEndFrom;
 use App\Enums\StudentStatus;
 use App\Enums\StudentTermMovementType;
 use App\Enums\UserStatus;
+use App\Livewire\Catalogs\StudentCatalogs;
 use App\Livewire\Guardians\GuardianIndex;
 use App\Livewire\Students\StudentEditor;
 use App\Livewire\Students\StudentIndex;
@@ -291,7 +292,7 @@ class StudentManagementTest extends TestCase
         $this->get(route('guardians.index'))->assertOk()->assertSee('ROSA')->assertSee($student->enrollment_number);
 
         foreach (['asesores', 'planes', 'origenes', 'tipos', 'puestos', 'encuesta'] as $tab) {
-            $this->get(route('student-catalogs.index', ['pestana' => $tab]))->assertOk();
+            $this->withFilters(StudentCatalogs::class, ['tab' => $tab])->get(route('student-catalogs.index'))->assertOk();
         }
 
         Livewire::test(StudentShow::class, ['student' => $student])

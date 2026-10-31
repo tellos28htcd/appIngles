@@ -4,18 +4,16 @@
         <p class="text-[15px] text-ink-700">{{ __('invitations.subtitle') }}</p>
     </div>
 
-    <div class="flex items-center gap-2.5 rounded-lg bg-surface px-3.5 py-3 text-sm">
-        <x-ui.icon name="mail" class="size-[18px] text-ink-500" />
-        <span class="truncate font-semibold">{{ $email }}</span>
-    </div>
-
     @auth
         @include('livewire.auth.partials.signed-in-notice')
     @else
     <form wire:submit="save" class="flex flex-col gap-4.5" novalidate>
+        <x-ui.input name="email" type="email" size="lg" :label="__('access.fields.email')" :hint="__('invitations.email_hint')"
+                    wire:model="email" autocomplete="username" inputmode="email" autofocus required />
+
         <x-ui.input name="password" size="lg" :label="__('access.fields.password')" revealable
                     :hint="__('access.reset.subtitle')"
-                    wire:model="password" autocomplete="new-password" autofocus required />
+                    wire:model="password" autocomplete="new-password" required />
 
         <x-ui.input name="password_confirmation" size="lg" :label="__('access.fields.password_confirmation')" revealable
                     wire:model="password_confirmation" autocomplete="new-password" required />

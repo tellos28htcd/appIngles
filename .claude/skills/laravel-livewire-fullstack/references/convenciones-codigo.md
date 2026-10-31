@@ -23,6 +23,14 @@ tests/
 ```
 Si Livewire 4 del proyecto usa otra organización de componentes, seguir la del proyecto.
 
+## Sin variables GET (seguridad)
+
+- Nunca `?parametro=` en URLs: nada de `#[Url]`, `request()->query()`, `route('x', ['filtro' => …])`, `withQueryString()` ni paginación en la URL.
+- Filtros, pestañas, mes/semana y página: `#[Session]` y `use WithPagination, WithoutUrlPagination`.
+- Datos y acciones: POST (acciones Livewire). Contexto entre pantallas: `session()->flash()` desde una acción y `redirectRoute()`.
+- Permitido: parámetros de ruta (`/alumnos/{student}`) y el token en enlaces de correo (sin `?email=`).
+- Pruebas: `Livewire::test(X::class)->set('prop', …)` o `withFilters()` del `TestCase`, nunca `withQueryParams`.
+
 ## Nombres
 - Tablas en plural snake_case; modelos en singular PascalCase; llaves foráneas `modelo_id`.
 - Componentes Livewire por módulo y acción: `Invoices/Index`, `Invoices/Form`.

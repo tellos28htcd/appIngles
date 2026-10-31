@@ -23,7 +23,6 @@ class AcceptInvitation extends Component
     #[Locked]
     public string $token = '';
 
-    #[Locked]
     public string $email = '';
 
     public string $password = '';
@@ -33,7 +32,6 @@ class AcceptInvitation extends Component
     public function mount(string $token): void
     {
         $this->token = $token;
-        $this->email = Str::lower(trim((string) request()->query('email', '')));
         $this->rememberReturnUrl();
     }
 
@@ -42,12 +40,13 @@ class AcceptInvitation extends Component
         $this->ensureSignedOut();
 
         $this->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],
         ]);
 
         $status = Password::broker('invitations')->reset(
             [
-                'email' => $this->email,
+                'email' => Str::lower(trim($this->email)),
                 'password' => $this->password,
                 'password_confirmation' => $this->password_confirmation,
                 'token' => $this->token,

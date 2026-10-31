@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'email_hint' => 'El correo al que te llegó la invitación.',
     'title' => 'Crea tu contraseña',
     'subtitle' => 'Bienvenido. Crea la contraseña con la que entrarás al sistema.',
     'submit' => 'Crear contraseña',

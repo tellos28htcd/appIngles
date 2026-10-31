@@ -47,7 +47,7 @@ class PasswordResetTest extends TestCase
         $user = User::factory()->create();
         $token = Password::createToken($user);
 
-        $this->get(route('password.reset', ['token' => $token, 'email' => $user->email]))->assertOk();
+        $this->get(route('password.reset', ['token' => $token]))->assertOk();
 
         Livewire::test(ResetPassword::class, ['token' => $token])
             ->set('email', $user->email)

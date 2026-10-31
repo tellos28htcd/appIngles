@@ -233,7 +233,7 @@ class TeacherAvailabilityTest extends TestCase
         $this->assertNotNull($this->cell($melissa, $revolution->addDay(), 9));
 
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
-        $this->get(route('availability.index', ['mes' => '2026-11', 'semana' => '2026-11-16']))->assertOk()->assertSee('Día festivo: Día de la Revolución');
+        $this->withFilters(AvailabilityPanel::class, ['month' => '2026-11', 'week' => '2026-11-16'])->get(route('availability.index'))->assertOk()->assertSee('Día festivo: Día de la Revolución');
     }
 
     public function test_adding_or_removing_a_holiday_updates_armed_weeks(): void
@@ -317,7 +317,7 @@ class TeacherAvailabilityTest extends TestCase
             ->set('fromSlotId', $this->slots[9]->id)->set('toSlotId', $this->slots[10]->id)->set('reason', 'Cubre')
             ->call('save')->assertHasNoErrors();
 
-        $absences = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)->viewData('absences');
+        $absences = Livewire::test(AvailabilityPanel::class)->set('month', '2026-07')->set('week', '2026-07-27')->viewData('absences');
         $key = fn (int $hour) => '2026-07-27|'.$this->slots[$hour]->id.'|'.$melissa->id;
 
         // 9 y 10 las cubre Dulce; 11 y 12 nadie: se muestran "A".
@@ -348,7 +348,7 @@ class TeacherAvailabilityTest extends TestCase
         }
 
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
-        $average = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)->viewData('average');
+        $average = Livewire::test(AvailabilityPanel::class)->set('month', '2026-07')->set('week', '2026-07-27')->viewData('average');
 
         $this->assertEquals(1.2, $average[$this->slots[9]->id]);  // 7 aulas (con sábado) / 6
         $this->assertEquals(1.0, $average[$this->slots[10]->id]); // 5 aulas (sin sábado) / 5
@@ -384,7 +384,7 @@ class TeacherAvailabilityTest extends TestCase
         $this->planner()->generateWeek($this->school, $this->monday);
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
 
-        $panel = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)
+        $panel = Livewire::test(AvailabilityPanel::class)->set('month', '2026-07')->set('week', '2026-07-27')
             ->call('editSchedule', $melissa->id)->assertSet('editingScheduleTeacherId', $melissa->id)
             ->assertSeeLivewire(BaseScheduleEditor::class);
 
@@ -449,12 +449,12 @@ class TeacherAvailabilityTest extends TestCase
         // En el panel no tiene columna antes de su fecha de ingreso (ni en semanas anteriores).
         $this->teacher('MELISSA', 1, [1 => [9]]);
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
-        $panel = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class);
+        $panel = Livewire::test(AvailabilityPanel::class)->set('month', '2026-07')->set('week', '2026-07-27');
         $dayTeachers = $panel->viewData('dayTeachers');
         $this->assertSame(['MELISSA'], $dayTeachers['2026-07-27']->pluck('short_name')->all());
         $this->assertSame(['MELISSA', 'ALFONSO'], $dayTeachers['2026-07-28']->pluck('short_name')->all());
 
-        $previous = Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-20'])->test(AvailabilityPanel::class);
+        $previous = Livewire::test(AvailabilityPanel::class)->set('month', '2026-07')->set('week', '2026-07-20');
         $this->assertNotContains('ALFONSO', $previous->viewData('teachers')->pluck('short_name')->all());
     }
 
@@ -464,7 +464,7 @@ class TeacherAvailabilityTest extends TestCase
         $this->planner()->generateWeek($this->school, $this->monday);
 
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
-        $this->get(route('availability.index', ['mes' => '2026-07', 'semana' => '2026-07-27']))->assertOk()->assertSee('MELISSA');
+        $this->withFilters(AvailabilityPanel::class, ['month' => '2026-07', 'week' => '2026-07-27'])->get(route('availability.index'))->assertOk()->assertSee('MELISSA');
 
         $this->flushSession();
         $this->actingAs($this->user(Role::RECEPTION));
@@ -472,7 +472,7 @@ class TeacherAvailabilityTest extends TestCase
 
         $this->flushSession();
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
-        $this->get(route('availability.index', ['mes' => '2026-07', 'semana' => '2026-07-27']))->assertOk();
+        $this->withFilters(AvailabilityPanel::class, ['month' => '2026-07', 'week' => '2026-07-27'])->get(route('availability.index'))->assertOk();
 
         // Otra escuela no ve ni toca las celdas de esta.
         $this->flushSession();

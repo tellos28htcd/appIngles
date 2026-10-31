@@ -17,6 +17,10 @@ Verifica las versiones reales en composer.json y package.json.
 - Trabaja un módulo a la vez. Antes de programar, haz el análisis corto del
   módulo y espera mi aprobación.
 - Textos de interfaz en español (lang/es); código en inglés.
+- Prohibido pasar variables por GET (`?estado=`, `?mes=`, `?page=`, `?email=`): filtros,
+  pestañas y paginación en sesión (`#[Session]` + `WithoutUrlPagination`), datos por POST
+  (acciones Livewire); contexto entre pantallas con flash de sesión. Solo parámetros de ruta
+  (`/alumnos/{student}`) y el token de los enlaces de correo.
 - Despliegue final en AlmaLinux: configuración solo en .env. Todo nombre de
   archivo, carpeta, URL, tabla y columna va en minúsculas; única excepción:
   clases PHP en PascalCase (PSR-4). Detalle en la skill

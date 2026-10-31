@@ -31,7 +31,6 @@ class ResetPassword extends Component
     public function mount(string $token): void
     {
         $this->token = $token;
-        $this->email = (string) request()->query('email', '');
         $this->rememberReturnUrl();
     }
 

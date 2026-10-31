@@ -9,20 +9,21 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 /** Listado de escuelas (solo Super Admin). */
 #[Layout('layouts.app')]
 class SchoolIndex extends Component
 {
-    use WithPagination;
+    use WithoutUrlPagination, WithPagination;
 
-    #[Url(as: 'q', except: '')]
+    #[Session]
     public string $search = '';
 
-    #[Url(except: '')]
+    #[Session]
     public string $status = '';
 
     public ?int $confirmingSuspendId = null;

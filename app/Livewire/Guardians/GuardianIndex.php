@@ -12,8 +12,9 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 /**
@@ -23,9 +24,9 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class GuardianIndex extends Component
 {
-    use WithPagination;
+    use WithoutUrlPagination, WithPagination;
 
-    #[Url(as: 'q', except: '')]
+    #[Session]
     public string $search = '';
 
     public ?bool $editing = null;

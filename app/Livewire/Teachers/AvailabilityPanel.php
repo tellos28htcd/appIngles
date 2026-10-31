@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 
 /**
@@ -27,10 +27,10 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class AvailabilityPanel extends Component
 {
-    #[Url(as: 'mes', except: '')]
+    #[Session]
     public string $month = '';
 
-    #[Url(as: 'semana', except: '')]
+    #[Session]
     public string $week = '';
 
     /** Teacher cuyo horario base se edita en la ventana (clic en su nombre). */

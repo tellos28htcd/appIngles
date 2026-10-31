@@ -13,8 +13,9 @@ use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -26,7 +27,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Layout('layouts.app')]
 class AuditLogIndex extends Component
 {
-    use WithPagination;
+    use WithoutUrlPagination, WithPagination;
 
     public const PER_PAGE_OPTIONS = [25, 50, 100];
 
@@ -38,28 +39,28 @@ class AuditLogIndex extends Component
     #[Locked]
     public bool $platform = false;
 
-    #[Url(as: 'vista', except: 'cambios')]
+    #[Session]
     public string $tab = 'cambios';
 
-    #[Url(as: 'q', except: '')]
+    #[Session]
     public string $search = '';
 
-    #[Url(as: 'escuela', except: '')]
+    #[Session]
     public string $school = '';
 
-    #[Url(as: 'modulo', except: '')]
+    #[Session]
     public string $module = '';
 
-    #[Url(as: 'accion', except: '')]
+    #[Session]
     public string $event = '';
 
-    #[Url(as: 'desde')]
+    #[Session]
     public string $from = '';
 
-    #[Url(as: 'hasta', except: '')]
+    #[Session]
     public string $to = '';
 
-    #[Url(as: 'por_pagina', except: 25)]
+    #[Session]
     public int $perPage = 25;
 
     public ?int $viewingId = null;

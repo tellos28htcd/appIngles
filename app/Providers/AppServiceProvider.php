@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\User;
 use App\Support\Brand;
 use App\Support\Navigation;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Sin variables en la URL: el enlace de restablecer lleva solo el token; el correo lo escribe el usuario.
+        ResetPassword::createUrlUsing(fn (User $user, string $token): string => route('password.reset', ['token' => $token]));
+
         Model::preventLazyLoading(! $this->app->isProduction());
 
         // Nunca asignar atributos que no estén en $fillable: un campo extra en la petición falla en desarrollo.

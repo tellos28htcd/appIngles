@@ -14,8 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 /**
@@ -25,29 +26,29 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class StudentIndex extends Component
 {
-    use WithPagination;
+    use WithoutUrlPagination, WithPagination;
 
     public const PER_PAGE_OPTIONS = [25, 50, 100];
 
-    #[Url(as: 'q', except: '')]
+    #[Session]
     public string $search = '';
 
-    #[Url(as: 'estatus', except: '')]
+    #[Session]
     public string $status = '';
 
-    #[Url(as: 'asesor', except: '')]
+    #[Session]
     public string $advisor = '';
 
-    #[Url(as: 'tipo', except: '')]
+    #[Session]
     public string $type = '';
 
-    #[Url(as: 'desde', except: '')]
+    #[Session]
     public string $from = '';
 
-    #[Url(as: 'hasta', except: '')]
+    #[Session]
     public string $to = '';
 
-    #[Url(as: 'por_pagina', except: 25)]
+    #[Session]
     public int $perPage = 25;
 
     public ?int $confirmingDeletionId = null;

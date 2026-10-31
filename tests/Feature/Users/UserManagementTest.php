@@ -264,10 +264,10 @@ class UserManagementTest extends TestCase
 
         auth()->logout();
 
-        $this->get(route('invitation.accept', ['token' => $token, 'email' => $user->email]))->assertOk()->assertSee('Crea tu contraseña');
+        $this->get(route('invitation.accept', ['token' => $token]))->assertOk()->assertSee('Crea tu contraseña');
 
-        Livewire::withQueryParams(['email' => $user->email])
-            ->test(AcceptInvitation::class, ['token' => $token])
+        Livewire::test(AcceptInvitation::class, ['token' => $token])
+            ->set('email', $user->email)
             ->set('password', 'MiClave2026')
             ->set('password_confirmation', 'MiClave2026')
             ->call('save')
@@ -428,20 +428,20 @@ class UserManagementTest extends TestCase
     {
         $invited = $this->userWithRole(Role::TEACHER, $this->schoolA, ['password' => null, 'email' => 'nuevo@appingles.com']);
         $token = Password::broker('invitations')->createToken($invited);
-        $url = route('invitation.accept', ['token' => $token, 'email' => $invited->email]);
+        $url = route('invitation.accept', ['token' => $token]);
 
         $this->actingAs($this->userWithRole(Role::PLATFORM_ADMIN));
 
         // Antes mandaba al Inicio del admin; ahora muestra el aviso.
         $this->get($url)->assertOk()->assertSee('Cerrar sesión y continuar');
 
-        Livewire::withQueryParams(['email' => $invited->email])
-            ->test(AcceptInvitation::class, ['token' => $token])
+        Livewire::test(AcceptInvitation::class, ['token' => $token])
+            ->set('email', $invited->email)
             ->call('save')
             ->assertForbidden();
 
-        Livewire::withQueryParams(['email' => $invited->email])
-            ->test(AcceptInvitation::class, ['token' => $token])
+        Livewire::test(AcceptInvitation::class, ['token' => $token])
+            ->set('email', $invited->email)
             ->call('signOutAndContinue')
             ->assertRedirect();
 

@@ -2,10 +2,10 @@
     <x-ui.page-header :title="__('users.title')" :subtitle="__($isPlatform ? 'users.subtitle_platform' : 'users.subtitle')">
         <x-slot:actions>
             @can('create', \App\Models\User::class)
-                <a href="{{ route('users.create', $isPlatform && ctype_digit($school) ? ['escuela' => $school] : []) }}" wire:navigate
+                <button type="button" wire:click="create"
                    class="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary-600 px-5 text-[15px] font-bold text-on-primary transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
                     <span aria-hidden="true">+</span> {{ __('users.new') }}
-                </a>
+                </button>
             @endcan
         </x-slot:actions>
     </x-ui.page-header>

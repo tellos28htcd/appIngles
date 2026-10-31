@@ -26,7 +26,7 @@ class UserEditor extends Component
         } else {
             $this->authorize('create', User::class);
             $this->form->school_id = auth()->user()->isPlatformAdmin()
-                ? (int) request()->query('escuela') ?: null
+                ? (int) session(UserIndex::NEW_USER_SCHOOL) ?: null
                 : auth()->user()->school_id;
         }
     }

@@ -4,6 +4,7 @@ namespace Tests\Feature\Catalogs;
 
 use App\Actions\Catalogs\CopyBaseCatalogs;
 use App\Livewire\Catalogs\ActivitiesTab;
+use App\Livewire\Catalogs\BaseCatalogs;
 use App\Livewire\Catalogs\BooksTab;
 use App\Livewire\Catalogs\ClubsTab;
 use App\Livewire\Catalogs\SchoolCatalogs;
@@ -330,7 +331,8 @@ class CatalogManagementTest extends TestCase
     public function test_super_admin_manages_configuration_base_from_platform(): void
     {
         $this->actingAs($this->superAdmin)
-            ->get(route('base-catalogs.index', ['pestana' => 'salones']))
+            ->withFilters(BaseCatalogs::class, ['tab' => 'salones'])
+            ->get(route('base-catalogs.index'))
             ->assertOk()
             ->assertSee('Nueva aula');
 

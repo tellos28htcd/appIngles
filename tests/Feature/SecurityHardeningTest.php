@@ -14,6 +14,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -40,6 +41,25 @@ class SecurityHardeningTest extends TestCase
     private function admin(): User
     {
         return User::factory()->create(['role_id' => Role::where('slug', Role::SCHOOL_ADMIN)->value('id'), 'school_id' => $this->school->id]);
+    }
+
+    /** Regla del proyecto: ninguna variable viaja por GET; filtros y paginación van en sesión. */
+    public function test_no_variables_travel_in_the_query_string(): void
+    {
+        $offenders = collect(['app', 'resources/views', 'routes'])
+            ->flatMap(fn (string $dir) => File::allFiles(base_path($dir)))
+            ->filter(fn (\SplFileInfo $file) => preg_match('/#\[Url\b|Attributes\\\\Url;|request\(\)->query\(|->query\(\s*\'|withQueryString\(|fullUrlWithQuery\(/', file_get_contents($file->getPathname())) === 1)
+            ->map(fn (\SplFileInfo $file) => str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname()))
+            ->values()->all();
+
+        $this->assertSame([], $offenders, 'Variables por GET (usa #[Session], WithoutUrlPagination o POST): '.implode(', ', $offenders));
+
+        foreach (collect(File::allFiles(app_path('Livewire')))->map->getPathname() as $path) {
+            $code = file_get_contents($path);
+            if (str_contains($code, 'use WithPagination') || preg_match('/use [^;]*\bWithPagination\b/', $code)) {
+                $this->assertStringContainsString('WithoutUrlPagination', $code, "Paginación en la URL: $path");
+            }
+        }
     }
 
     public function test_no_internal_page_opens_without_a_session(): void

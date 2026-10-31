@@ -105,7 +105,7 @@ class AgendaTest extends TestCase
 
     private function receptionBooks(Student $student, int $hour, string $kind = 'session', string $modality = 'in_person', ?int $clubId = null): Testable
     {
-        return Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)
+        return Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->call('create')->call('pickStudent', $student->id)
             ->set('option', $this->slots[$hour]->id."|$kind|$modality|".$clubId)->call('book');
     }
@@ -132,12 +132,12 @@ class AgendaTest extends TestCase
 
         // Se libera un lugar: se propone al de la lista de espera y pasa a esa aula.
         $freed = Booking::where('student_id', $students[0]->id)->sole();
-        Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->call('confirmCancel', $freed->id)->set('reason', CancellationReason::Notice->value)->call('cancel')
             ->assertSet('cancellingId', null);
         $this->assertSame([$waiting->id], app(AgendaService::class)->waitlistProposals($this->school, CarbonImmutable::parse(self::MONDAY))->modelKeys());
 
-        Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)->call('promote', $waiting->id)->assertDispatched('toast', type: 'success');
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('promote', $waiting->id)->assertDispatched('toast', type: 'success');
         $waiting->refresh();
         $this->assertFalse($waiting->is_waitlist);
         $this->assertSame($freed->classroom_id, $waiting->classroom_id);
@@ -163,7 +163,7 @@ class AgendaTest extends TestCase
         $this->assertArrayNotHasKey('2026-07-28|'.$this->slots[9]->id, $week);
 
         // El calendario lo muestra y la celda abre la reservación de esa hora.
-        Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->assertSee('3/4')->assertSee('6/6')
             ->call('openSlot', self::MONDAY, $this->slots[10]->id)->assertSet('creating', true)->assertSet('slotId', $this->slots[10]->id);
     }
@@ -205,7 +205,7 @@ class AgendaTest extends TestCase
         $this->receptionBooks($this->student(), 9);
         $booking = Booking::with('student')->sole();
 
-        Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->assertSee($booking->student->fullName())->assertSee('L1-L1-A1')
             ->call('markAttended', $booking->id)->assertDispatched('toast', type: 'success');
 
@@ -270,7 +270,7 @@ class AgendaTest extends TestCase
         $this->actingAs($this->user(Role::RECEPTION));
         [$ana, $luis] = [$this->student(), $this->student()];
 
-        $clubs = collect(Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)->call('create')->call('pickStudent', $ana->id)->get('options'))
+        $clubs = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $ana->id)->get('options'))
             ->flatMap(fn (array $hour) => $hour['options'])->pluck('club_session_id')->filter()->values()->all();
         $this->assertSame([$level1->id], $clubs);
 
@@ -299,8 +299,8 @@ class AgendaTest extends TestCase
         $other = School::factory()->create();
         $this->actingAs($this->user(Role::RECEPTION, $other));
 
-        Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)->assertDontSee($booking->student->fullName());
-        Livewire::withQueryParams(['fecha' => self::MONDAY])->test(AgendaDay::class)->call('markAttended', $booking->id)->assertNotFound();
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertDontSee($booking->student->fullName());
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('markAttended', $booking->id)->assertNotFound();
         $this->assertSame(BookingStatus::Booked, $booking->refresh()->status);
     }
 }

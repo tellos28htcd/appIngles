@@ -19,8 +19,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 /**
@@ -32,15 +33,15 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class TeacherIncidentIndex extends Component
 {
-    use WithPagination;
+    use WithoutUrlPagination, WithPagination;
 
-    #[Url(as: 'teacher', except: '')]
+    #[Session]
     public string $teacher = '';
 
-    #[Url(as: 'tipo', except: '')]
+    #[Session]
     public string $type = '';
 
-    #[Url(as: 'mes', except: '')]
+    #[Session]
     public string $month = '';
 
     public ?bool $editing = null;

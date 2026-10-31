@@ -26,10 +26,7 @@ class UserInvitation extends Notification
             ->subject(__('invitations.mail.subject', ['place' => $place]))
             ->greeting(__('invitations.mail.greeting', ['name' => $notifiable->first_name ?: $notifiable->name]))
             ->line(__('invitations.mail.intro', ['place' => $place, 'role' => $notifiable->role?->name]))
-            ->action(__('invitations.mail.action'), route('invitation.accept', [
-                'token' => $this->token,
-                'email' => $notifiable->email,
-            ]))
+            ->action(__('invitations.mail.action'), route('invitation.accept', ['token' => $this->token]))
             ->line(__('invitations.mail.expires', ['hours' => $hours]))
             ->line(__('invitations.mail.ignore'))
             ->salutation(__('invitations.mail.salutation', ['brand' => config('appingles.brand.name')]));

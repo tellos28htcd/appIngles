@@ -19,7 +19,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 
 /**
@@ -30,7 +30,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class AgendaDay extends Component
 {
-    #[Url(as: 'fecha', except: '')]
+    #[Session]
     public string $date = '';
 
     public ?bool $creating = null;

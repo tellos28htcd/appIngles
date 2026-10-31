@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 
 /**
@@ -33,11 +33,11 @@ class CoordinatorSchedule extends Component
     /** Valor del selector de teacher para las actividades que no ocupan la hora de un teacher. */
     public const COORDINATION = 'coordinacion';
 
-    #[Url(as: 'mes', except: '')]
+    #[Session]
     public string $month = '';
 
     /** Pestaña del resumen abierta: teacher | activity ('' = colapsado). */
-    #[Url(as: 'resumen', except: '')]
+    #[Session]
     public string $summaryTab = '';
 
     public ?int $sessionId = null;

@@ -87,7 +87,7 @@ class ClubScheduleTest extends TestCase
 
     private function schedule(string $date, int $hour, ?Teacher $teacher, string $code = 'C12', string $modality = 'in_person', bool $repeat = false): Testable
     {
-        $component = Livewire::withQueryParams(['mes' => substr($date, 0, 7)])->test(ClubSchedule::class)
+        $component = Livewire::test(ClubSchedule::class)->set('month', substr($date, 0, 7))
             ->call('add', $date, $this->slots[$hour]->id)
             ->set('codeKey', $this->conversation->id.'|'.$code)->set('teacherId', $teacher?->id)->set('modality', $modality);
 
@@ -102,7 +102,7 @@ class ClubScheduleTest extends TestCase
         app(AvailabilityPlanner::class)->generateWeek($this->school, $this->monday);
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
 
-        $options = Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)->call('add', '2026-07-27', $this->slots[9]->id)->get('teacherOptions');
+        $options = Livewire::test(ClubSchedule::class)->set('month', '2026-07')->call('add', '2026-07-27', $this->slots[9]->id)->get('teacherOptions');
         $this->assertSame([$melissa->id], array_keys($options));
 
         $this->schedule('2026-07-27', 9, $dulce)->assertHasErrors('teacherId');
@@ -117,12 +117,12 @@ class ClubScheduleTest extends TestCase
         // En el panel esa hora es de club, con su aula, y no se le cambia el aula ahí.
         $cell = TeacherAvailability::where('teacher_id', $melissa->id)->whereDate('date', '2026-07-27')->where('schedule_slot_id', $this->slots[9]->id)->sole();
         $this->assertSame([$session->id, $virtual->id], [$cell->club_session_id, $cell->classroom_id]);
-        Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)
+        Livewire::test(AvailabilityPanel::class)->set('month', '2026-07')->set('week', '2026-07-27')
             ->call('setClassroom', $cell->id, null)->assertDispatched('toast', type: 'error', message: __('availability.validation.club_hour'));
         $this->assertSame($virtual->id, $cell->fresh()->classroom_id);
 
         // Al eliminar el club la hora vuelve a ser de clases.
-        Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)->call('edit', $session->id)->call('delete');
+        Livewire::test(ClubSchedule::class)->set('month', '2026-07')->call('edit', $session->id)->call('delete');
         $this->assertNull($cell->fresh()->club_session_id);
     }
 
@@ -155,7 +155,7 @@ class ClubScheduleTest extends TestCase
         $melissa = $this->teacher('MELISSA', 1, [1 => [9]]);
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
 
-        Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)->call('add', '2026-07-27', $this->slots[9]->id)
+        Livewire::test(ClubSchedule::class)->set('month', '2026-07')->call('add', '2026-07-27', $this->slots[9]->id)
             ->set('codeKey', $this->conversation->id.'|C12')->set('teacherId', $melissa->id)->call('save')->assertHasErrors('classroomId');
         $this->assertSame(0, ClubSession::count());
     }
@@ -174,7 +174,7 @@ class ClubScheduleTest extends TestCase
         $this->schedule('2026-07-27', 10, $melissa)->assertHasNoErrors();
 
         // La reserva aparece en la programación como "Reservada para otra actividad" y queda en el historial.
-        $this->get(route('clubs.schedule', ['mes' => '2026-07']))->assertOk()->assertSee('Reservada para otra actividad');
+        $this->withFilters(ClubSchedule::class, ['month' => '2026-07'])->get(route('clubs.schedule'))->assertOk()->assertSee('Reservada para otra actividad');
         $this->assertSame(['Mantenimiento'], Livewire::test(ClassroomIndex::class)->call('openClosures', $this->audiovisual->id)->get('closures')->pluck('reason')->all());
 
         Holiday::create(['school_id' => $this->school->id, 'name' => 'Asueto', 'type' => HolidayType::School, 'starts_on' => '2026-07-28', 'ends_on' => '2026-07-28', 'is_active' => true]);
@@ -211,9 +211,9 @@ class ClubScheduleTest extends TestCase
             ClubSession::orderBy('date')->get()->map(fn ($session) => $session->date->toDateString())->all());
 
         // Al editar uno de ellos, la casilla "Repetir" aparece marcada; uno sin repetir, desmarcada.
-        Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)->call('edit', ClubSession::orderBy('date')->first()->id)->assertSet('repeat', true);
+        Livewire::test(ClubSchedule::class)->set('month', '2026-07')->call('edit', ClubSession::orderBy('date')->first()->id)->assertSet('repeat', true);
         $this->schedule('2026-07-28', 9, $this->teacher('DULCE', 2, [2 => [9]]))->assertHasNoErrors();
-        Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)->call('edit', ClubSession::whereDate('date', '2026-07-28')->sole()->id)->assertSet('repeat', false);
+        Livewire::test(ClubSchedule::class)->set('month', '2026-07')->call('edit', ClubSession::whereDate('date', '2026-07-28')->sole()->id)->assertSet('repeat', false);
     }
 
     public function test_repeat_also_works_when_editing_a_club(): void
@@ -222,7 +222,7 @@ class ClubScheduleTest extends TestCase
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
         $this->schedule('2026-07-13', 9, $melissa)->assertHasNoErrors();
 
-        Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)
+        Livewire::test(ClubSchedule::class)->set('month', '2026-07')
             ->call('edit', ClubSession::sole()->id)->set('codeKey', $this->conversation->id.'|C23')->set('repeat', true)->call('save')->assertHasNoErrors();
 
         $this->assertSame([['2026-07-13', 'C23'], ['2026-07-20', 'C23'], ['2026-07-27', 'C23']],
@@ -238,7 +238,7 @@ class ClubScheduleTest extends TestCase
         $this->schedule('2026-07-27', 10, $melissa, 'C23')->assertHasNoErrors();
 
         // Las pestañas empiezan colapsadas; al dar clic se muestra el resumen y al volver a dar clic se cierra.
-        $page = Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class);
+        $page = Livewire::test(ClubSchedule::class)->set('month', '2026-07');
         $this->assertSame([], $page->viewData('summaries'));
         $page->call('toggleSummary', 'teacher');
         [$july, $june] = $page->viewData('summaries');
@@ -257,7 +257,7 @@ class ClubScheduleTest extends TestCase
         $this->schedule('2026-07-27', 9, $melissa)->assertHasNoErrors();
 
         $this->actingAs($this->user(Role::RECEPTION));
-        $this->get(route('clubs.schedule', ['mes' => '2026-07']))->assertOk()->assertSee('C12')->assertSee('MELISSA')->assertSee('Presencial');
+        $this->withFilters(ClubSchedule::class, ['month' => '2026-07'])->get(route('clubs.schedule'))->assertOk()->assertSee('C12')->assertSee('MELISSA')->assertSee('Presencial');
         Livewire::test(ClubSchedule::class)->call('add', '2026-07-27', $this->slots[10]->id)->assertForbidden();
 
         $other = School::factory()->create();

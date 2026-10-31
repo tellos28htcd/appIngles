@@ -12,8 +12,9 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 /**
@@ -23,23 +24,26 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class UserIndex extends Component
 {
-    use WithPagination;
+    use WithoutUrlPagination, WithPagination;
+
+    /** Escuela del filtro para "Nuevo usuario" (se pasa por sesión, no en la URL). */
+    public const NEW_USER_SCHOOL = 'users.new_user_school';
 
     public const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
-    #[Url(as: 'q', except: '')]
+    #[Session]
     public string $search = '';
 
-    #[Url(as: 'escuela', except: '')]
+    #[Session]
     public string $school = '';
 
-    #[Url(as: 'rol', except: '')]
+    #[Session]
     public string $role = '';
 
-    #[Url(as: 'estado', except: '')]
+    #[Session]
     public string $status = '';
 
-    #[Url(as: 'por_pagina', except: 25)]
+    #[Session]
     public int $perPage = 25;
 
     public ?int $confirmingDeletionId = null;
@@ -190,6 +194,18 @@ class UserIndex extends Component
             ->when(! $actor->isPlatformAdmin(), fn (Builder $query) => $query->where('slug', '!=', Role::PLATFORM_ADMIN))
             ->pluck('name', 'id')
             ->all();
+    }
+
+    /** "Nuevo usuario": en Plataforma, con la escuela del filtro ya elegida. */
+    public function create(): void
+    {
+        $this->authorize('create', User::class);
+
+        if (auth()->user()->isPlatformAdmin() && ctype_digit($this->school)) {
+            session()->flash(self::NEW_USER_SCHOOL, (int) $this->school);
+        }
+
+        $this->redirectRoute('users.create', navigate: true);
     }
 
     public function render(): View

@@ -83,7 +83,7 @@ class CoordinatorScheduleTest extends TestCase
 
     private function program(string $date, int $hour, CoordinatorActivity $activity, ?Teacher $teacher = null, bool $repeat = false): Testable
     {
-        return Livewire::withQueryParams(['mes' => substr($date, 0, 7)])->test(CoordinatorSchedule::class)
+        return Livewire::test(CoordinatorSchedule::class)->set('month', substr($date, 0, 7))
             ->call('add', $date, $this->slots[$hour]->id)->set('activityId', $activity->id)
             ->set('teacherKey', $teacher ? (string) $teacher->id : CoordinatorSchedule::COORDINATION)
             ->set('repeat', $repeat)->call('save');
@@ -96,7 +96,7 @@ class CoordinatorScheduleTest extends TestCase
         app(AvailabilityPlanner::class)->generateWeek($this->school, CarbonImmutable::parse('2026-07-27'));
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
 
-        $options = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)
+        $options = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')
             ->call('add', '2026-07-27', $this->slots[9]->id)->set('activityId', $this->review->id)->get('teacherOptions');
         $this->assertSame([$melissa->id], array_keys($options));
 
@@ -107,14 +107,14 @@ class CoordinatorScheduleTest extends TestCase
         $cell = TeacherAvailability::where('teacher_id', $melissa->id)->whereDate('date', '2026-07-27')->where('schedule_slot_id', $this->slots[9]->id)->sole();
         $this->assertSame([CoordinatorSession::sole()->id, null], [$cell->coordinator_session_id, $cell->classroom_id]);
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
-        Livewire::withQueryParams(['mes' => '2026-07', 'semana' => '2026-07-27'])->test(AvailabilityPanel::class)
+        Livewire::test(AvailabilityPanel::class)->set('month', '2026-07')->set('week', '2026-07-27')
             ->assertSeeHtml('bg-ink-900 text-sm font-extrabold text-white');
 
         // Esa hora ya no sirve para clubs.
         Classroom::create(['school_id' => $this->school->id, 'name' => '7', 'capacity' => 20, 'is_club_room' => true, 'is_active' => true]);
         Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 1, 'is_active' => true,
             'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true]]]);
-        $clubTeachers = Livewire::withQueryParams(['mes' => '2026-07'])->test(ClubSchedule::class)->call('add', '2026-07-27', $this->slots[9]->id)->get('teacherOptions');
+        $clubTeachers = Livewire::test(ClubSchedule::class)->set('month', '2026-07')->call('add', '2026-07-27', $this->slots[9]->id)->get('teacherOptions');
         $this->assertArrayNotHasKey($melissa->id, $clubTeachers);
     }
 
@@ -122,7 +122,7 @@ class CoordinatorScheduleTest extends TestCase
     {
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
 
-        $component = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)
+        $component = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')
             ->call('add', '2026-07-27', $this->slots[10]->id)->set('activityId', $this->meeting->id);
         $this->assertSame([CoordinatorSchedule::COORDINATION], array_keys($component->get('teacherOptions')));
         $component->assertSet('teacherKey', CoordinatorSchedule::COORDINATION)->call('save')->assertHasNoErrors();
@@ -144,7 +144,7 @@ class CoordinatorScheduleTest extends TestCase
         app(AvailabilityPlanner::class)->generateWeek($this->school, CarbonImmutable::parse('2026-07-27'));
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
 
-        $component = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)
+        $component = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')
             ->call('add', '2026-07-27', $this->slots[9]->id)->set('activityId', $evaluation->id);
         $this->assertSame([$melissa->id], array_keys($component->get('teacherOptions')));
         $component->assertSet('teacherKey', '');
@@ -173,7 +173,7 @@ class CoordinatorScheduleTest extends TestCase
         $this->program('2026-07-28', 9, $evaluation, $melissa)->assertHasErrors('activityId');
         $this->program('2026-07-28', 10, $evaluation, $dulce)->assertHasNoErrors();
 
-        $columns = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)->viewData('columns');
+        $columns = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')->viewData('columns');
         $left = collect($columns[1])->filter()->mapWithKeys(fn ($row) => [$row['label'] => [$row['authorized'], $row['programmed']]])->all();
         $this->assertSame(['Evaluación de Club T. Melissa' => [2.0, 2.0], 'Evaluación de Club T. Dulce' => [2.0, 1.0]], $left);
     }
@@ -192,7 +192,7 @@ class CoordinatorScheduleTest extends TestCase
             'classroom_id' => $room->id, 'date' => '2026-07-29', 'schedule_slot_id' => $this->slots[11]->id, 'modality' => 'in_person']);
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
 
-        $page = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class)
+        $page = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')
             ->assertSeeHtml('sticky top-0') // la barra de resúmenes queda fija al bajar
             ->call('openClubPicker', $evaluation->id, $melissa->id);
         $this->assertSame(['27 jul. · 09:00 · C12', '29 jul. · 11:00 · C12'], array_column($page->get('teacherClubs'), 'label'));
@@ -212,7 +212,7 @@ class CoordinatorScheduleTest extends TestCase
         $this->program('2026-07-06', 9, $this->meeting)->assertHasNoErrors();
         $this->program('2026-07-07', 9, $this->meeting)->assertHasErrors('activityId');
 
-        $page = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class);
+        $page = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07');
         $this->assertEquals([3.0, 1.0], [$page->viewData('totalAuthorized'), $page->viewData('totalProgrammed')]);
         $this->assertFalse($page->viewData('allMatch'));
         $page->assertSee('Junta mensual')->assertSee('Aún no coincide');
@@ -227,7 +227,7 @@ class CoordinatorScheduleTest extends TestCase
         $this->program('2026-07-06', 9, $this->review, $melissa, repeat: true)->assertDispatched('toast', type: 'warning');
         $this->assertSame(['2026-07-06', '2026-07-13'], CoordinatorSession::orderBy('date')->get()->map(fn ($session) => $session->date->toDateString())->all());
 
-        $page = Livewire::withQueryParams(['mes' => '2026-07'])->test(CoordinatorSchedule::class);
+        $page = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07');
         $page->call('edit', CoordinatorSession::orderBy('date')->first()->id)->assertSet('repeat', true);
         $this->assertSame([], $page->viewData('summaries'));
         [$july] = $page->call('toggleSummary', 'activity')->viewData('summaries');

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 
 /**
@@ -39,7 +39,7 @@ abstract class CatalogPage extends Component
     #[Locked]
     public ?int $schoolId = null;
 
-    #[Url(as: 'pestana', except: 'horarios')]
+    #[Session]
     public string $tab = 'horarios';
 
     /** Cambia al incorporar novedades para volver a montar las pestañas. */

@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 
 /**
@@ -33,11 +33,11 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class ClubSchedule extends Component
 {
-    #[Url(as: 'mes', except: '')]
+    #[Session]
     public string $month = '';
 
     /** Pestaña del resumen abierta: teacher | type ('' = colapsado). */
-    #[Url(as: 'resumen', except: '')]
+    #[Session]
     public string $summaryTab = '';
 
     /** Abre la pestaña del resumen; si ya estaba abierta, la colapsa. */

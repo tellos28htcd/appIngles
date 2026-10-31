@@ -21,6 +21,7 @@ Cada control tiene su prueba automática en `tests/Feature` (sobre todo `Securit
 | Acceso entre escuelas (tenants) | Todo listado y acción filtra por la escuela del usuario; un ID ajeno responde 404/403 | `User::scopeVisibleTo`, Policies |
 | Escalamiento de privilegios | Policies en **cada acción** de Livewire (no solo al abrir la pantalla); nadie cambia su propio rol; el admin de escuela no asigna el rol de plataforma | Policies, `UserForm` |
 | Manipulación de datos en el navegador | IDs sensibles con `#[Locked]`; Livewire firma el estado del componente; las acciones vuelven a buscar el registro con su permiso | Componentes |
+| Variables en la URL (GET) | Ninguna variable viaja como `?parametro=`: filtros, pestañas, meses/semanas y página se guardan en **sesión** (`#[Session]`, `WithoutUrlPagination`) y las acciones van por POST (Livewire). Los enlaces de correo llevan solo el token (el correo lo escribe el usuario). Una prueba falla si aparece `#[Url]`, `request()->query()` o `withQueryString` | Componentes, `SecurityHardeningTest` |
 | Asignación masiva | `#[Fillable]` en modelos; en desarrollo falla si llega un campo no permitido | Modelos, `AppServiceProvider` |
 | Rutas por URL directa | Middleware `menu.access`: un rol sin el módulo asignado recibe 403 en todas las rutas del módulo | `EnsureMenuAccess` |
 | Usuarios desactivados / escuela suspendida | No pueden entrar; si estaban dentro, se cierra su sesión en la siguiente petición | `EnsureUserIsActive` |
