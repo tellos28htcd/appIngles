@@ -165,6 +165,8 @@ class AgendaTest extends TestCase
         // El calendario lo muestra y la celda abre la reservación de esa hora.
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->assertSee('3/4')->assertSee('6/6')
+            ->call('toggleCalendar')->assertSet('calendarCollapsed', true)->assertDontSee('3/4')
+            ->call('toggleCalendar')->assertSee('3/4')
             ->call('openSlot', self::MONDAY, $this->slots[10]->id)->assertSet('creating', true)->assertSet('slotId', $this->slots[10]->id);
     }
 

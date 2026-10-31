@@ -33,6 +33,10 @@ class AgendaDay extends Component
     #[Session]
     public string $date = '';
 
+    /** Calendario semanal oculto para ver solo el listado del día (se recuerda en la sesión). */
+    #[Session]
+    public bool $calendarCollapsed = false;
+
     public ?bool $creating = null;
 
     /** Hora elegida en el calendario (la reservación se limita a esa hora). */
@@ -77,6 +81,11 @@ class AgendaDay extends Component
     {
         $this->date = $this->day()->addWeeks(max(-1, min(1, $weeks)))->toDateString();
         unset($this->bookings, $this->proposals);
+    }
+
+    public function toggleCalendar(): void
+    {
+        $this->calendarCollapsed = ! $this->calendarCollapsed;
     }
 
     /** Clic en el encabezado del día: muestra su listado. */

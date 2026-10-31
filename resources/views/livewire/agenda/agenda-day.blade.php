@@ -21,8 +21,21 @@
     </div>
 
     @if ($isReady)
-        <div wire:loading.delay.class="opacity-60" class="transition-opacity">
-            @include('livewire.agenda.partials.week-grid', ['selectedDate' => $day->toDateString(), 'canPick' => $canManage, 'canSelectDay' => true])
+        {{-- Calendario colapsable: al ocultarlo queda a la vista el listado del día. --}}
+        <div class="flex flex-col gap-2">
+            <button type="button" wire:click="toggleCalendar" aria-expanded="{{ $calendarCollapsed ? 'false' : 'true' }}" aria-controls="agenda-calendar"
+                    class="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-white px-4 py-3 text-left shadow-xs transition hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
+                <span class="flex items-center gap-2 font-display font-bold text-primary-700">
+                    <x-ui.icon name="calendar" class="size-5" />{{ __('agenda.calendar') }}
+                    <span class="text-sm font-semibold text-ink-500">· {{ __($calendarCollapsed ? 'agenda.calendar_show' : 'agenda.calendar_hide') }}</span>
+                </span>
+                <x-ui.icon name="chevron-down" @class(['size-5 text-ink-500 transition-transform', 'rotate-180' => ! $calendarCollapsed]) />
+            </button>
+            @unless ($calendarCollapsed)
+                <div id="agenda-calendar" wire:loading.delay.class="opacity-60" class="transition-opacity">
+                    @include('livewire.agenda.partials.week-grid', ['selectedDate' => $day->toDateString(), 'canPick' => $canManage, 'canSelectDay' => true])
+                </div>
+            @endunless
         </div>
     @endif
 

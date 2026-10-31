@@ -49,6 +49,9 @@ return [
     'previous_week' => 'Semana anterior',
     'next_week' => 'Semana siguiente',
     'week_of' => 'Semana del :from al :to',
+    'calendar' => 'Calendario de la semana',
+    'calendar_hide' => 'Ocultar para ver el listado del día',
+    'calendar_show' => 'Mostrar',
     'see_day' => 'Ver el listado del día',
     'book_at' => 'Agendar el :day a las :hour',
 
