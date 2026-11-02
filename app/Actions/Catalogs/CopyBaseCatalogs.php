@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\AdvisorPosition;
 use App\Models\AuditLog;
 use App\Models\Book;
+use App\Models\CancellationReason;
 use App\Models\ChargeConcept;
 use App\Models\Classroom;
 use App\Models\Club;
@@ -49,6 +50,7 @@ final class CopyBaseCatalogs
         'student_plans' => StudentPlan::class,
         'information_sources' => InformationSource::class,
         'student_types' => StudentType::class,
+        'cancellation_reasons' => CancellationReason::class,
         'advisor_positions' => AdvisorPosition::class,
         'survey_questions' => SurveyQuestion::class,
     ];
@@ -62,6 +64,7 @@ final class CopyBaseCatalogs
         StudentPlan::class => 'code',
         InformationSource::class => 'name',
         StudentType::class => 'code',
+        CancellationReason::class => 'name',
         AdvisorPosition::class => 'name',
         SurveyQuestion::class => 'question',
     ];

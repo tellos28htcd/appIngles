@@ -4,14 +4,15 @@ namespace Tests\Feature\Agenda;
 
 use App\Actions\Agenda\AgendaService;
 use App\Actions\Teachers\AvailabilityPlanner;
+use App\Enums\AttendanceEffect;
 use App\Enums\BookingStatus;
-use App\Enums\CancellationReason;
 use App\Enums\LessonType;
 use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
 use App\Livewire\Agenda\MyAgenda;
 use App\Models\Book;
 use App\Models\Booking;
+use App\Models\CancellationReason;
 use App\Models\Classroom;
 use App\Models\Club;
 use App\Models\ClubSession;
@@ -49,6 +50,9 @@ class AgendaTest extends TestCase
 
     private Lesson $firstLesson;
 
+    /** @var array<string, CancellationReason> */
+    private array $reasons = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -75,6 +79,10 @@ class AgendaTest extends TestCase
         $book = Book::create(['school_id' => $this->school->id, 'level' => 1, 'name' => 'Book 1', 'is_active' => true]);
         $this->firstLesson = Lesson::create(['school_id' => $this->school->id, 'book_id' => $book->id, 'number' => 1, 'name' => 'Lesson 1', 'type' => LessonType::Lesson, 'sort_order' => 1, 'is_active' => true]);
         Lesson::create(['school_id' => $this->school->id, 'book_id' => $book->id, 'number' => 2, 'name' => 'Lesson 2', 'type' => LessonType::Lesson, 'sort_order' => 2, 'is_active' => true]);
+
+        foreach (['no_show' => ['No se presentó', AttendanceEffect::Absent], 'notice' => ['Aviso para cancelar', AttendanceEffect::None]] as $key => [$name, $effect]) {
+            $this->reasons[$key] = CancellationReason::create(['school_id' => $this->school->id, 'name' => $name, 'attendance' => $effect, 'sort_order' => count($this->reasons) + 1, 'is_active' => true]);
+        }
 
         $melissa = $this->teacher('MELISSA', 1);
         $dulce = $this->teacher('DULCE', 2);
@@ -133,7 +141,7 @@ class AgendaTest extends TestCase
         // Se libera un lugar: se propone al de la lista de espera y pasa a esa aula.
         $freed = Booking::where('student_id', $students[0]->id)->sole();
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
-            ->call('confirmCancel', $freed->id)->set('reason', CancellationReason::Notice->value)->call('cancel')
+            ->call('confirmCancel', $freed->id)->assertSet('reasonId', $this->reasons['notice']->id)->set('reasonId', $this->reasons['no_show']->id)->call('cancel')
             ->assertSet('cancellingId', null);
         $this->assertSame([$waiting->id], app(AgendaService::class)->waitlistProposals($this->school, CarbonImmutable::parse(self::MONDAY))->modelKeys());
 
@@ -194,7 +202,7 @@ class AgendaTest extends TestCase
             Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => $date, 'schedule_slot_id' => $slot,
                 'kind' => 'session', 'modality' => 'in_person',
                 'status' => $result === 'attended' ? BookingStatus::Attended : BookingStatus::Cancelled,
-                'cancellation_reason' => $result === 'attended' ? null : CancellationReason::NoShow]);
+                'cancellation_reason_id' => $result === 'attended' ? null : $this->reasons['no_show']->id]);
         }
 
         $this->receptionBooks($student, 9)->assertDispatched('toast', type: 'success');
@@ -244,7 +252,7 @@ class AgendaTest extends TestCase
             'schedule_slot_id' => $this->slots[10]->id, 'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Booked]);
         Livewire::test(MyAgenda::class)->call('cancel', $other->id)->assertForbidden();
         Livewire::test(MyAgenda::class)->assertSee(__('agenda.room', ['name' => $mine->classroom->name]))->call('cancel', $mine->id)->assertDispatched('toast', type: 'success');
-        $this->assertSame(CancellationReason::Notice, $mine->refresh()->cancellation_reason);
+        $this->assertSame($this->reasons['notice']->id, $mine->refresh()->cancellation_reason_id);
     }
 
     public function test_the_student_cannot_book_the_same_day_with_day_before(): void

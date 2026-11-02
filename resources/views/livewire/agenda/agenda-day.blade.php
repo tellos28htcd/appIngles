@@ -110,8 +110,8 @@
                                             <x-ui.badge :variant="match ($booking->status) { \App\Enums\BookingStatus::Attended => 'success', \App\Enums\BookingStatus::Cancelled => 'neutral', default => $booking->is_waitlist ? 'warning' : 'info' }">
                                                 {{ $booking->status->label() }}
                                             </x-ui.badge>
-                                            @if ($booking->cancellation_reason)
-                                                <span class="mt-1 block text-xs">{{ $booking->cancellation_reason->label() }}</span>
+                                            @if ($booking->cancellationReason)
+                                                <span class="mt-1 block text-xs">{{ $booking->cancellationReason->name }}</span>
                                             @endif
                                         </td>
                                         @if ($canManage)
@@ -183,7 +183,8 @@
         </x-ui.modal>
 
         <x-ui.modal wire:model="cancellingId" :title="__('agenda.form.cancel_title')">
-            <x-ui.select name="reason" :label="__('agenda.form.reason')" :options="$reasonOptions" wire:model="reason" required />
+            <x-ui.select name="reasonId" :label="__('agenda.form.reason')" :options="$reasonOptions" :placeholder="__('students.select')" wire:model="reasonId" required />
+            <p class="-mt-2 text-xs text-ink-500">{{ __('agenda.form.reason_hint') }}</p>
             <x-slot:footer>
                 <x-ui.button variant="ghost" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
                 <x-ui.button variant="danger" wire:click="cancel">{{ __('agenda.actions.confirm_cancel') }}</x-ui.button>

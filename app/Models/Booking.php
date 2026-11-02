@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Enums\BookingKind;
 use App\Enums\BookingStatus;
-use App\Enums\CancellationReason;
 use App\Enums\ClubModality;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToSchool;
@@ -20,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'school_id', 'student_id', 'date', 'schedule_slot_id', 'kind', 'modality', 'teacher_availability_id', 'club_session_id',
-    'teacher_id', 'classroom_id', 'virtual_room', 'is_waitlist', 'status', 'cancellation_reason', 'cancelled_at',
+    'teacher_id', 'classroom_id', 'virtual_room', 'is_waitlist', 'status', 'cancellation_reason_id', 'cancelled_at',
     'book_id', 'lesson_id', 'activity_number', 'booked_by_reception', 'user_id',
 ])]
 class Booking extends Model
@@ -34,7 +33,6 @@ class Booking extends Model
             'kind' => BookingKind::class,
             'modality' => ClubModality::class,
             'status' => BookingStatus::class,
-            'cancellation_reason' => CancellationReason::class,
             'cancelled_at' => 'datetime',
             'is_waitlist' => 'boolean',
             'booked_by_reception' => 'boolean',
@@ -95,6 +93,12 @@ class Booking extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    /** @return BelongsTo<CancellationReason, $this> */
+    public function cancellationReason(): BelongsTo
+    {
+        return $this->belongsTo(CancellationReason::class);
     }
 
     /** @return HasMany<BookingEvent, $this> */

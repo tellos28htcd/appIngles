@@ -5,7 +5,6 @@ namespace App\Livewire\Agenda;
 use App\Actions\Agenda\AgendaService;
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\BookingKind;
-use App\Enums\CancellationReason;
 use App\Enums\ClubModality;
 use App\Models\Booking;
 use App\Models\ScheduleSlot;
@@ -108,13 +107,13 @@ class MyAgenda extends Component
             : __('agenda.messages.booked', ['place' => $booking->placeLabel()]));
     }
 
-    /** El alumno cancela con "Aviso para cancelar". */
+    /** El alumno cancela con el motivo del catálogo que no cuenta para la asistencia ("Aviso para cancelar"). */
     public function cancel(int $bookingId, AgendaService $agenda): void
     {
         $booking = Booking::query()->findOrFail($bookingId);
         $this->authorize('cancelOwn', $booking);
 
-        $agenda->cancel($booking, CancellationReason::Notice, auth()->user());
+        $agenda->cancel($booking, $agenda->studentCancellationReason($booking->school_id), auth()->user());
 
         unset($this->options, $this->bookings);
         $this->dispatch('toast', type: 'success', message: __('agenda.messages.cancelled'));

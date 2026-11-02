@@ -3,13 +3,14 @@
 namespace App\Actions\Agenda;
 
 use App\Actions\Teachers\AvailabilityPlanner;
+use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
 use App\Enums\BookingStatus;
-use App\Enums\CancellationReason;
 use App\Enums\ClubModality;
 use App\Enums\SelfBooking;
 use App\Models\Booking;
 use App\Models\BookingEvent;
+use App\Models\CancellationReason;
 use App\Models\ClubSession;
 use App\Models\ScheduleSlot;
 use App\Models\School;
@@ -78,10 +79,10 @@ final class AgendaService
     public function attendanceIndex(Student $student, CarbonInterface $today): ?float
     {
         $bookings = Booking::withoutGlobalScope('school')->where('student_id', $student->id)->where('is_waitlist', false)
-            ->whereBetween('date', [$today->copy()->subDays(7)->toDateString(), $today->copy()->subDay()->toDateString()])->get();
+            ->whereBetween('date', [$today->copy()->subDays(7)->toDateString(), $today->copy()->subDay()->toDateString()])->with('cancellationReason')->get();
 
-        $attended = $bookings->filter(fn (Booking $booking) => $booking->status === BookingStatus::Attended || $booking->cancellation_reason?->attendance() === true)->count();
-        $absent = $bookings->filter(fn (Booking $booking) => $booking->cancellation_reason?->attendance() === false)->count();
+        $attended = $bookings->filter(fn (Booking $booking) => $booking->status === BookingStatus::Attended || $booking->cancellationReason?->attendance?->attendance() === true)->count();
+        $absent = $bookings->filter(fn (Booking $booking) => $booking->cancellationReason?->attendance?->attendance() === false)->count();
 
         return $attended + $absent === 0 ? null : $attended / ($attended + $absent);
     }
@@ -424,12 +425,19 @@ final class AgendaService
 
     // ── Cancelar, asistencia y lista de espera ────────────────────
 
-    public function cancel(Booking $booking, CancellationReason $reason, ?User $user): void
+    /** Motivo que se usa cuando el alumno cancela él mismo: el primero activo que "no cuenta" para la asistencia. */
+    public function studentCancellationReason(int $schoolId): ?CancellationReason
+    {
+        return CancellationReason::withoutGlobalScope('school')->where('school_id', $schoolId)->where('is_active', true)
+            ->where('attendance', AttendanceEffect::None)->orderBy('sort_order')->orderBy('id')->first();
+    }
+
+    public function cancel(Booking $booking, ?CancellationReason $reason, ?User $user): void
     {
         abort_if($booking->status === BookingStatus::Cancelled, 422);
 
-        $booking->update(['status' => BookingStatus::Cancelled, 'cancellation_reason' => $reason, 'cancelled_at' => now()]);
-        $this->log($booking, 'cancelled', $reason->label(), $user);
+        $booking->update(['status' => BookingStatus::Cancelled, 'cancellation_reason_id' => $reason?->id, 'cancelled_at' => now()]);
+        $this->log($booking, 'cancelled', $reason?->name, $user);
     }
 
     public function markAttended(Booking $booking, ?User $user): void

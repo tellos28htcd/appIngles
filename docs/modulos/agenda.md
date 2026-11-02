@@ -56,14 +56,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
   - Cada asesoría lleva la actividad siguiente de la ruta de avance (`App\Support\ProgressPath`): libros por nivel → lecciones en su orden → actividades 1–7 (8 en Check Points).
   - Parte de la última asesoría reservada; si no hay, del punto de inicio de la ficha de inscripción.
   - La 2.ª hora del día toma la actividad que sigue.
-- **Motivos de cancelación:**
-
-  | Motivo | Cuenta como |
-  |---|---|
-  | No se presentó | Falta |
-  | Aviso para cancelar | No cuenta |
-  | No terminó la actividad | Asistencia |
-  | Asistió, decidió cancelar | Asistencia |
+- **Motivos de cancelación:** catálogo con base en Plataforma y copia por escuela (Configuración → Catálogos de alumnos → Motivos de cancelación). Cada motivo dice si cuenta como asistencia, como falta o no cuenta. Base: No se presentó (falta), Aviso para cancelar (no cuenta), No terminó la actividad y Asistió, decidió cancelar (asistencia). Cuando el alumno cancela él mismo se usa el primer motivo activo que no cuenta.
 
 - **Historial:** todo movimiento (reservó, entró a lista de espera, pasó a aula, canceló, asistencia) se guarda en `booking_events` con usuario y hora.
 

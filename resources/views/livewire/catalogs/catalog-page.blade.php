@@ -61,6 +61,7 @@
             @case('origenes')
             @case('tipos')
             @case('puestos')
+            @case('cancelaciones')
                 <livewire:catalogs.student-catalog-tab :school-id="$schoolId" :catalog="$tab" wire:key="student-{{ $tab }}-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
             @case('encuesta')

@@ -5,16 +5,17 @@ namespace App\Livewire\Agenda;
 use App\Actions\Agenda\AgendaService;
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\BookingKind;
-use App\Enums\CancellationReason;
 use App\Enums\ClubModality;
 use App\Enums\StudentStatus;
 use App\Models\Booking;
+use App\Models\CancellationReason;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -51,7 +52,7 @@ class AgendaDay extends Component
 
     public ?int $cancellingId = null;
 
-    public string $reason = 'notice';
+    public ?int $reasonId = null;
 
     public function mount(): void
     {
@@ -164,15 +165,15 @@ class AgendaDay extends Component
     {
         $this->authorize('manage', Booking::class);
         $this->cancellingId = $this->findBooking($bookingId)->id;
-        $this->reason = CancellationReason::Notice->value;
+        $this->reasonId = app(AgendaService::class)->studentCancellationReason(auth()->user()->school_id)?->id;
     }
 
     public function cancel(AgendaService $agenda): void
     {
         $this->authorize('manage', Booking::class);
-        $this->validate(['reason' => ['required', Rule::enum(CancellationReason::class)]]);
+        $this->validate(['reasonId' => ['required', 'integer', Rule::in($this->reasons()->modelKeys())]], [], ['reasonId' => Str::lower(__('agenda.form.reason'))]);
 
-        $agenda->cancel($this->findBooking($this->cancellingId), CancellationReason::from($this->reason), auth()->user());
+        $agenda->cancel($this->findBooking($this->cancellingId), $this->reasons()->find($this->reasonId), auth()->user());
 
         $this->cancellingId = null;
         unset($this->bookings, $this->proposals);
@@ -215,7 +216,7 @@ class AgendaDay extends Component
     public function bookings(): Collection
     {
         $bookings = Booking::query()->whereDate('date', $this->date)
-            ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user'])
+            ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason'])
             ->get();
 
         return $bookings->groupBy('schedule_slot_id')
@@ -282,7 +283,7 @@ class AgendaDay extends Component
             'availability' => $isReady ? $agenda->weekAvailability($school, $days) : [],
             'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'isReady' => $isReady,
-            'reasonOptions' => collect(CancellationReason::cases())->mapWithKeys(fn (CancellationReason $reason) => [$reason->value => $reason->label()])->all(),
+            'reasonOptions' => $this->reasons()->pluck('name', 'id')->all(),
             'nextActivity' => $this->selectedStudent ? $agenda->nextActivity($this->selectedStudent) : null,
             'dailyLimit' => $this->selectedStudent ? $agenda->dailyLimit($this->selectedStudent, $this->today()) : null,
         ])->title(__('agenda.title'));
@@ -303,6 +304,12 @@ class AgendaDay extends Component
         }
 
         return ['slot' => $slot, 'kind' => $kind, 'modality' => $modality, 'club_session_id' => $clubId === '' ? null : (int) $clubId];
+    }
+
+    /** Motivos de cancelación activos del catálogo de la escuela. @return \Illuminate\Database\Eloquent\Collection<int, CancellationReason> */
+    private function reasons(): \Illuminate\Database\Eloquent\Collection
+    {
+        return CancellationReason::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
     }
 
     private function findBooking(?int $bookingId): Booking

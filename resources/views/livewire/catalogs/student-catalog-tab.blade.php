@@ -24,7 +24,8 @@
                                         'font-mono text-sm font-bold text-primary-700' => $field[0] === 'code',
                                         'font-semibold' => $loop->first && $field[0] === 'text',
                                         'text-sm text-ink-700' => ! $loop->first && $field[0] === 'text',
-                                    ])>{{ $record->{$name} ?? '—' }}</td>
+                                        'text-sm' => $field[0] === 'select',
+                                    ])>{{ $field[0] === 'select' ? $record->{$name}?->label() : ($record->{$name} ?? '—') }}</td>
                                 @endforeach
                                 <td class="px-4 py-2 md:px-5">
                                     <x-catalog.row-actions :active="$record->is_active" :name="$record->name ?? $record->code"
@@ -40,6 +41,11 @@
 
     <x-ui.modal wire:model="editing" :title="__($recordId ? 'catalogs.student.'.$catalog.'.edit' : 'catalogs.student.'.$catalog.'.add')">
         @foreach ($fields as $name => $field)
+            @if ($field[0] === 'select')
+                <x-ui.select name="values.{{ $name }}" :label="__('catalogs.student.fields.'.$name)" :options="$selectOptions[$name]" wire:model="values.{{ $name }}" wire:key="field-{{ $name }}"
+                             :hint="__('catalogs.student.hints.'.$catalog.'.'.$name) !== 'catalogs.student.hints.'.$catalog.'.'.$name ? __('catalogs.student.hints.'.$catalog.'.'.$name) : null" required />
+                @continue
+            @endif
             <x-ui.input name="values.{{ $name }}" :label="__('catalogs.student.fields.'.$name)" wire:model="values.{{ $name }}" wire:key="field-{{ $name }}"
                         :type="$field[0] === 'number' ? 'number' : 'text'" :maxlength="$field[0] === 'number' ? null : $field[1]"
                         :min="$field[0] === 'number' ? 0 : null" :max="$field[0] === 'number' ? $field[1] : null"

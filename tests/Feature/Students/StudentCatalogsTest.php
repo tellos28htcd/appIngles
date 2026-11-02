@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Students;
 
+use App\Enums\AttendanceEffect;
 use App\Livewire\Catalogs\BaseCatalogs;
 use App\Livewire\Catalogs\SalesAdvisorsTab;
 use App\Livewire\Catalogs\StudentCatalogs;
 use App\Livewire\Catalogs\StudentCatalogTab;
 use App\Livewire\Catalogs\SurveyQuestionsTab;
+use App\Models\CancellationReason;
 use App\Models\Role;
 use App\Models\SalesAdvisor;
 use App\Models\School;
@@ -132,5 +134,24 @@ class StudentCatalogsTest extends TestCase
             ->assertSet('confirmingDeletion', null);
 
         $this->assertModelExists($question);
+    }
+
+    public function test_cancellation_reasons_come_from_the_catalog_with_their_attendance_effect(): void
+    {
+        // La base se copia a cada escuela con su efecto en la asistencia.
+        $copies = CancellationReason::withoutGlobalScope('school')->where('school_id', $this->schoolA->id)->orderBy('sort_order')->get();
+        $this->assertSame(['No se presentó', 'Aviso para cancelar', 'No terminó la actividad', 'Asistió, decidió cancelar'], $copies->pluck('name')->all());
+        $this->assertSame(AttendanceEffect::Absent, $copies->first()->attendance);
+
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        Livewire::test(StudentCatalogTab::class, ['schoolId' => $this->schoolA->id, 'catalog' => 'cancelaciones'])
+            ->call('edit')->assertSet('values.attendance', 'attended')
+            ->set('values.name', 'Llegó tarde')->set('values.attendance', 'absent')->set('values.sort_order', 50)
+            ->call('save')->assertHasNoErrors()
+            ->call('edit')->set('values.name', 'Otro')->set('values.attendance', 'cualquiera')->call('save')->assertHasErrors('values.attendance');
+
+        $late = CancellationReason::where('name', 'Llegó tarde')->sole();
+        $this->assertSame([$this->schoolA->id, AttendanceEffect::Absent], [$late->school_id, $late->attendance]);
+        $this->assertFalse(CancellationReason::withoutGlobalScope('school')->where('school_id', $this->schoolB->id)->where('name', 'Llegó tarde')->exists());
     }
 }

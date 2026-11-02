@@ -16,7 +16,7 @@ class BaseCatalogs extends CatalogPage
     /** La base también incluye los catálogos de Configuración y de Alumnos de cada escuela. */
     protected function tabs(): array
     {
-        return [...parent::tabs(), 'salones', 'metodos', 'conceptos', 'dias', 'planes', 'origenes', 'tipos', 'puestos', 'encuesta'];
+        return [...parent::tabs(), 'salones', 'metodos', 'conceptos', 'dias', 'planes', 'origenes', 'tipos', 'puestos', 'cancelaciones', 'encuesta'];
     }
 
     protected function title(): string

@@ -24,7 +24,14 @@ return [
         'origenes' => 'Origen de la información',
         'tipos' => 'Tipos de alumno',
         'puestos' => 'Puestos de asesor',
+        'cancelaciones' => 'Motivos de cancelación',
         'encuesta' => 'Encuesta',
+    ],
+
+    'attendance_effects' => [
+        'attended' => 'Cuenta como asistencia',
+        'absent' => 'Cuenta como falta',
+        'none' => 'No cuenta',
     ],
 
     'shifts' => [
@@ -197,6 +204,7 @@ return [
             'information_sources' => 'Origen de la información',
             'student_types' => 'Tipos de alumno',
             'advisor_positions' => 'Puestos de asesor',
+            'cancellation_reasons' => 'Motivos de cancelación',
             'survey_questions' => 'Preguntas de la encuesta',
         ],
     ],
@@ -209,16 +217,23 @@ return [
             'channel' => 'Origen',
             'short_name' => 'Nombre corto',
             'rank' => 'Jerarquía',
+            'attendance' => 'Para la asistencia',
+            'sort_order' => 'Orden',
         ],
         'hints' => [
             'planes' => ['code' => 'Letra o clave del plan (p. ej. A, F, CONTADO).', 'installments' => 'Número de mensualidades del plan; se propone al elegirlo en la inscripción.'],
             'origenes' => ['channel' => 'Agrupa el origen: Enlace Digital, Administrativa, Información ganada, Personal…'],
             'tipos' => ['code' => 'Clave corta en mayúsculas (p. ej. ALUMN, TRASP).'],
             'puestos' => ['rank' => '1 = el puesto más alto.'],
+            'cancelaciones' => [
+                'attendance' => 'Para el límite de horas por día (asistencia de los últimos 7 días). Cuando el alumno cancela él mismo se usa el primer motivo que "No cuenta".',
+                'sort_order' => 'Orden en la lista.',
+            ],
         ],
         'planes' => ['title' => 'Planes', 'description' => 'Planes de pago de la inscripción y su número de mensualidades.', 'add' => 'Nuevo plan', 'edit' => 'Editar plan'],
         'origenes' => ['title' => 'Origen de la información', 'description' => 'Cómo se enteró el alumno de la escuela.', 'add' => 'Nuevo origen', 'edit' => 'Editar origen'],
         'tipos' => ['title' => 'Tipos de alumno', 'description' => 'Alumno nuevo, traspaso, colaborador, reasignado…', 'add' => 'Nuevo tipo', 'edit' => 'Editar tipo'],
+        'cancelaciones' => ['title' => 'Motivos de cancelación', 'description' => 'Motivos al cancelar una reservación de la agenda y cómo cuentan para la asistencia del alumno.', 'add' => 'Nuevo motivo', 'edit' => 'Editar motivo'],
         'puestos' => ['title' => 'Puestos de asesor', 'description' => 'Puestos de los asesores de ventas y su orden de jerarquía.', 'add' => 'Nuevo puesto', 'edit' => 'Editar puesto'],
         'advisors' => [
             'title' => 'Asesores de ventas',

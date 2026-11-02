@@ -3,9 +3,11 @@
 namespace Database\Seeders;
 
 use App\Actions\Catalogs\CopyBaseCatalogs;
+use App\Enums\AttendanceEffect;
 use App\Enums\SurveyQuestionType;
 use App\Models\AdvisorPosition;
 use App\Models\AuditLog;
+use App\Models\CancellationReason;
 use App\Models\InformationSource;
 use App\Models\School;
 use App\Models\StudentPlan;
@@ -35,6 +37,14 @@ class StudentCatalogBaseSeeder extends Seeder
         'F' => ['Plan F', 10],
         'F11' => ['Plan F', 11],
         'X' => ['Plan X', 12],
+    ];
+
+    /** Motivos de cancelación de la agenda: [nombre, cómo cuenta para la asistencia] */
+    private const CANCELLATION_REASONS = [
+        ['No se presentó', AttendanceEffect::Absent],
+        ['Aviso para cancelar', AttendanceEffect::None],
+        ['No terminó la actividad', AttendanceEffect::Attended],
+        ['Asistió, decidió cancelar', AttendanceEffect::Attended],
     ];
 
     /** [nombre, origen, nombre corto] */
@@ -125,6 +135,12 @@ class StudentCatalogBaseSeeder extends Seeder
                 StudentType::ofCatalog(null)->firstOrCreate(['school_id' => null, 'code' => $code], ['name' => $name, 'is_active' => true]);
             }
 
+            foreach (self::CANCELLATION_REASONS as $index => [$name, $attendance]) {
+                CancellationReason::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
+                    'attendance' => $attendance, 'sort_order' => ($index + 1) * 10, 'is_active' => true,
+                ]);
+            }
+
             foreach (self::POSITIONS as $name => $rank) {
                 AdvisorPosition::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], ['rank' => $rank, 'is_active' => true]);
             }
@@ -148,7 +164,7 @@ class StudentCatalogBaseSeeder extends Seeder
     {
         $copy = app(CopyBaseCatalogs::class);
         $catalogs = array_intersect_key(CopyBaseCatalogs::CATALOGS, array_flip([
-            'student_plans', 'information_sources', 'student_types', 'advisor_positions', 'survey_questions',
+            'student_plans', 'information_sources', 'student_types', 'advisor_positions', 'cancellation_reasons', 'survey_questions',
         ]));
 
         School::query()->each(function (School $school) use ($copy, $catalogs): void {

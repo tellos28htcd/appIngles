@@ -112,6 +112,7 @@ return [
         'no_results' => 'Sin resultados.',
         'cancel_title' => 'Cancelar reservación',
         'reason' => 'Motivo',
+        'reason_hint' => 'Los motivos se editan en Configuración → Catálogos de alumnos → Motivos de cancelación.',
     ],
 
     'messages' => [

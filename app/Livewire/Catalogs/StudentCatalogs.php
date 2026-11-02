@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Gate;
 /**
  * Configuración → Catálogos de alumnos: asesores de ventas (propios de la
  * escuela) y la copia de la escuela de planes, origen de la información,
- * tipos de alumno, puestos y encuesta.
+ * tipos de alumno, puestos, motivos de cancelación de la agenda y encuesta.
  */
 class StudentCatalogs extends CatalogPage
 {
-    public const STUDENT_TABS = ['asesores', 'planes', 'origenes', 'tipos', 'puestos', 'encuesta'];
+    public const STUDENT_TABS = ['asesores', 'planes', 'origenes', 'tipos', 'puestos', 'cancelaciones', 'encuesta'];
 
-    public const STUDENT_CATALOGS = ['student_plans', 'information_sources', 'student_types', 'advisor_positions', 'survey_questions'];
+    public const STUDENT_CATALOGS = ['student_plans', 'information_sources', 'student_types', 'advisor_positions', 'cancellation_reasons', 'survey_questions'];
 
     public function mount(): void
     {
@@ -21,7 +21,7 @@ class StudentCatalogs extends CatalogPage
 
         // El Super Admin no pertenece a una escuela: administra la base.
         if ($user->isPlatformAdmin()) {
-            $this->redirectRoute('base-catalogs.index', ['pestana' => 'planes'], navigate: true);
+            $this->redirectRoute('base-catalogs.index', navigate: true);
 
             return;
         }
