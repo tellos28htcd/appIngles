@@ -31,6 +31,7 @@ return [
         'promoted' => 'Pasó de lista de espera a aula',
         'cancelled' => 'Canceló',
         'attended' => 'Marcó asistencia',
+        'changed' => 'Cambió aula, teacher o alumno',
     ],
 
     'waitlist' => 'Lista de espera',
@@ -80,6 +81,26 @@ return [
     'status' => 'Estado',
     'by_reception' => 'Agendó recepción',
     'history' => 'Historial',
+    'filters' => [
+        'hour' => 'Hora',
+        'room' => 'Aula',
+        'teacher' => 'Teacher',
+        'all_hours' => 'Todas las horas',
+        'all_rooms' => 'Todas las aulas',
+        'all_teachers' => 'Todos los teachers',
+        'clear' => 'Quitar filtros',
+    ],
+    'edit' => [
+        'title' => 'Cambiar reservación',
+        'open' => 'Cambiar aula, teacher o alumno',
+        'room' => 'Aula',
+        'teacher' => 'Teacher',
+        'teacher_hint' => 'Teachers que trabajan a esa hora.',
+        'student' => 'Alumno',
+        'search' => 'Buscar otro alumno para pasarle el lugar',
+        'club_note' => 'En un club solo se cambia el alumno.',
+        'save' => 'Guardar cambios',
+    ],
 
     'empty' => 'No hay reservaciones este día.',
     'empty_hint' => 'Agenda a un alumno con "Nueva reservación".',
@@ -124,6 +145,7 @@ return [
         'cancelled' => 'Reservación cancelada.',
         'attended' => 'Asistencia registrada.',
         'promoted' => 'El alumno pasó a :place.',
+        'changed' => 'Reservación actualizada.',
     ],
 
     'validation' => [
@@ -139,5 +161,8 @@ return [
         'full' => 'Ya no hay lugar a esa hora.',
         'no_activity' => 'No se encontró su siguiente actividad: revisa el punto de inicio de su ficha.',
         'option' => 'Elige una opción disponible.',
+        'room' => 'Elige un aula activa.',
+        'teacher' => 'Ese teacher no trabaja a esa hora.',
+        'room_full' => 'El aula :room ya está llena a esa hora.',
     ],
 ];

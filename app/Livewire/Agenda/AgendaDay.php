@@ -9,9 +9,11 @@ use App\Enums\ClubModality;
 use App\Enums\StudentStatus;
 use App\Models\Booking;
 use App\Models\CancellationReason;
+use App\Models\Classroom;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\Teacher;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -54,6 +56,27 @@ class AgendaDay extends Component
 
     public ?int $reasonId = null;
 
+    /** Filtros del listado del día (hora, aula y teacher); se recuerdan en la sesión. */
+    #[Session]
+    public string $filterSlot = '';
+
+    #[Session]
+    public string $filterRoom = '';
+
+    #[Session]
+    public string $filterTeacher = '';
+
+    /** Reservación que se edita (clic en el alumno): aula, teacher y alumno. */
+    public ?int $editingId = null;
+
+    public ?int $editRoomId = null;
+
+    public ?int $editTeacherId = null;
+
+    public ?int $editStudentId = null;
+
+    public string $editSearch = '';
+
     public function mount(): void
     {
         $this->authorize('viewAny', Booking::class);
@@ -61,6 +84,17 @@ class AgendaDay extends Component
         if (! $this->validDate($this->date)) {
             $this->date = $this->today()->toDateString();
         }
+    }
+
+    public function updatedFilterSlot(): void
+    {
+        unset($this->bookings);
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset('filterSlot', 'filterRoom', 'filterTeacher');
+        unset($this->bookings);
     }
 
     public function updatedDate(): void
@@ -205,6 +239,85 @@ class AgendaDay extends Component
         $this->dispatch('toast', type: 'success', message: __('agenda.messages.promoted', ['place' => $booking->placeLabel()]));
     }
 
+    // ── Cambiar aula, teacher o alumno ────────────────────────────
+
+    public function editBooking(int $bookingId): void
+    {
+        $this->authorize('manage', Booking::class);
+        $booking = $this->findBooking($bookingId);
+        abort_unless($booking->status->isActive(), 422);
+
+        $this->editingId = $booking->id;
+        $this->editRoomId = $booking->classroom_id;
+        $this->editTeacherId = $booking->teacher_id;
+        $this->editStudentId = $booking->student_id;
+        $this->editSearch = '';
+        $this->resetValidation();
+    }
+
+    public function pickEditStudent(int $studentId): void
+    {
+        $this->authorize('manage', Booking::class);
+        $this->editStudentId = Student::query()->findOrFail($studentId)->id;
+        $this->editSearch = '';
+    }
+
+    public function saveChange(AgendaService $agenda): void
+    {
+        $this->authorize('manage', Booking::class);
+        $booking = $this->findBooking($this->editingId);
+
+        try {
+            $agenda->change($booking, $this->editRoomId, $this->editTeacherId, Student::query()->findOrFail($this->editStudentId), auth()->user());
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->editingId = null;
+        unset($this->bookings);
+        $this->dispatch('toast', type: 'success', message: __('agenda.messages.changed'));
+    }
+
+    /** @return Collection<int, Student> */
+    #[Computed]
+    public function editStudents(): Collection
+    {
+        if (mb_strlen(trim($this->editSearch)) < 2) {
+            return collect();
+        }
+
+        return Student::query()->search($this->editSearch)->where('status', StudentStatus::Active)
+            ->orderBy('first_name')->orderBy('last_name')->limit(6)->get();
+    }
+
+    /**
+     * Opciones de la ventana de edición: aulas activas (físicas y virtuales) y teachers que trabajan a esa hora.
+     *
+     * @return array{rooms: array<int, string>, teachers: array<int, string>, student: ?Student, booking: ?Booking}
+     */
+    private function editData(): array
+    {
+        $booking = $this->editingId ? Booking::query()->with(['slot', 'clubSession'])->find($this->editingId) : null;
+
+        if ($booking === null) {
+            return ['rooms' => [], 'teachers' => [], 'student' => null, 'booking' => null];
+        }
+
+        $school = $this->school();
+        $working = app(AvailabilityPlanner::class)->workingTeacherIds($school, $booking->date, $booking->slot);
+
+        return [
+            'booking' => $booking,
+            'student' => Student::query()->find($this->editStudentId),
+            'rooms' => Classroom::query()->ofCatalog($school->id)->where('is_active', true)->orderByRaw('CAST(name AS UNSIGNED)')->orderBy('name')->get()
+                ->mapWithKeys(fn (Classroom $room) => [$room->id => __($room->is_virtual ? 'agenda.virtual_classroom' : 'agenda.room', ['name' => $room->name])])->all(),
+            'teachers' => Teacher::query()->whereIn('id', $working)->get()->sortBy(fn (Teacher $teacher) => $teacher->panelName())
+                ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all(),
+        ];
+    }
+
     // ── Datos ─────────────────────────────────────────────────────
 
     /**
@@ -218,6 +331,11 @@ class AgendaDay extends Component
         $bookings = Booking::query()->whereDate('date', $this->date)
             ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason'])
             ->get();
+
+        $bookings = $bookings
+            ->when($this->filterSlot !== '', fn (Collection $items) => $items->where('schedule_slot_id', (int) $this->filterSlot))
+            ->when($this->filterRoom !== '', fn (Collection $items) => $items->where('classroom_id', (int) $this->filterRoom))
+            ->when($this->filterTeacher !== '', fn (Collection $items) => $items->where('teacher_id', (int) $this->filterTeacher));
 
         return $bookings->groupBy('schedule_slot_id')
             ->map(fn (Collection $items) => [
@@ -273,7 +391,18 @@ class AgendaDay extends Component
         $days = $planner->days($school, $this->day());
         $isReady = $planner->isGenerated($school, $days[0]);
 
+        // Filtros con lo que hay ese día; color de cada aula como en el panel (por su número).
+        $dayBookings = Booking::query()->whereDate('date', $this->date)->with(['slot', 'classroom', 'teacher'])->get();
+        $classrooms = Classroom::query()->ofCatalog($school->id)->orderByRaw('CAST(name AS UNSIGNED)')->orderBy('name')->get(['id', 'name']);
+
         return view('livewire.agenda.agenda-day', [
+            'filterSlots' => $dayBookings->pluck('slot')->filter()->unique('id')->sortBy('starts_at')->mapWithKeys(fn (ScheduleSlot $slot) => [$slot->id => $slot->range()])->all(),
+            'filterRooms' => $dayBookings->pluck('classroom')->filter()->unique('id')->sortBy(fn (Classroom $room) => sprintf('%05d', (int) $room->name).$room->name)
+                ->mapWithKeys(fn (Classroom $room) => [$room->id => $room->name])->all(),
+            'filterTeachers' => $dayBookings->pluck('teacher')->filter()->unique('id')->sortBy(fn (Teacher $teacher) => $teacher->panelName())
+                ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all(),
+            'roomNumbers' => $classrooms->values()->mapWithKeys(fn (Classroom $room, int $index) => [$room->id => ctype_digit((string) $room->name) ? (int) $room->name : $index + 1])->all(),
+            'edit' => $this->editData(),
             'canManage' => auth()->user()->can('manage', Booking::class),
             'day' => $this->day(),
             'days' => $days,

@@ -124,9 +124,10 @@ class Booking extends Model
     {
         return match (true) {
             $this->is_waitlist => __('agenda.waitlist'),
+            $this->modality === ClubModality::Online && $this->classroom?->is_virtual => __('agenda.virtual_classroom', ['name' => $this->classroom->name]),
             // Práctica en línea dentro de la clase de un teacher presencial (aulas virtuales llenas).
-            $this->kind === BookingKind::Session && $this->modality === ClubModality::Online && $this->teacher_availability_id !== null => __('agenda.hybrid_room', ['name' => $this->classroom?->name ?? '—']),
-            $this->modality === ClubModality::Online && $this->classroom_id !== null => __('agenda.virtual_classroom', ['name' => $this->classroom?->name ?? '—']),
+            $this->kind === BookingKind::Session && $this->modality === ClubModality::Online && $this->classroom_id !== null => __('agenda.hybrid_room', ['name' => $this->classroom?->name ?? '—']),
+            $this->modality === ClubModality::Online && $this->classroom_id !== null => __('agenda.room', ['name' => $this->classroom?->name ?? '—']),
             $this->modality === ClubModality::Online => __('agenda.virtual_room', ['number' => $this->virtual_room ?? 1]),
             default => __('agenda.room', ['name' => $this->classroom?->name ?? '—']),
         };

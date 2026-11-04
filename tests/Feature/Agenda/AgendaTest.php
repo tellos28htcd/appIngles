@@ -366,4 +366,58 @@ class AgendaTest extends TestCase
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('markAttended', $booking->id)->assertNotFound();
         $this->assertSame(BookingStatus::Booked, $booking->refresh()->status);
     }
+
+    public function test_reception_changes_room_teacher_and_student_of_a_booking(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis, $sofia] = [$this->student(), $this->student(), $this->student()];
+        $this->receptionBooks($ana, 9);
+        $booking = Booking::sole();
+        $otherRoom = $booking->classroom_id === $this->rooms[0]->id ? $this->rooms[1] : $this->rooms[0];
+        $dulce = Teacher::where('short_name', 'DULCE')->sole();
+        $page = fn () => Livewire::test(AgendaDay::class)->set('date', self::MONDAY);
+
+        // Aula y teacher por separado.
+        $page()->call('editBooking', $booking->id)->assertSet('editStudentId', $ana->id)
+            ->set('editRoomId', $otherRoom->id)->set('editTeacherId', $dulce->id)->call('saveChange')
+            ->assertDispatched('toast', type: 'success')->assertSet('editingId', null);
+        $booking->refresh();
+        $this->assertSame([$otherRoom->id, $dulce->id], [$booking->classroom_id, $booking->teacher_id]);
+
+        // Un teacher que no trabaja a esa hora no se puede elegir.
+        $idle = Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => 'LIBRE', 'panel_number' => 9]);
+        $page()->call('editBooking', $booking->id)->set('editTeacherId', $idle->id)->call('saveChange')
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.teacher'));
+
+        // Aula llena (cupo por sesión 2).
+        $this->receptionBooks($luis, 9);
+        $this->receptionBooks($sofia, 9);
+        $full = Booking::where('student_id', '!=', $ana->id)->pluck('classroom_id')->countBy()->filter(fn (int $count) => $count >= 2)->keys()->first();
+        if ($full !== null && $full !== $booking->classroom_id) {
+            $page()->call('editBooking', $booking->id)->set('editRoomId', $full)->call('saveChange')
+                ->assertDispatched('toast', type: 'error', message: __('agenda.validation.room_full', ['room' => Classroom::find($full)->name]));
+        }
+
+        // Pasar el lugar a otro alumno: no si ya tiene esa hora; sí a uno libre (con su actividad).
+        $page()->call('editBooking', $booking->id)->call('pickEditStudent', $luis->id)->call('saveChange')
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.duplicate'));
+        $nuevo = $this->student();
+        $page()->call('editBooking', $booking->id)->set('editSearch', $nuevo->first_name)->call('pickEditStudent', $nuevo->id)->call('saveChange')
+            ->assertDispatched('toast', type: 'success');
+        $this->assertSame($nuevo->id, $booking->refresh()->student_id);
+        $this->assertSame(['booked', 'changed', 'changed'], $booking->events()->pluck('event')->all());
+    }
+
+    public function test_the_day_list_filters_by_hour_room_and_teacher(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis] = [$this->student(), $this->student()];
+        $this->receptionBooks($ana, 9);
+        $this->receptionBooks($luis, 10);
+
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
+            ->assertSee($ana->fullName())->assertSee($luis->fullName())
+            ->set('filterSlot', (string) $this->slots[10]->id)->assertDontSee($ana->fullName())->assertSee($luis->fullName())
+            ->call('clearFilters')->set('filterTeacher', (string) Booking::where('student_id', $ana->id)->value('teacher_id'))->assertSee($ana->fullName());
+    }
 }
