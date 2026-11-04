@@ -31,7 +31,8 @@ use Illuminate\Validation\ValidationException;
  *   aula = "cupo por sesión" de Mi Instituto (o el del aula si es menor). El aula se asigna al azar
  *   entre las que tienen lugar; llenas, el alumno entra a la lista de espera (si Mi Instituto lo permite).
  * - Práctica en línea: primero un aula virtual ("aulas virtuales por horario" × "alumnos por aula virtual");
- *   llenas, entra en línea a la clase de un teacher presencial con lugar (híbrida) y ocupa un lugar de su cupo.
+ *   llenas (o con 0 aulas virtuales), entra en línea a la clase de un teacher presencial con lugar (híbrida)
+ *   y ocupa un lugar de su cupo.
  * - Tolerancia: recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo);
  *   el alumno solo antes de que empiece.
  * - Club: los clubs programados; cupo "por club" (presencial) o "por aula virtual" (en línea);
@@ -296,8 +297,8 @@ final class AgendaService
                     'label' => __('agenda.option_session'), 'free' => 0, 'waitlist' => true];
             }
 
-            // En línea: aulas virtuales y, llenas, híbrida en un aula presencial con lugar.
-            $virtualSeats = (int) $school->virtual_rooms_per_slot > 0 ? array_sum($this->virtualSeats($school, $date, $slot)) + $freeSeats : 0;
+            // En línea (siempre se ofrece): aulas virtuales y, llenas o sin ellas, híbrida en un aula presencial con lugar.
+            $virtualSeats = array_sum($this->virtualSeats($school, $date, $slot)) + $freeSeats;
             if ($virtualSeats > 0) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::Online->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => $virtualSeats, 'waitlist' => false];
@@ -403,13 +404,12 @@ final class AgendaService
                 $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
 
                 if ($modality === ClubModality::Online) {
-                    (int) $school->virtual_rooms_per_slot > 0 || $fail('no_online');
                     $rooms = $this->freeVirtualRooms($school, $date, $slot);
 
                     if ($rooms !== []) {
                         $booking->virtual_room = $rooms[array_rand($rooms)];
                     } else {
-                        // Aulas virtuales llenas: híbrida con un teacher presencial (ocupa un lugar de su aula).
+                        // Aulas virtuales llenas (o la escuela no tiene): híbrida con un teacher presencial (ocupa un lugar de su aula).
                         $this->placeInRoom($school, $booking, $date, $slot, allowWaitlist: false) || $fail('full');
                     }
                 } else {

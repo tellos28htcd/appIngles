@@ -316,6 +316,22 @@ class AgendaTest extends TestCase
         $this->assertSame(['free' => 0, 'capacity' => 1], $nine['online']);
     }
 
+    public function test_without_virtual_rooms_online_practice_joins_a_class_as_hybrid(): void
+    {
+        $this->school->update(['virtual_rooms_per_slot' => 0]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        $student = $this->student();
+
+        $modalities = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('openSlot', self::MONDAY, $this->slots[9]->id)
+            ->call('pickStudent', $student->id)->get('options')[0]['options'])->where('kind', 'session')->pluck('modality')->all();
+        $this->assertSame(['in_person', 'online'], $modalities);
+
+        $this->receptionBooks($student, 9, 'session', 'online')->assertDispatched('toast', type: 'success');
+        $booking = Booking::with('classroom')->sole();
+        $this->assertNull($booking->virtual_room);
+        $this->assertSame(__('agenda.hybrid_room', ['name' => $booking->classroom->name]), $booking->placeLabel());
+    }
+
     public function test_reception_has_ten_minutes_of_tolerance_and_the_student_none(): void
     {
         $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 09:05', 'America/Mexico_City'));

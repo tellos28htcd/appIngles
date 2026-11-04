@@ -138,6 +138,5 @@ return [
         'full' => 'Ya no hay lugar a esa hora.',
         'no_activity' => 'No se encontró su siguiente actividad: revisa el punto de inicio de su ficha.',
         'option' => 'Elige una opción disponible.',
-        'no_online' => 'La escuela no tiene práctica en línea (Mi Instituto → Aulas virtuales por horario).',
     ],
 ];

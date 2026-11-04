@@ -86,7 +86,7 @@ return [
         'virtual_room_capacity' => 'Alumnos por aula virtual',
         'virtual_room_capacity_hint' => 'Prácticas y clubs en línea.',
         'virtual_rooms_per_slot' => 'Aulas virtuales por horario',
-        'virtual_rooms_per_slot_hint' => 'Para práctica en línea; 0 = sin práctica en línea.',
+        'virtual_rooms_per_slot_hint' => 'Para práctica en línea. Llenas (o con 0), el alumno en línea entra a una clase presencial (híbrida).',
         'timezone' => 'Zona horaria',
         'currency' => 'Moneda',
         'works_sundays' => 'Trabaja los días domingo',
