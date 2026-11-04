@@ -31,7 +31,7 @@ return [
         'promoted' => 'Pasó de lista de espera a aula',
         'cancelled' => 'Canceló',
         'attended' => 'Marcó asistencia',
-        'changed' => 'Cambió aula, teacher o alumno',
+        'changed' => 'Cambió aula o alumno',
     ],
 
     'waitlist' => 'Lista de espera',
@@ -92,10 +92,11 @@ return [
     ],
     'edit' => [
         'title' => 'Cambiar reservación',
-        'open' => 'Cambiar aula, teacher o alumno',
+        'open' => 'Cambiar aula o alumno',
         'room' => 'Aula',
         'teacher' => 'Teacher',
-        'teacher_hint' => 'Al elegir el aula se pone su teacher del panel, y al elegir el teacher, su aula; se pueden cambiar por separado.',
+        'room_hint' => 'Solo aulas con lugar a esa hora; cada una con el teacher que da la clase ahí.',
+        'teacher_of_room' => 'Teacher que da la clase:',
         'student' => 'Alumno',
         'search' => 'Buscar otro alumno para pasarle el lugar',
         'club_note' => 'En un club solo se cambia el alumno.',

@@ -210,10 +210,13 @@
                     {{ $edit['booking']->date->translatedFormat('l j \d\e F') }} · {{ $edit['booking']->slot?->range() }} · {{ $edit['booking']->kind->label() }} {{ $edit['booking']->activityLabel() }}
                 </p>
                 @if ($editable)
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :placeholder="__('students.select')" wire:model.live="editRoomId" required />
-                        <x-ui.select name="editTeacherId" :label="__('agenda.edit.teacher')" :options="$edit['teachers']" :placeholder="__('students.select')" :hint="__('agenda.edit.teacher_hint')" wire:model.live="editTeacherId" required />
-                    </div>
+                    <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :hint="__('agenda.edit.room_hint')" wire:model.live="editRoomId" required />
+                    @php($chosen = $edit['choices'][$editRoomId] ?? null)
+                    @if ($chosen)
+                        <p class="-mt-2 rounded-lg bg-primary-50 px-3 py-2 text-[15px] text-primary-700">
+                            {{ __('agenda.edit.teacher_of_room') }} <span class="font-bold">{{ $chosen['teacher'] !== '' ? $chosen['teacher'] : '—' }}</span>
+                        </p>
+                    @endif
                 @else
                     <p class="rounded-lg bg-surface p-3 text-sm text-ink-700">{{ __('agenda.edit.club_note') }}</p>
                 @endif

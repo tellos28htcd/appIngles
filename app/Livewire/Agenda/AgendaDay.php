@@ -14,7 +14,6 @@ use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Teacher;
-use App\Models\TeacherAvailability;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -67,12 +66,10 @@ class AgendaDay extends Component
     #[Session]
     public string $filterTeacher = '';
 
-    /** Reservación que se edita (clic en el alumno): aula, teacher y alumno. */
+    /** Reservación que se edita (recepción): aula (con su teacher) y alumno. */
     public ?int $editingId = null;
 
     public ?int $editRoomId = null;
-
-    public ?int $editTeacherId = null;
 
     public ?int $editStudentId = null;
 
@@ -250,46 +247,9 @@ class AgendaDay extends Component
 
         $this->editingId = $booking->id;
         $this->editRoomId = $booking->classroom_id;
-        $this->editTeacherId = $booking->teacher_id;
         $this->editStudentId = $booking->student_id;
         $this->editSearch = '';
         $this->resetValidation();
-    }
-
-    /** Al elegir el aula se pone el teacher que el panel tiene en esa aula a esa hora (se puede cambiar). */
-    public function updatedEditRoomId(): void
-    {
-        $teacherId = $this->editCell(classroomId: (int) $this->editRoomId)?->teacher_id;
-
-        if ($teacherId !== null) {
-            $this->editTeacherId = $teacherId;
-        }
-    }
-
-    /** Al elegir el teacher se pone el aula que tiene programada a esa hora (el alumno pide otro teacher). */
-    public function updatedEditTeacherId(): void
-    {
-        $classroomId = $this->editCell(teacherId: (int) $this->editTeacherId)?->classroom_id;
-
-        if ($classroomId !== null) {
-            $this->editRoomId = $classroomId;
-        }
-    }
-
-    /** Hora del panel (de la reservación que se edita) por aula o por teacher. */
-    private function editCell(?int $classroomId = null, ?int $teacherId = null): ?TeacherAvailability
-    {
-        $booking = $this->editingId ? $this->findBooking($this->editingId) : null;
-
-        if ($booking === null) {
-            return null;
-        }
-
-        return TeacherAvailability::query()->whereDate('date', $booking->date->toDateString())->where('schedule_slot_id', $booking->schedule_slot_id)
-            ->where('is_absent', false)->whereNull('club_session_id')
-            ->when($classroomId, fn ($query) => $query->where('classroom_id', $classroomId))
-            ->when($teacherId, fn ($query) => $query->where('teacher_id', $teacherId))
-            ->first();
     }
 
     public function pickEditStudent(int $studentId): void
@@ -305,7 +265,7 @@ class AgendaDay extends Component
         $booking = $this->findBooking($this->editingId);
 
         try {
-            $agenda->change($booking, $this->editRoomId, $this->editTeacherId, Student::query()->findOrFail($this->editStudentId), auth()->user());
+            $agenda->change($booking, $this->editRoomId, Student::query()->findOrFail($this->editStudentId), auth()->user());
         } catch (ValidationException $exception) {
             $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
 
@@ -330,28 +290,27 @@ class AgendaDay extends Component
     }
 
     /**
-     * Opciones de la ventana de edición: aulas activas (físicas y virtuales) y teachers que trabajan a esa hora.
+     * Ventana de edición: aulas disponibles a esa hora (con lugar, más la actual), cada una con el teacher
+     * que da la clase ahí; el teacher no se elige, sale del aula.
      *
-     * @return array{rooms: array<int, string>, teachers: array<int, string>, student: ?Student, booking: ?Booking}
+     * @return array{rooms: array<int, string>, choices: array<int, array<string, mixed>>, student: ?Student, booking: ?Booking}
      */
     private function editData(): array
     {
         $booking = $this->editingId ? Booking::query()->with(['slot', 'clubSession'])->find($this->editingId) : null;
 
         if ($booking === null) {
-            return ['rooms' => [], 'teachers' => [], 'student' => null, 'booking' => null];
+            return ['rooms' => [], 'choices' => [], 'student' => null, 'booking' => null];
         }
 
-        $school = $this->school();
-        $working = app(AvailabilityPlanner::class)->workingTeacherIds($school, $booking->date, $booking->slot);
+        $choices = $booking->kind === BookingKind::Session ? app(AgendaService::class)->roomChoices($booking) : [];
 
         return [
             'booking' => $booking,
             'student' => Student::query()->find($this->editStudentId),
-            'rooms' => Classroom::query()->ofCatalog($school->id)->where('is_active', true)->orderByRaw('CAST(name AS UNSIGNED)')->orderBy('name')->get()
-                ->mapWithKeys(fn (Classroom $room) => [$room->id => __($room->is_virtual ? 'agenda.virtual_classroom' : 'agenda.room', ['name' => $room->name])])->all(),
-            'teachers' => Teacher::query()->whereIn('id', $working)->get()->sortBy(fn (Teacher $teacher) => $teacher->panelName())
-                ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all(),
+            'choices' => $choices,
+            'rooms' => collect($choices)->map(fn (array $room) => $room['label'].($room['teacher'] !== '' ? ' · '.$room['teacher'] : '')
+                .' ('.trans_choice('agenda.seats', $room['free']).')')->all(),
         ];
     }
 
