@@ -37,6 +37,7 @@ return [
     'virtual_room' => 'Aula virtual :number',
     'room' => 'Aula :name',
     'hybrid_room' => 'Aula :name (híbrida, en línea)',
+    'virtual_classroom' => 'Aula virtual :name',
     'online' => 'En línea',
     'in_person' => 'Presencial',
     'option_session' => 'Práctica',

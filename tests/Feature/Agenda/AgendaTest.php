@@ -156,6 +156,8 @@ class AgendaTest extends TestCase
     public function test_the_week_calendar_shows_free_places_by_day_and_hour(): void
     {
         $this->school->update(['virtual_rooms_per_slot' => 2, 'virtual_room_capacity' => 3]);
+        Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+        Classroom::create(['school_id' => $this->school->id, 'name' => '11', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
         $this->actingAs($this->user(Role::RECEPTION));
         $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
 
@@ -293,13 +295,15 @@ class AgendaTest extends TestCase
     public function test_online_practice_fills_the_virtual_rooms_and_then_joins_a_class_as_hybrid(): void
     {
         $this->school->update(['virtual_rooms_per_slot' => 1, 'virtual_room_capacity' => 1, 'session_capacity' => 2]);
+        Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+        Classroom::create(['school_id' => $this->school->id, 'name' => '11', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
         $this->actingAs($this->user(Role::RECEPTION));
 
         // 1.º en línea: aula virtual. Llena: los siguientes en línea entran a una clase presencial (híbrida).
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
         [$virtual, $hybrid] = Booking::with('classroom')->orderBy('id')->get()->all();
-        $this->assertSame(__('agenda.virtual_room', ['number' => 1]), $virtual->placeLabel());
+        $this->assertSame(__('agenda.virtual_classroom', ['name' => '10']), $virtual->placeLabel());
         $this->assertNotNull($hybrid->teacher_availability_id);
         $this->assertSame(__('agenda.hybrid_room', ['name' => $hybrid->classroom->name]), $hybrid->placeLabel());
 
@@ -316,9 +320,9 @@ class AgendaTest extends TestCase
         $this->assertSame(['free' => 0, 'capacity' => 1], $nine['online']);
     }
 
-    public function test_without_virtual_rooms_online_practice_joins_a_class_as_hybrid(): void
+    public function test_without_virtual_classrooms_online_practice_joins_a_class_as_hybrid(): void
     {
-        $this->school->update(['virtual_rooms_per_slot' => 0]);
+        // Sin aulas virtuales en el catálogo de Aulas.
         $this->actingAs($this->user(Role::RECEPTION));
         $student = $this->student();
 

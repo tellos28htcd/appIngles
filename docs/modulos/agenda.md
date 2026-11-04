@@ -79,7 +79,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 ## Ajustes (nov-2026)
 
 - **Práctica** (antes "Asesoría"): al elegir la hora se escoge **Presencial** o **En línea**; las opciones son botones (Tab para recorrer, Enter para elegir).
-- **En línea / híbrida:** primero un aula virtual (Aulas virtuales por horario × Alumnos por aula virtual). Llenas (o si la escuela tiene 0 aulas virtuales), el alumno entra en línea a la clase de un teacher presencial con lugar ("Aula X (híbrida, en línea)") y ocupa un lugar del cupo por sesión de esa aula. El calendario muestra cuántos van presencial y cuántos en línea.
+- **En línea / híbrida:** primero un aula virtual del catálogo de Aulas (las marcadas "Virtual" sin club en línea ni reserva a esa hora; "Aulas virtuales por horario" limita cuántas, 0 = todas), cada una con "Alumnos por aula virtual" lugares (o su capacidad). Llenas (o si la escuela tiene 0 aulas virtuales), el alumno entra en línea a la clase de un teacher presencial con lugar ("Aula X (híbrida, en línea)") y ocupa un lugar del cupo por sesión de esa aula. El calendario muestra cuántos van presencial y cuántos en línea.
 - **Tolerancia:** recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo, p. ej. por una cancelación); el alumno solo antes de que empiece.
 - **Portal del alumno:** una sola opción "Agendar" (prácticas y clubs). "Agendar club" queda desactivada en el menú (su código se conserva).
 - **Ventanas:** todas las ventanas de captura se mueven arrastrando su título.
