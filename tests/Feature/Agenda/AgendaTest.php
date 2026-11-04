@@ -304,6 +304,8 @@ class AgendaTest extends TestCase
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
         [$virtual, $hybrid] = Booking::with('classroom')->orderBy('id')->get()->all();
         $this->assertSame(__('agenda.virtual_classroom', ['name' => '10']), $virtual->placeLabel());
+        // El aula virtual no está en el panel: la atiende un teacher que da clase presencial a esa hora.
+        $this->assertContains($virtual->teacher_id, Teacher::whereIn('short_name', ['MELISSA', 'DULCE'])->pluck('id')->all());
         $this->assertNotNull($hybrid->teacher_availability_id);
         $this->assertSame(__('agenda.hybrid_room', ['name' => $hybrid->classroom->name]), $hybrid->placeLabel());
 

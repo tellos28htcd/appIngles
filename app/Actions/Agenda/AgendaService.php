@@ -163,6 +163,26 @@ final class AgendaService
         return (int) $school->virtual_rooms_per_slot > 0 ? $rooms->take((int) $school->virtual_rooms_per_slot)->values() : $rooms;
     }
 
+    /**
+     * Teacher que atiende un aula virtual: el que el panel tenga en esa aula a esa hora; si no está
+     * programada, uno de los que dan clase presencial a esa hora (el que lleve menos alumnos en línea).
+     */
+    public function virtualTeacherId(School $school, CarbonInterface $date, ScheduleSlot $slot, int $classroomId): ?int
+    {
+        $cells = $this->sessionCells($school, $date, $slot)->reject(fn (TeacherAvailability $cell) => $cell->teacher?->is_waitlist);
+        $assigned = $cells->firstWhere('classroom_id', $classroomId);
+
+        if ($assigned !== null) {
+            return $assigned->teacher_id;
+        }
+
+        $online = Booking::withoutGlobalScope('school')->active()->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+            ->where('schedule_slot_id', $slot->id)->where('modality', ClubModality::Online)->whereNotNull('teacher_id')
+            ->selectRaw('teacher_id, count(*) as total')->groupBy('teacher_id')->pluck('total', 'teacher_id');
+
+        return $cells->sortBy(fn (TeacherAvailability $cell) => sprintf('%05d|%05d', $online[$cell->teacher_id] ?? 0, $cell->teacher_id))->first()?->teacher_id;
+    }
+
     /** Lugares libres por aula virtual a esa hora (id del aula => lugares; solo las que tienen lugar). @return array<int, int> */
     private function virtualSeats(School $school, CarbonInterface $date, ScheduleSlot $slot): array
     {
@@ -432,6 +452,7 @@ final class AgendaService
 
                     if ($rooms !== []) {
                         $booking->classroom_id = $rooms[array_rand($rooms)];
+                        $booking->teacher_id = $this->virtualTeacherId($school, $date, $slot, $booking->classroom_id);
                     } else {
                         // Aulas virtuales llenas (o la escuela no tiene): híbrida con un teacher presencial (ocupa un lugar de su aula).
                         $this->placeInRoom($school, $booking, $date, $slot, allowWaitlist: false) || $fail('full');
