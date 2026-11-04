@@ -14,6 +14,7 @@ use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\TeacherAvailability;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -253,6 +254,42 @@ class AgendaDay extends Component
         $this->editStudentId = $booking->student_id;
         $this->editSearch = '';
         $this->resetValidation();
+    }
+
+    /** Al elegir el aula se pone el teacher que el panel tiene en esa aula a esa hora (se puede cambiar). */
+    public function updatedEditRoomId(): void
+    {
+        $teacherId = $this->editCell(classroomId: (int) $this->editRoomId)?->teacher_id;
+
+        if ($teacherId !== null) {
+            $this->editTeacherId = $teacherId;
+        }
+    }
+
+    /** Al elegir el teacher se pone el aula que tiene programada a esa hora (el alumno pide otro teacher). */
+    public function updatedEditTeacherId(): void
+    {
+        $classroomId = $this->editCell(teacherId: (int) $this->editTeacherId)?->classroom_id;
+
+        if ($classroomId !== null) {
+            $this->editRoomId = $classroomId;
+        }
+    }
+
+    /** Hora del panel (de la reservación que se edita) por aula o por teacher. */
+    private function editCell(?int $classroomId = null, ?int $teacherId = null): ?TeacherAvailability
+    {
+        $booking = $this->editingId ? $this->findBooking($this->editingId) : null;
+
+        if ($booking === null) {
+            return null;
+        }
+
+        return TeacherAvailability::query()->whereDate('date', $booking->date->toDateString())->where('schedule_slot_id', $booking->schedule_slot_id)
+            ->where('is_absent', false)->whereNull('club_session_id')
+            ->when($classroomId, fn ($query) => $query->where('classroom_id', $classroomId))
+            ->when($teacherId, fn ($query) => $query->where('teacher_id', $teacherId))
+            ->first();
     }
 
     public function pickEditStudent(int $studentId): void

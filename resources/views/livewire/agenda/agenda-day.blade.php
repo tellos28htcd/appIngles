@@ -137,6 +137,7 @@
                                             <td class="px-4 py-3">
                                                 @if ($active)
                                                     <div class="flex items-center justify-end gap-1.5">
+                                                        <x-ui.button size="sm" variant="outline" class="text-[15px]" wire:click="editBooking({{ $booking->id }})" :title="__('agenda.edit.open')">{{ __('agenda.actions.change') }}</x-ui.button>
                                                         @if ($booking->status !== \App\Enums\BookingStatus::Attended && ! $booking->is_waitlist)
                                                             <x-ui.button size="sm" variant="secondary" class="text-[15px]" wire:click="markAttended({{ $booking->id }})">{{ __('agenda.actions.attended') }}</x-ui.button>
                                                         @endif
@@ -210,8 +211,8 @@
                 </p>
                 @if ($editable)
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :placeholder="__('students.select')" wire:model="editRoomId" required />
-                        <x-ui.select name="editTeacherId" :label="__('agenda.edit.teacher')" :options="$edit['teachers']" :placeholder="__('students.select')" :hint="__('agenda.edit.teacher_hint')" wire:model="editTeacherId" required />
+                        <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :placeholder="__('students.select')" wire:model.live="editRoomId" required />
+                        <x-ui.select name="editTeacherId" :label="__('agenda.edit.teacher')" :options="$edit['teachers']" :placeholder="__('students.select')" :hint="__('agenda.edit.teacher_hint')" wire:model.live="editTeacherId" required />
                     </div>
                 @else
                     <p class="rounded-lg bg-surface p-3 text-sm text-ink-700">{{ __('agenda.edit.club_note') }}</p>

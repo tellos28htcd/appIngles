@@ -420,4 +420,17 @@ class AgendaTest extends TestCase
             ->set('filterSlot', (string) $this->slots[10]->id)->assertDontSee($ana->fullName())->assertSee($luis->fullName())
             ->call('clearFilters')->set('filterTeacher', (string) Booking::where('student_id', $ana->id)->value('teacher_id'))->assertSee($ana->fullName());
     }
+
+    public function test_choosing_a_room_brings_its_panel_teacher_and_choosing_a_teacher_brings_their_room(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $this->receptionBooks($this->student(), 9);
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $dulce = Teacher::where('short_name', 'DULCE')->sole();
+
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', Booking::sole()->id)
+            ->set('editRoomId', $this->rooms[1]->id)->assertSet('editTeacherId', $dulce->id)
+            ->set('editTeacherId', $melissa->id)->assertSet('editRoomId', $this->rooms[0]->id)
+            ->assertSee(__('agenda.actions.change'));
+    }
 }
