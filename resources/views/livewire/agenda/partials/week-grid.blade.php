@@ -1,4 +1,4 @@
-{{-- Calendario semanal de la agenda: por día y hora, lugares de asesoría (presencial / en línea) y de cada club.
+{{-- Calendario semanal de la agenda: por día y hora, lugares de práctica (presencial / en línea) y de cada club.
      Variables: $days, $scheduleSlots, $availability, $holidays, $planner, $selectedDate (o null), $canPick (clic en la celda), $canSelectDay. --}}
 <section class="overflow-x-auto rounded-xl border border-line bg-white shadow-xs">
     <table class="w-full min-w-[760px] border-separate border-spacing-0 text-center text-sm">
@@ -58,6 +58,9 @@
                                             <span>{{ __('agenda.grid.session') }}</span>
                                             <span class="tabular-nums">{{ $sessionFree > 0 ? $sessionFree.'/'.$cell['session']['capacity'] : ($cell['waitlist'] ? __('agenda.grid.waitlist') : __('agenda.grid.full')) }}</span>
                                         </span>
+                                    @endif
+                                    @if ($cell['session']['in_person'] + $cell['session']['online'] > 0)
+                                        <span class="px-1 text-[10px] font-semibold text-ink-700">{{ __('agenda.grid.by_modality', ['in_person' => $cell['session']['in_person'], 'online' => $cell['session']['online']]) }}</span>
                                     @endif
                                     @if ($cell['online']['capacity'] > 0)
                                         <span @class(['flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[11px] font-bold leading-tight',

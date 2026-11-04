@@ -164,10 +164,10 @@ class AgendaTest extends TestCase
         $nine = $week[self::MONDAY.'|'.$this->slots[9]->id];
 
         // 2 aulas × cupo 2 = 4 lugares (1 ocupado); en línea 2 aulas × 3 = 6.
-        $this->assertSame(['free' => 3, 'capacity' => 4], $nine['session']);
+        $this->assertSame(['free' => 3, 'capacity' => 4, 'in_person' => 1, 'online' => 0], $nine['session']);
         $this->assertSame(['free' => 6, 'capacity' => 6], $nine['online']);
         $this->assertSame(1, $nine['booked']);
-        $this->assertSame(['free' => 4, 'capacity' => 4], $week[self::MONDAY.'|'.$this->slots[10]->id]['session']);
+        $this->assertSame(['free' => 4, 'capacity' => 4, 'in_person' => 0, 'online' => 0], $week[self::MONDAY.'|'.$this->slots[10]->id]['session']);
         $this->assertArrayNotHasKey('2026-07-28|'.$this->slots[9]->id, $week);
 
         // El calendario lo muestra y la celda abre la reservación de esa hora.
@@ -290,14 +290,47 @@ class AgendaTest extends TestCase
         $this->assertSame('C12', Booking::with('clubSession')->sole()->activityLabel());
     }
 
-    public function test_online_sessions_use_the_virtual_rooms_per_slot(): void
+    public function test_online_practice_fills_the_virtual_rooms_and_then_joins_a_class_as_hybrid(): void
     {
-        $this->school->update(['virtual_rooms_per_slot' => 1, 'virtual_room_capacity' => 1]);
+        $this->school->update(['virtual_rooms_per_slot' => 1, 'virtual_room_capacity' => 1, 'session_capacity' => 2]);
         $this->actingAs($this->user(Role::RECEPTION));
 
+        // 1.º en línea: aula virtual. Llena: los siguientes en línea entran a una clase presencial (híbrida).
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
+        [$virtual, $hybrid] = Booking::with('classroom')->orderBy('id')->get()->all();
+        $this->assertSame(__('agenda.virtual_room', ['number' => 1]), $virtual->placeLabel());
+        $this->assertNotNull($hybrid->teacher_availability_id);
+        $this->assertSame(__('agenda.hybrid_room', ['name' => $hybrid->classroom->name]), $hybrid->placeLabel());
+
+        // El híbrido ocupa un lugar del aula: 2 aulas × 2 = 4, quedan 3; el calendario cuenta por modalidad.
+        foreach (range(1, 3) as $i) {
+            $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
+        }
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
-        $this->assertSame(__('agenda.virtual_room', ['number' => 1]), Booking::with('classroom')->sole()->placeLabel());
+
+        $days = app(AvailabilityPlanner::class)->days($this->school, CarbonImmutable::parse(self::MONDAY));
+        $nine = app(AgendaService::class)->weekAvailability($this->school, $days)[self::MONDAY.'|'.$this->slots[9]->id];
+        $this->assertSame(['free' => 0, 'capacity' => 4, 'in_person' => 3, 'online' => 2], $nine['session']);
+        $this->assertSame(['free' => 0, 'capacity' => 1], $nine['online']);
+    }
+
+    public function test_reception_has_ten_minutes_of_tolerance_and_the_student_none(): void
+    {
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 09:05', 'America/Mexico_City'));
+        $user = $this->user(Role::STUDENT);
+        $student = $this->student($user);
+
+        $this->actingAs($user);
+        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $this->slots[9]->id.'|session|in_person|')->call('book')
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.past'));
+
+        $this->actingAs($this->user(Role::RECEPTION));
+        $this->receptionBooks($student, 9)->assertDispatched('toast', type: 'success');
+
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 09:11', 'America/Mexico_City'));
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.past'));
     }
 
     public function test_another_school_cannot_see_or_change_the_bookings(): void

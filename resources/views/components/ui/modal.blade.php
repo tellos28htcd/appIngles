@@ -1,9 +1,9 @@
 {{-- Modal (en móvil: hoja inferior). Se abre cuando la propiedad de wire:model tiene valor.
      Foco atrapado, Esc cierra, la acción destructiva va a la derecha y nunca recibe el foco inicial.
-     Con :draggable="true" (escritorio) se mueve arrastrando el título y el fondo queda más claro
-     para ver lo que hay detrás; al volver a abrirse regresa al centro.
+     Toda ventana se mueve arrastrando el título (escritorio) y el fondo queda más claro para ver lo que
+     hay detrás; al volver a abrirse regresa al centro. :draggable="false" la deja fija.
      Uso: <x-ui.modal wire:model="confirmingDeletionId" :title="..."> … <x-slot:footer>…</x-slot:footer></x-ui.modal> --}}
-@props(['title', 'size' => 'sm', 'draggable' => false])
+@props(['title', 'size' => 'sm', 'draggable' => true])
 @php
 $model = $attributes->wire('model')->value();
 $width = ['sm' => 'md:max-w-[480px]', 'md' => 'md:max-w-[640px]', 'lg' => 'md:max-w-[880px]'][$size];

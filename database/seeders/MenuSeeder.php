@@ -50,7 +50,7 @@ class MenuSeeder extends Seeder
         ]],
         'student-portal' => ['Mi aprendizaje', 'book', null, MenuItemStatus::Active, [
             'student-portal-progress' => ['Mi avance', null, null, MenuItemStatus::ComingSoon],
-            'student-portal-book-class' => ['Agendar clase', null, 'my-agenda.index', MenuItemStatus::Active],
+            'student-portal-book-class' => ['Agendar', null, 'my-agenda.index', MenuItemStatus::Active],
             'student-portal-book-club' => ['Agendar club', null, 'my-agenda.clubs', MenuItemStatus::Active],
             'student-portal-account' => ['Mi estado de cuenta', null, null, MenuItemStatus::ComingSoon],
         ]],
@@ -110,6 +110,14 @@ class MenuSeeder extends Seeder
 
     private const EXCLUSIVE = ['platform', 'my-students', 'student-portal'];
 
+    /**
+     * Opciones que se crean desactivadas (se conserva su código; se activan desde Plataforma → Menú).
+     * "Agendar club": los clubs se reservan desde "Agendar".
+     *
+     * @var list<string>
+     */
+    private const DISABLED_ON_CREATE = ['student-portal-book-club'];
+
     public function run(): void
     {
         DB::transaction(function (): void {
@@ -165,7 +173,7 @@ class MenuSeeder extends Seeder
     {
         [$label, $icon, $routeName, $status] = $definition;
 
-        $item = MenuItem::firstOrNew(['slug' => $slug], ['label' => $label, 'sort_order' => $order]);
+        $item = MenuItem::firstOrNew(['slug' => $slug], ['label' => $label, 'sort_order' => $order, 'is_enabled' => ! in_array($slug, self::DISABLED_ON_CREATE, true)]);
         $item->fill(['parent_id' => $parentId, 'icon' => $icon, 'route_name' => $routeName, 'status' => $status, 'is_system' => true])->save();
 
         return $item;

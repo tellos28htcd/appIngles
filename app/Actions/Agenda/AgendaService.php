@@ -27,15 +27,18 @@ use Illuminate\Validation\ValidationException;
 /**
  * Agenda: lugares disponibles, reservación, cancelación, asistencia y lista de espera.
  *
- * - Asesoría presencial: las horas del panel (teacher + aula; sin clubs ni revisiones); cupo por
+ * - Práctica presencial: las horas del panel (teacher + aula; sin clubs ni revisiones); cupo por
  *   aula = "cupo por sesión" de Mi Instituto (o el del aula si es menor). El aula se asigna al azar
  *   entre las que tienen lugar; llenas, el alumno entra a la lista de espera (si Mi Instituto lo permite).
- * - Asesoría en línea: "aulas virtuales por horario" × "cupo por aula virtual", a las horas con teachers.
+ * - Práctica en línea: primero un aula virtual ("aulas virtuales por horario" × "alumnos por aula virtual");
+ *   llenas, entra en línea a la clase de un teacher presencial con lugar (híbrida) y ocupa un lugar de su cupo.
+ * - Tolerancia: recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo);
+ *   el alumno solo antes de que empiece.
  * - Club: los clubs programados; cupo "por club" (presencial) o "por aula virtual" (en línea);
  *   nivel de la abreviatura, lección mínima para clubs y máximo de clubs por día.
- * - Por día: máximo de asesorías (Mi Instituto) y de horas según la asistencia de los últimos
+ * - Por día: máximo de prácticas (Mi Instituto) y de horas según la asistencia de los últimos
  *   7 días (≥ 0.8 o sin historial: 2 horas; menos: 1).
- * - Cada asesoría lleva la actividad que le toca (LLA) según la ruta de avance.
+ * - Cada práctica lleva la actividad que le toca (LLA) según la ruta de avance.
  */
 final class AgendaService
 {
@@ -45,12 +48,15 @@ final class AgendaService
 
     public const ATTENDANCE_THRESHOLD = 0.8;
 
+    /** Minutos después del inicio de la hora en que recepción todavía puede agendar. */
+    public const RECEPTION_TOLERANCE_MINUTES = 10;
+
     public function __construct(private AvailabilityPlanner $planner) {}
 
     // ── Avance (LLA) ──────────────────────────────────────────────
 
     /**
-     * Siguiente actividad del alumno: la que sigue a la última asesoría reservada (no cancelada) o,
+     * Siguiente actividad del alumno: la que sigue a la última práctica reservada (no cancelada) o,
      * sin reservaciones, el punto de inicio de su ficha de inscripción.
      *
      * @return array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string}|null
@@ -97,7 +103,7 @@ final class AgendaService
 
     // ── Lugares ───────────────────────────────────────────────────
 
-    /** Horas del panel con aula para asesoría (sin clubs ni revisiones) a esa hora. @return Collection<int, TeacherAvailability> */
+    /** Horas del panel con aula para práctica (sin clubs ni revisiones) a esa hora. @return Collection<int, TeacherAvailability> */
     private function sessionCells(School $school, CarbonInterface $date, ScheduleSlot $slot): Collection
     {
         return TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
@@ -127,7 +133,7 @@ final class AgendaService
         return $cells->filter(fn (TeacherAvailability $cell) => ($taken[$cell->id] ?? 0) < $this->cellCapacity($school, $cell))->values();
     }
 
-    /** Aulas virtuales (1…N) con lugar a esa hora para asesoría en línea. @return list<int> */
+    /** Aulas virtuales (1…N) con lugar a esa hora para práctica en línea. @return list<int> */
     public function freeVirtualRooms(School $school, CarbonInterface $date, ScheduleSlot $slot): array
     {
         return array_keys($this->virtualSeats($school, $date, $slot));
@@ -168,14 +174,14 @@ final class AgendaService
     }
 
     /**
-     * Disponibilidad de la semana para el calendario, por "fecha|hora": lugares de asesoría
+     * Disponibilidad de la semana para el calendario, por "fecha|hora": lugares de práctica
      * presencial y en línea, si se puede agendar en lista de espera, clubs con sus lugares y
      * reservaciones. Todo en pocas consultas (no por celda).
      *
      * @param  list<CarbonImmutable>  $days
-     * @return array<string, array{past: bool, session: array{free: int, capacity: int}, online: array{free: int, capacity: int}, waitlist: bool, waiting: int, booked: int, clubs: list<array{id: int, code: string, name: ?string, modality: ClubModality, color: int, free: int, capacity: int}>}>
+     * @return array<string, array{past: bool, session: array{free: int, capacity: int, in_person: int, online: int}, online: array{free: int, capacity: int}, waitlist: bool, waiting: int, booked: int, clubs: list<array{id: int, code: string, name: ?string, modality: ClubModality, color: int, free: int, capacity: int}>}>
      */
-    public function weekAvailability(School $school, array $days): array
+    public function weekAvailability(School $school, array $days, bool $byReception = false): array
     {
         $from = $days[0]->toDateString();
         $to = end($days)->toDateString();
@@ -204,11 +210,17 @@ final class AgendaService
             $here = $bookingsAt->get($at, collect());
             $capacity = $rooms->sum(fn (TeacherAvailability $cell) => $this->cellCapacity($school, $cell));
             $online = $rooms->isNotEmpty() ? $virtualCapacity : 0;
-            $onlineTaken = $here->filter(fn (Booking $booking) => $booking->kind === BookingKind::Session && $booking->modality === ClubModality::Online)->count();
+            $sessions = $here->filter(fn (Booking $booking) => $booking->kind === BookingKind::Session && ! $booking->is_waitlist);
+            // Aulas virtuales: solo los de en línea sin aula del panel (los híbridos ocupan lugar en el aula del teacher).
+            $onlineTaken = $sessions->filter(fn (Booking $booking) => $booking->modality === ClubModality::Online && $booking->teacher_availability_id === null)->count();
 
             $result[$at] = [
-                'past' => ! isset($slots[$slotId]) || ! $this->isFuture($school, CarbonImmutable::parse($date), $slots[$slotId]),
-                'session' => ['free' => (int) $rooms->sum(fn (TeacherAvailability $cell) => max(0, $this->cellCapacity($school, $cell) - ($perCell[$cell->id] ?? 0))), 'capacity' => (int) $capacity],
+                'past' => ! isset($slots[$slotId]) || ! $this->isFuture($school, CarbonImmutable::parse($date), $slots[$slotId], $byReception),
+                'session' => [
+                    'free' => (int) $rooms->sum(fn (TeacherAvailability $cell) => max(0, $this->cellCapacity($school, $cell) - ($perCell[$cell->id] ?? 0))), 'capacity' => (int) $capacity,
+                    'in_person' => $sessions->filter(fn (Booking $booking) => $booking->modality === ClubModality::InPerson)->count(),
+                    'online' => $sessions->filter(fn (Booking $booking) => $booking->modality === ClubModality::Online)->count(),
+                ],
                 'online' => ['free' => max(0, $online - $onlineTaken), 'capacity' => $online],
                 'waitlist' => (bool) $school->books_without_classroom && $group->isNotEmpty(),
                 'waiting' => $here->filter(fn (Booking $booking) => $booking->is_waitlist)->count(),
@@ -250,11 +262,11 @@ final class AgendaService
     }
 
     /**
-     * Opciones de un día para el alumno: por hora, asesoría presencial/en línea y clubs con lugar.
+     * Opciones de un día para el alumno: por hora, práctica presencial/en línea y clubs con lugar.
      *
      * @return list<array{slot: ScheduleSlot, options: list<array{kind: string, modality: string, club_session_id: ?int, label: string, free: int, waitlist: bool}>}>
      */
-    public function options(School $school, Student $student, CarbonImmutable $date): array
+    public function options(School $school, Student $student, CarbonImmutable $date, bool $byReception = false): array
     {
         if (! $this->planner->isGenerated($school, $date->startOfWeek(CarbonInterface::MONDAY))) {
             return [];
@@ -266,7 +278,7 @@ final class AgendaService
         $result = [];
 
         foreach ($this->planner->slots($school) as $slot) {
-            if (! $this->isFuture($school, $date, $slot)) {
+            if (! $this->isFuture($school, $date, $slot, $byReception)) {
                 continue;
             }
 
@@ -284,7 +296,8 @@ final class AgendaService
                     'label' => __('agenda.option_session'), 'free' => 0, 'waitlist' => true];
             }
 
-            $virtualSeats = array_sum($this->virtualSeats($school, $date, $slot));
+            // En línea: aulas virtuales y, llenas, híbrida en un aula presencial con lugar.
+            $virtualSeats = (int) $school->virtual_rooms_per_slot > 0 ? array_sum($this->virtualSeats($school, $date, $slot)) + $freeSeats : 0;
             if ($virtualSeats > 0) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::Online->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => $virtualSeats, 'waitlist' => false];
@@ -307,12 +320,17 @@ final class AgendaService
         return $result;
     }
 
-    /** ¿La hora todavía no empieza? (en la zona horaria de la escuela). */
-    private function isFuture(School $school, CarbonInterface $date, ScheduleSlot $slot): bool
+    /**
+     * ¿Todavía se puede agendar esa hora? (zona horaria de la escuela). El alumno, antes de que empiece;
+     * recepción, hasta RECEPTION_TOLERANCE_MINUTES después de que empezó.
+     */
+    private function isFuture(School $school, CarbonInterface $date, ScheduleSlot $slot, bool $byReception = false): bool
     {
         $timezone = $school->timezone ?: config('appingles.timezone');
+        $limit = CarbonImmutable::parse($date->toDateString().' '.$slot->starts_at, $timezone)
+            ->addMinutes($byReception ? self::RECEPTION_TOLERANCE_MINUTES : 0);
 
-        return CarbonImmutable::parse($date->toDateString().' '.$slot->starts_at, $timezone)->isAfter(CarbonImmutable::now($timezone));
+        return $limit->isAfter(CarbonImmutable::now($timezone));
     }
 
     // ── Reservar ──────────────────────────────────────────────────
@@ -329,7 +347,7 @@ final class AgendaService
             $fail('week_not_ready');
         }
 
-        if (! $this->isFuture($school, $date, $slot)) {
+        if (! $this->isFuture($school, $date, $slot, $byReception)) {
             $fail('past');
         }
 
@@ -385,9 +403,15 @@ final class AgendaService
                 $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
 
                 if ($modality === ClubModality::Online) {
+                    (int) $school->virtual_rooms_per_slot > 0 || $fail('no_online');
                     $rooms = $this->freeVirtualRooms($school, $date, $slot);
-                    $rooms === [] && $fail('full');
-                    $booking->virtual_room = $rooms[array_rand($rooms)];
+
+                    if ($rooms !== []) {
+                        $booking->virtual_room = $rooms[array_rand($rooms)];
+                    } else {
+                        // Aulas virtuales llenas: híbrida con un teacher presencial (ocupa un lugar de su aula).
+                        $this->placeInRoom($school, $booking, $date, $slot, allowWaitlist: false) || $fail('full');
+                    }
                 } else {
                     $this->placeInRoom($school, $booking, $date, $slot) || $fail('full');
                 }
@@ -401,7 +425,7 @@ final class AgendaService
     }
 
     /** Aula al azar entre las que tienen lugar; si están llenas, a la lista de espera (si se permite). */
-    private function placeInRoom(School $school, Booking $booking, CarbonInterface $date, ScheduleSlot $slot): bool
+    private function placeInRoom(School $school, Booking $booking, CarbonInterface $date, ScheduleSlot $slot, bool $allowWaitlist = true): bool
     {
         $free = $this->freeSessionCells($school, $date, $slot);
 
@@ -412,7 +436,7 @@ final class AgendaService
             return true;
         }
 
-        if (! $school->books_without_classroom || $this->sessionCells($school, $date, $slot)->isEmpty()) {
+        if (! $allowWaitlist || ! $school->books_without_classroom || $this->sessionCells($school, $date, $slot)->isEmpty()) {
             return false;
         }
 

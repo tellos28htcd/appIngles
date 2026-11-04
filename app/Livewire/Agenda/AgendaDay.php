@@ -255,7 +255,7 @@ class AgendaDay extends Component
     {
         $student = $this->studentId ? Student::query()->find($this->studentId) : null;
 
-        $options = $student ? app(AgendaService::class)->options($this->school(), $student, $this->day()) : [];
+        $options = $student ? app(AgendaService::class)->options($this->school(), $student, $this->day(), byReception: true) : [];
 
         return $this->slotId === null ? $options : array_values(array_filter($options, fn (array $hour) => $hour['slot']->id === $this->slotId));
     }
@@ -280,7 +280,7 @@ class AgendaDay extends Component
             'planner' => $planner,
             'scheduleSlots' => $planner->slots($school),
             'holidays' => $planner->holidays($school, $days),
-            'availability' => $isReady ? $agenda->weekAvailability($school, $days) : [],
+            'availability' => $isReady ? $agenda->weekAvailability($school, $days, byReception: true) : [],
             'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'isReady' => $isReady,
             'reasonOptions' => $this->reasons()->pluck('name', 'id')->all(),

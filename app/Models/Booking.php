@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Reservación de una hora en la agenda: asesoría (con la actividad que le toca, LLA)
+ * Reservación de una hora en la agenda: práctica (con la actividad que le toca, LLA)
  * o club; presencial (aula asignada por el sistema) o en línea (aula virtual).
  */
 #[Fillable([
@@ -125,6 +125,8 @@ class Booking extends Model
         return match (true) {
             $this->is_waitlist => __('agenda.waitlist'),
             $this->modality === ClubModality::Online && $this->classroom_id === null => __('agenda.virtual_room', ['number' => $this->virtual_room ?? 1]),
+            // Práctica en línea dentro de la clase de un teacher presencial (aulas virtuales llenas).
+            $this->kind === BookingKind::Session && $this->modality === ClubModality::Online => __('agenda.hybrid_room', ['name' => $this->classroom?->name ?? '—']),
             default => __('agenda.room', ['name' => $this->classroom?->name ?? '—']),
         };
     }

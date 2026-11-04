@@ -20,7 +20,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Mi agenda (alumno): calendario semanal con los lugares libres por día y hora (asesoría y
+ * Mi agenda (alumno): calendario semanal con los lugares libres por día y hora (práctica y
  * clubs); clic en una celda para elegir y reservar; el sistema le asigna el aula (o la lista
  * de espera). Puede cancelar sus reservaciones. Desde "Agendar club" solo se reservan clubs.
  */
