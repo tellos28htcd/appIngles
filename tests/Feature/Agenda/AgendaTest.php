@@ -414,14 +414,7 @@ class AgendaTest extends TestCase
         $page()->call('editBooking', $booking->id)->set('editRoomId', $here->id)->call('saveChange')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.room_full', ['room' => $here->name]));
 
-        // Pasar el lugar a otro alumno: no si ya tiene esa hora; sí a uno libre.
-        $page()->call('editBooking', $booking->id)->call('pickEditStudent', $luis->id)->call('saveChange')
-            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.duplicate'));
-        $nuevo = $this->student();
-        $page()->call('editBooking', $booking->id)->set('editSearch', $nuevo->first_name)->call('pickEditStudent', $nuevo->id)->call('saveChange')
-            ->assertDispatched('toast', type: 'success');
-        $this->assertSame($nuevo->id, $booking->refresh()->student_id);
-        $this->assertSame(['booked', 'changed', 'changed'], $booking->events()->pluck('event')->all());
+        $this->assertSame(['booked', 'changed'], $booking->events()->pluck('event')->all());
     }
 
     public function test_only_reception_staff_can_change_bookings(): void
@@ -432,5 +425,42 @@ class AgendaTest extends TestCase
 
         $this->actingAs($this->user(Role::TEACHER));
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $booking->id)->assertForbidden();
+    }
+
+    public function test_full_hours_go_to_the_waitlist_room_and_the_seat_passes_only_to_the_waitlist(): void
+    {
+        // "Agendar en lista de espera" apagado, pero el panel tiene la columna "Lista de espera" con el aula 9.
+        $this->school->update(['books_without_classroom' => false, 'session_capacity' => 1]);
+        $waitRoom = Classroom::create(['school_id' => $this->school->id, 'name' => '9', 'capacity' => 20, 'is_active' => true]);
+        $waitTeacher = Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => 'LISTA_ESP', 'panel_number' => 99, 'is_waitlist' => true]);
+        TeacherAvailability::create(['school_id' => $this->school->id, 'teacher_id' => $waitTeacher->id, 'date' => self::MONDAY,
+            'schedule_slot_id' => $this->slots[9]->id, 'classroom_id' => $waitRoom->id, 'is_absent' => false]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis, $sofia, $pedro] = [$this->student(), $this->student(), $this->student(), $this->student()];
+
+        $this->receptionBooks($ana, 9)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($luis, 9)->assertDispatched('toast', type: 'success');
+        $options = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('openSlot', self::MONDAY, $this->slots[9]->id)
+            ->call('pickStudent', $sofia->id)->get('options');
+        $this->assertTrue(collect($options[0]['options'])->firstWhere('modality', 'in_person')['waitlist']);
+
+        $this->receptionBooks($sofia, 9)->assertDispatched('toast', type: 'warning');
+        $waiting = Booking::where('student_id', $sofia->id)->sole();
+        $this->assertTrue($waiting->is_waitlist);
+        $this->assertSame([$waitRoom->id, $waitTeacher->id], [$waiting->classroom_id, $waiting->teacher_id]);
+
+        // Ana no llegó: su lugar pasa a Sofía (de la lista de espera); Pedro, sin reservación, no aparece.
+        $seat = Booking::where('student_id', $ana->id)->sole();
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $seat->id);
+        $this->assertSame([$waiting->id], $page->viewData('edit')['waiting']->modelKeys());
+        $page->assertDontSee($pedro->fullName())
+            ->set('editWaitingId', $waiting->id)->assertSet('editReasonId', $this->reasons['no_show']->id)
+            ->call('saveChange')->assertDispatched('toast', type: 'success');
+
+        $seat->refresh();
+        $waiting->refresh();
+        $this->assertSame([BookingStatus::Cancelled, $this->reasons['no_show']->id], [$seat->status, $seat->cancellation_reason_id]);
+        $this->assertFalse($waiting->is_waitlist);
+        $this->assertSame([$seat->classroom_id, $seat->teacher_id], [$waiting->classroom_id, $waiting->teacher_id]);
     }
 }

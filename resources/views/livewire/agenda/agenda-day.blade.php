@@ -221,27 +221,36 @@
                     <p class="rounded-lg bg-surface p-3 text-sm text-ink-700">{{ __('agenda.edit.club_note') }}</p>
                 @endif
 
+                {{-- Pasar el lugar: solo a alumnos de la lista de espera de ese día y hora. --}}
                 <div class="flex flex-col gap-2">
                     <span class="text-sm font-semibold text-ink-700">{{ __('agenda.edit.student') }}</span>
                     <div class="rounded-lg border border-line bg-surface px-3 py-2">
-                        <span class="font-bold">{{ $edit['student']?->fullName() }}</span>
-                        <span class="ml-2 text-sm text-ink-500 tabular-nums">{{ $edit['student']?->enrollment_number }}</span>
+                        <span class="font-bold">{{ $edit['booking']->student?->fullName() }}</span>
+                        <span class="ml-2 text-sm text-ink-500 tabular-nums">{{ $edit['booking']->student?->enrollment_number }}</span>
                     </div>
-                    <x-ui.input name="editSearch" :label="__('agenda.edit.search')" :placeholder="__('agenda.form.search_placeholder')" wire:model.live.debounce.300ms="editSearch" autocomplete="off" />
-                    @if (mb_strlen(trim($editSearch)) >= 2)
-                        <ul class="flex flex-col gap-1.5">
-                            @forelse ($this->editStudents as $student)
-                                <li wire:key="edit-pick-{{ $student->id }}">
-                                    <button type="button" wire:click="pickEditStudent({{ $student->id }})"
-                                            class="flex w-full items-center justify-between gap-3 rounded-lg border border-line px-3 py-2 text-left transition hover:border-primary-500 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
-                                        <span class="font-semibold">{{ $student->fullName() }}</span>
-                                        <span class="text-xs text-ink-500 tabular-nums">{{ $student->enrollment_number }}</span>
-                                    </button>
-                                </li>
-                            @empty
-                                <li class="text-sm text-ink-500">{{ __('agenda.form.no_results') }}</li>
-                            @endforelse
-                        </ul>
+                    @if ($editable && ! $edit['booking']->is_waitlist)
+                        <span class="text-sm font-semibold text-ink-700">{{ __('agenda.edit.give_seat') }}</span>
+                        @if ($edit['waiting']->isEmpty())
+                            <p class="text-sm text-ink-500">{{ __('agenda.edit.no_waiting') }}</p>
+                        @else
+                            <ul class="flex flex-col gap-1.5">
+                                @foreach ($edit['waiting'] as $waiting)
+                                    @php($picked = $editWaitingId === $waiting->id)
+                                    <li wire:key="waiting-{{ $waiting->id }}">
+                                        <button type="button" wire:click="$set('editWaitingId', {{ $picked ? 'null' : $waiting->id }})" aria-pressed="{{ $picked ? 'true' : 'false' }}"
+                                                @class(['flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                                                    'border-primary-500 bg-primary-50 ring-2 ring-primary-500' => $picked, 'border-line hover:border-primary-500' => ! $picked])>
+                                            <span class="font-semibold">{{ $waiting->student?->fullName() }}</span>
+                                            <span class="text-xs text-ink-500 tabular-nums">{{ $waiting->student?->enrollment_number }} · {{ $waiting->modality === \App\Enums\ClubModality::Online ? __('agenda.online') : __('agenda.in_person') }}</span>
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                            @if ($editWaitingId)
+                                <x-ui.select name="editReasonId" :label="__('agenda.edit.reason_for', ['name' => $edit['booking']->student?->fullName()])" :options="$reasonOptions"
+                                             :placeholder="__('students.select')" wire:model="editReasonId" required />
+                            @endif
+                        @endif
                     @endif
                 </div>
             @endif

@@ -4,6 +4,7 @@ namespace App\Livewire\Agenda;
 
 use App\Actions\Agenda\AgendaService;
 use App\Actions\Teachers\AvailabilityPlanner;
+use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
 use App\Enums\ClubModality;
 use App\Enums\StudentStatus;
@@ -71,9 +72,10 @@ class AgendaDay extends Component
 
     public ?int $editRoomId = null;
 
-    public ?int $editStudentId = null;
+    /** Alumno de la lista de espera (misma hora) que toma el lugar, y motivo para el que sale. */
+    public ?int $editWaitingId = null;
 
-    public string $editSearch = '';
+    public ?int $editReasonId = null;
 
     public function mount(): void
     {
@@ -247,16 +249,9 @@ class AgendaDay extends Component
 
         $this->editingId = $booking->id;
         $this->editRoomId = $booking->classroom_id;
-        $this->editStudentId = $booking->student_id;
-        $this->editSearch = '';
+        $this->editWaitingId = null;
+        $this->editReasonId = $this->reasons()->first(fn (CancellationReason $reason) => $reason->attendance === AttendanceEffect::Absent)?->id;
         $this->resetValidation();
-    }
-
-    public function pickEditStudent(int $studentId): void
-    {
-        $this->authorize('manage', Booking::class);
-        $this->editStudentId = Student::query()->findOrFail($studentId)->id;
-        $this->editSearch = '';
     }
 
     public function saveChange(AgendaService $agenda): void
@@ -265,7 +260,12 @@ class AgendaDay extends Component
         $booking = $this->findBooking($this->editingId);
 
         try {
-            $agenda->change($booking, $this->editRoomId, Student::query()->findOrFail($this->editStudentId), auth()->user());
+            $booking = $agenda->change($booking, $this->editRoomId, null, auth()->user());
+
+            if ($this->editWaitingId !== null) {
+                $this->validate(['editReasonId' => ['required', 'integer', Rule::in($this->reasons()->modelKeys())]], [], ['editReasonId' => Str::lower(__('agenda.form.reason'))]);
+                $agenda->giveSeat($booking, $this->findBooking($this->editWaitingId), $this->reasons()->find($this->editReasonId), auth()->user());
+            }
         } catch (ValidationException $exception) {
             $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
 
@@ -273,41 +273,29 @@ class AgendaDay extends Component
         }
 
         $this->editingId = null;
-        unset($this->bookings);
+        unset($this->bookings, $this->proposals);
         $this->dispatch('toast', type: 'success', message: __('agenda.messages.changed'));
-    }
-
-    /** @return Collection<int, Student> */
-    #[Computed]
-    public function editStudents(): Collection
-    {
-        if (mb_strlen(trim($this->editSearch)) < 2) {
-            return collect();
-        }
-
-        return Student::query()->search($this->editSearch)->where('status', StudentStatus::Active)
-            ->orderBy('first_name')->orderBy('last_name')->limit(6)->get();
     }
 
     /**
      * Ventana de edición: aulas disponibles a esa hora (con lugar, más la actual), cada una con el teacher
      * que da la clase ahí; el teacher no se elige, sale del aula.
      *
-     * @return array{rooms: array<int, string>, choices: array<int, array<string, mixed>>, student: ?Student, booking: ?Booking}
+     * @return array{rooms: array<int, string>, choices: array<int, array<string, mixed>>, waiting: Collection<int, Booking>, booking: ?Booking}
      */
     private function editData(): array
     {
-        $booking = $this->editingId ? Booking::query()->with(['slot', 'clubSession'])->find($this->editingId) : null;
+        $booking = $this->editingId ? Booking::query()->with(['slot', 'clubSession', 'student'])->find($this->editingId) : null;
 
         if ($booking === null) {
-            return ['rooms' => [], 'choices' => [], 'student' => null, 'booking' => null];
+            return ['rooms' => [], 'choices' => [], 'waiting' => collect(), 'booking' => null];
         }
 
         $choices = $booking->kind === BookingKind::Session ? app(AgendaService::class)->roomChoices($booking) : [];
 
         return [
             'booking' => $booking,
-            'student' => Student::query()->find($this->editStudentId),
+            'waiting' => $booking->kind === BookingKind::Session && ! $booking->is_waitlist ? app(AgendaService::class)->waitlistAt($booking) : collect(),
             'choices' => $choices,
             'rooms' => collect($choices)->map(fn (array $room) => $room['label'].($room['teacher'] !== '' ? ' · '.$room['teacher'] : '')
                 .' ('.trans_choice('agenda.seats', $room['free']).')')->all(),

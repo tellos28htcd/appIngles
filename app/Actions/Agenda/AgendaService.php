@@ -267,7 +267,7 @@ final class AgendaService
                     'online' => $sessions->filter(fn (Booking $booking) => $booking->modality === ClubModality::Online)->count(),
                 ],
                 'online' => ['free' => max(0, $online - $onlineTaken), 'capacity' => $online],
-                'waitlist' => (bool) $school->books_without_classroom && $group->isNotEmpty(),
+                'waitlist' => $this->waitlistAllowed($school, $group),
                 'waiting' => $here->filter(fn (Booking $booking) => $booking->is_waitlist)->count(),
                 'booked' => $here->count(),
                 'clubs' => $clubsAt->get($at, collect())->map(fn (ClubSession $club) => [
@@ -336,7 +336,7 @@ final class AgendaService
             if ($freeSeats > 0) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => $freeSeats, 'waitlist' => false];
-            } elseif ($school->books_without_classroom && $cells->isNotEmpty()) {
+            } elseif ($this->waitlistAllowed($school, $cells)) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => 0, 'waitlist' => true];
             }
@@ -470,6 +470,18 @@ final class AgendaService
     }
 
     /** Aula al azar entre las que tienen lugar; si están llenas, a la lista de espera (si se permite). */
+    /**
+     * ¿Se agenda en lista de espera cuando las aulas se llenan? Sí si el panel tiene a esa hora la
+     * columna "Lista de espera" (su aula de espera) o si Mi Instituto lo permite.
+     *
+     * @param  Collection<int, TeacherAvailability>  $cells
+     */
+    private function waitlistAllowed(School $school, Collection $cells): bool
+    {
+        return $cells->contains(fn (TeacherAvailability $cell) => (bool) $cell->teacher?->is_waitlist)
+            || ((bool) $school->books_without_classroom && $cells->isNotEmpty());
+    }
+
     private function placeInRoom(School $school, Booking $booking, CarbonInterface $date, ScheduleSlot $slot, bool $allowWaitlist = true): bool
     {
         $free = $this->freeSessionCells($school, $date, $slot);
@@ -481,7 +493,7 @@ final class AgendaService
             return true;
         }
 
-        if (! $allowWaitlist || ! $school->books_without_classroom || $this->sessionCells($school, $date, $slot)->isEmpty()) {
+        if (! $allowWaitlist || ! $this->waitlistAllowed($school, $this->sessionCells($school, $date, $slot))) {
             return false;
         }
 
@@ -656,6 +668,43 @@ final class AgendaService
         $this->log($booking, 'promoted', $booking->placeLabel(), $user);
 
         return $booking;
+    }
+
+    /**
+     * Alumnos en lista de espera a la misma hora que una reservación (los que pueden tomar su lugar).
+     *
+     * @return Collection<int, Booking>
+     */
+    public function waitlistAt(Booking $booking): Collection
+    {
+        return Booking::withoutGlobalScope('school')->where('school_id', $booking->school_id)->whereDate('date', $booking->date->toDateString())
+            ->where('schedule_slot_id', $booking->schedule_slot_id)->where('kind', BookingKind::Session)->where('is_waitlist', true)->active()
+            ->whereKeyNot($booking->id)->with('student')->orderBy('created_at')->orderBy('id')->get();
+    }
+
+    /**
+     * El alumno de la reservación no llegó o canceló: su reservación se cancela con el motivo y el alumno
+     * de la lista de espera (de ese día y hora) toma su lugar (aula y teacher).
+     */
+    public function giveSeat(Booking $booking, Booking $waiting, ?CancellationReason $reason, ?User $user): Booking
+    {
+        abort_unless($booking->status->isActive() && ! $booking->is_waitlist, 422);
+        abort_unless($this->waitlistAt($booking)->contains('id', $waiting->id), 404);
+
+        return DB::transaction(function () use ($booking, $waiting, $reason, $user): Booking {
+            $this->cancel($booking, $reason, $user);
+
+            $room = $booking->classroom()->first();
+            $waiting->fill([
+                'classroom_id' => $booking->classroom_id, 'teacher_id' => $booking->teacher_id,
+                'teacher_availability_id' => $booking->teacher_availability_id, 'virtual_room' => $booking->virtual_room, 'is_waitlist' => false,
+                'modality' => $room?->is_virtual ? ClubModality::Online : $waiting->modality,
+            ])->save();
+            $waiting->setRelation('classroom', $room);
+            $this->log($waiting, 'promoted', $waiting->placeLabel(), $user);
+
+            return $waiting;
+        });
     }
 
     private function log(Booking $booking, string $event, ?string $detail, ?User $user): void
