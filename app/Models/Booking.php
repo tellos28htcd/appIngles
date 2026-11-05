@@ -119,6 +119,12 @@ class Booking extends Model
             : '—';
     }
 
+    /** Solo una reservación pendiente (sin asistencia ni cancelación) se puede cambiar de aula o de alumno. */
+    public function canBeChanged(): bool
+    {
+        return $this->status === BookingStatus::Booked;
+    }
+
     /** Lugar asignado: aula, aula virtual o lista de espera. */
     public function placeLabel(): string
     {

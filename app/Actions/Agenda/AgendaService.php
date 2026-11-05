@@ -513,7 +513,7 @@ final class AgendaService
      */
     public function change(Booking $booking, ?int $classroomId, ?Student $student, ?User $user): Booking
     {
-        abort_unless($booking->status->isActive(), 422);
+        abort_unless($booking->canBeChanged(), 422);
         $fail = fn (string $key, array $replace = []) => throw ValidationException::withMessages(['booking' => __("agenda.validation.$key", $replace)]);
         $school = School::findOrFail($booking->school_id);
         $timezone = $school->timezone ?: config('appingles.timezone');
@@ -688,7 +688,7 @@ final class AgendaService
      */
     public function giveSeat(Booking $booking, Booking $waiting, ?CancellationReason $reason, ?User $user): Booking
     {
-        abort_unless($booking->status->isActive() && ! $booking->is_waitlist, 422);
+        abort_unless($booking->canBeChanged() && ! $booking->is_waitlist, 422);
         abort_unless($this->waitlistAt($booking)->contains('id', $waiting->id), 404);
 
         return DB::transaction(function () use ($booking, $waiting, $reason, $user): Booking {

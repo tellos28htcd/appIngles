@@ -111,7 +111,7 @@
                                         </td>
                                         <td class="px-4 py-3 font-semibold">{{ $booking->teacher?->panelName() ?? '—' }}</td>
                                         <td class="px-4 py-3">
-                                            @if ($canManage && $active)
+                                            @if ($canManage && $booking->canBeChanged())
                                                 <button type="button" wire:click="editBooking({{ $booking->id }})" title="{{ __('agenda.edit.open') }}"
                                                         class="rounded text-left font-bold text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                                                     {{ $booking->student?->fullName() }}
@@ -137,7 +137,9 @@
                                             <td class="px-4 py-3">
                                                 @if ($active)
                                                     <div class="flex items-center justify-end gap-1.5">
-                                                        <x-ui.button size="sm" variant="outline" class="text-[15px]" wire:click="editBooking({{ $booking->id }})" :title="__('agenda.edit.open')">{{ __('agenda.actions.change') }}</x-ui.button>
+                                                        @if ($booking->canBeChanged())
+                                                            <x-ui.button size="sm" variant="outline" class="text-[15px]" wire:click="editBooking({{ $booking->id }})" :title="__('agenda.edit.open')">{{ __('agenda.actions.change') }}</x-ui.button>
+                                                        @endif
                                                         @if ($booking->status !== \App\Enums\BookingStatus::Attended && ! $booking->is_waitlist)
                                                             <x-ui.button size="sm" variant="secondary" class="text-[15px]" wire:click="markAttended({{ $booking->id }})">{{ __('agenda.actions.attended') }}</x-ui.button>
                                                         @endif

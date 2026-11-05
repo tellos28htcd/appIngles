@@ -222,6 +222,10 @@ class AgendaTest extends TestCase
             ->call('markAttended', $booking->id)->assertDispatched('toast', type: 'success');
 
         $this->assertSame(BookingStatus::Attended, $booking->refresh()->status);
+
+        // Con asistencia ya no se puede cambiar (no aparece "Cambiar" y la acción se rechaza).
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertDontSeeHtml('editBooking('.$booking->id.')')
+            ->call('editBooking', $booking->id)->assertStatus(422);
     }
 
     public function test_teachers_see_the_agenda_but_cannot_book(): void

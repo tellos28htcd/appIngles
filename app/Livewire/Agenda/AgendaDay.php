@@ -245,7 +245,7 @@ class AgendaDay extends Component
     {
         $this->authorize('manage', Booking::class);
         $booking = $this->findBooking($bookingId);
-        abort_unless($booking->status->isActive(), 422);
+        abort_unless($booking->canBeChanged(), 422);
 
         $this->editingId = $booking->id;
         $this->editRoomId = $booking->classroom_id;
