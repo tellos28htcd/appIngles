@@ -1,13 +1,14 @@
 <div class="flex flex-col gap-6">
-    <x-ui.page-header :title="__('agenda.title')" :subtitle="__('agenda.subtitle')" />
-
     @if ($canManage && $isReady)
-        {{-- Siempre a la mano al bajar por el calendario y el listado. --}}
-        <button type="button" wire:click="create"
-                class="fixed right-4 bottom-4 z-40 inline-flex h-13 items-center gap-2 rounded-full bg-primary-600 px-6 text-base font-bold text-on-primary shadow-pop transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 md:right-8 md:bottom-8">
-            <x-ui.icon name="plus" class="size-5" />{{ __('agenda.actions.new') }}
-        </button>
+        {{-- Arriba a la derecha (junto al título) y fijo al bajar: no tapa los botones de los renglones de abajo. --}}
+        <div class="sticky top-3 z-40 -mb-6 flex h-0 justify-end">
+            <button type="button" wire:click="create"
+                    class="inline-flex h-12 items-center gap-2 rounded-full bg-primary-600 px-6 text-base font-bold text-on-primary shadow-pop transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
+                <x-ui.icon name="plus" class="size-5" />{{ __('agenda.actions.new') }}
+            </button>
+        </div>
     @endif
+    <x-ui.page-header :title="__('agenda.title')" :subtitle="__('agenda.subtitle')" @class(['pr-56' => $canManage && $isReady]) />
 
     {{-- Semana: navegación, fecha y leyenda --}}
     @php($nav = 'flex size-11 items-center justify-center rounded-md border-[1.5px] border-line-strong bg-white text-ink-700 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200')
