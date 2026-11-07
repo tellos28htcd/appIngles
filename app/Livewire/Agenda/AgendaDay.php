@@ -75,6 +75,14 @@ class AgendaDay extends Component
     /** Alumno de la lista de espera (misma hora) que toma el lugar, y motivo para el que sale. */
     public ?int $editWaitingId = null;
 
+    /** Otra actividad de esa hora ("hora|tipo|modalidad|club"); vacío = la misma. */
+    public string $editActivity = '';
+
+    /** Alumno correcto (si se reservó al alumno equivocado). */
+    public ?int $editStudentId = null;
+
+    public string $editSearch = '';
+
     public ?int $editReasonId = null;
 
     public function mount(): void
@@ -250,6 +258,9 @@ class AgendaDay extends Component
         $this->editingId = $booking->id;
         $this->editRoomId = $booking->classroom_id;
         $this->editWaitingId = null;
+        $this->editActivity = '';
+        $this->editStudentId = $booking->student_id;
+        $this->editSearch = '';
         $this->editReasonId = $this->reasons()->first(fn (CancellationReason $reason) => $reason->attendance === AttendanceEffect::Absent)?->id;
         $this->resetValidation();
     }
@@ -260,8 +271,21 @@ class AgendaDay extends Component
         $booking = $this->findBooking($this->editingId);
 
         try {
-            $booking = $agenda->change($booking, $this->editRoomId, null, auth()->user());
+            // 1) Otra actividad de esa hora (se vuelve a acomodar) o, si no, otra aula.
+            if ($this->editActivity !== '') {
+                $choice = $this->parseOption($this->editActivity);
+                abort_unless($choice['slot']->id === $booking->schedule_slot_id, 422);
+                $booking = $agenda->changeActivity($booking, $choice['kind'], $choice['modality'], $choice['club_session_id'], auth()->user());
+            } else {
+                $booking = $agenda->change($booking, $this->editRoomId, null, auth()->user());
+            }
 
+            // 2) Alumno equivocado: se corrige por el alumno correcto.
+            if ($this->editStudentId !== null && $this->editStudentId !== $booking->student_id) {
+                $booking = $agenda->change($booking, null, Student::query()->findOrFail($this->editStudentId), auth()->user());
+            }
+
+            // 3) No llegó: su lugar pasa a uno de la lista de espera.
             if ($this->editWaitingId !== null) {
                 $this->validate(['editReasonId' => ['required', 'integer', Rule::in($this->reasons()->modelKeys())]], [], ['editReasonId' => Str::lower(__('agenda.form.reason'))]);
                 $agenda->giveSeat($booking, $this->findBooking($this->editWaitingId), $this->reasons()->find($this->editReasonId), auth()->user());
@@ -277,18 +301,47 @@ class AgendaDay extends Component
         $this->dispatch('toast', type: 'success', message: __('agenda.messages.changed'));
     }
 
+    public function pickEditStudent(int $studentId): void
+    {
+        $this->authorize('manage', Booking::class);
+        $this->editStudentId = Student::query()->findOrFail($studentId)->id;
+        $this->editSearch = '';
+    }
+
+    /** @return Collection<int, Student> */
+    #[Computed]
+    public function editStudents(): Collection
+    {
+        if (mb_strlen(trim($this->editSearch)) < 2) {
+            return collect();
+        }
+
+        return Student::query()->search($this->editSearch)->where('status', StudentStatus::Active)
+            ->orderBy('first_name')->orderBy('last_name')->limit(6)->get();
+    }
+
+    /** Doble clic en "Asistió": se marcó por error y regresa a Reservada. */
+    public function undoAttendance(int $bookingId, AgendaService $agenda): void
+    {
+        $this->authorize('manage', Booking::class);
+        $agenda->undoAttendance($this->findBooking($bookingId), auth()->user());
+
+        unset($this->bookings);
+        $this->dispatch('toast', type: 'success', message: __('agenda.messages.attendance_undone'));
+    }
+
     /**
      * Ventana de edición: aulas disponibles a esa hora (con lugar, más la actual), cada una con el teacher
      * que da la clase ahí; el teacher no se elige, sale del aula.
      *
-     * @return array{rooms: array<int, string>, choices: array<int, array<string, mixed>>, waiting: Collection<int, Booking>, booking: ?Booking}
+     * @return array{rooms: array<int, string>, choices: array<int, array<string, mixed>>, waiting: Collection<int, Booking>, activities: array<int, array<string, mixed>>, student: ?Student, booking: ?Booking}
      */
     private function editData(): array
     {
         $booking = $this->editingId ? Booking::query()->with(['slot', 'clubSession', 'student'])->find($this->editingId) : null;
 
         if ($booking === null) {
-            return ['rooms' => [], 'choices' => [], 'waiting' => collect(), 'booking' => null];
+            return ['rooms' => [], 'choices' => [], 'waiting' => collect(), 'activities' => [], 'student' => null, 'booking' => null];
         }
 
         $choices = $booking->kind === BookingKind::Session ? app(AgendaService::class)->roomChoices($booking) : [];
@@ -297,6 +350,13 @@ class AgendaDay extends Component
             'booking' => $booking,
             'waiting' => $booking->kind === BookingKind::Session && ! $booking->is_waitlist ? app(AgendaService::class)->waitlistAt($booking) : collect(),
             'choices' => $choices,
+            // Otras actividades de esa hora con lugar (práctica presencial / en línea y clubs), sin la actual.
+            'activities' => collect(app(AgendaService::class)->options($this->school(), $booking->student, CarbonImmutable::parse($booking->date->toDateString()), byReception: true))
+                ->where('slot.id', $booking->schedule_slot_id)
+                ->map(fn (array $hour) => [...$hour, 'options' => array_values(array_filter($hour['options'], fn (array $item) => ! ($item['kind'] === $booking->kind->value
+                    && $item['club_session_id'] === $booking->club_session_id && ($item['kind'] === BookingKind::Club->value || $item['modality'] === $booking->modality->value))))])
+                ->filter(fn (array $hour) => $hour['options'] !== [])->values()->all(),
+            'student' => Student::query()->find($this->editStudentId),
             'rooms' => collect($choices)->map(fn (array $room) => $room['label'].($room['teacher'] !== '' ? ' · '.$room['teacher'] : '')
                 .' ('.trans_choice('agenda.seats', $room['free']).')')->all(),
         ];

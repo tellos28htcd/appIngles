@@ -5,6 +5,7 @@ namespace Tests\Feature\Agenda;
 use App\Actions\Agenda\AgendaService;
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\AttendanceEffect;
+use App\Enums\BookingKind;
 use App\Enums\BookingStatus;
 use App\Enums\LessonType;
 use App\Enums\SelfBooking;
@@ -466,5 +467,66 @@ class AgendaTest extends TestCase
         $this->assertSame([BookingStatus::Cancelled, $this->reasons['no_show']->id], [$seat->status, $seat->cancellation_reason_id]);
         $this->assertFalse($waiting->is_waitlist);
         $this->assertSame([$seat->classroom_id, $seat->teacher_id], [$waiting->classroom_id, $waiting->teacher_id]);
+    }
+
+    public function test_reception_changes_the_activity_of_a_booking_when_there_is_room(): void
+    {
+        $this->school->update(['club_capacity' => 1]);
+        $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 10, 'is_active' => true,
+            'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true]]]);
+        $session = ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),
+            'classroom_id' => $this->rooms[0]->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id, 'modality' => 'in_person']);
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis] = [$this->student(), $this->student()];
+
+        // Ana reservó club pero viene a práctica: cambia y su lugar del club queda libre para Luis.
+        $this->receptionBooks($ana, 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
+        $booking = Booking::sole();
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $booking->id);
+        $kinds = collect($page->viewData('edit')['activities'][0]['options'])->map(fn (array $item) => $item['kind'].'|'.$item['modality'])->all();
+        $this->assertSame(['session|in_person', 'session|online'], $kinds);
+
+        $page->set('editActivity', $this->slots[10]->id.'|session|in_person|')->call('saveChange')->assertDispatched('toast', type: 'success');
+        $booking->refresh();
+        $this->assertSame([BookingKind::Session, null, BookingStatus::Booked], [$booking->kind, $booking->club_session_id, $booking->status]);
+        $this->assertNotNull($booking->teacher_availability_id);
+        $this->assertSame('activity_changed', $booking->events()->pluck('event')->last());
+        $this->receptionBooks($luis, 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
+
+        // De regreso al club: ya está lleno (Luis), así que no cambia.
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $booking->id)
+            ->set('editActivity', $this->slots[10]->id.'|club|in_person|'.$session->id)->call('saveChange')
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+        $this->assertSame(BookingKind::Session, $booking->refresh()->kind);
+    }
+
+    public function test_reception_fixes_a_booking_made_for_the_wrong_student(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$martin, $otroMartin] = [$this->student(), $this->student()];
+        $this->receptionBooks($martin, 9);
+        $booking = Booking::sole();
+
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $booking->id)
+            ->set('editSearch', $otroMartin->first_name)->call('pickEditStudent', $otroMartin->id)->call('saveChange')
+            ->assertDispatched('toast', type: 'success');
+
+        $this->assertSame($otroMartin->id, $booking->refresh()->student_id);
+        $this->assertSame(BookingStatus::Booked, $booking->status);
+    }
+
+    public function test_double_click_on_attended_returns_the_booking_to_booked(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $this->receptionBooks($this->student(), 9);
+        $booking = Booking::sole();
+
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('markAttended', $booking->id)
+            ->assertSeeHtml('wire:dblclick="undoAttendance('.$booking->id.')"')
+            ->call('undoAttendance', $booking->id)->assertDispatched('toast', type: 'success')
+            ->assertSeeHtml('editBooking('.$booking->id.')');
+
+        $this->assertSame(BookingStatus::Booked, $booking->refresh()->status);
+        $this->assertSame(['booked', 'attended', 'attendance_undone'], $booking->events()->pluck('event')->all());
     }
 }

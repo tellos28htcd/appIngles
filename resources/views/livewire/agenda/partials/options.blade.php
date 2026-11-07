@@ -1,5 +1,8 @@
 {{-- Opciones del día por hora: Práctica (el alumno elige presencial o en línea) y clubs con lugar.
-     Cada opción es un botón: se recorre con Tab y se elige con Enter o clic (queda en "option"). --}}
+     Cada opción es un botón: se recorre con Tab y se elige con Enter o clic (queda en $model, "option" por omisión;
+     otro clic la quita). Variables: $options, $model y $current (valor elegido). --}}
+@php($model ??= 'option')
+@php($current = $current ?? $option ?? '')
 @if ($options === [])
     <p class="rounded-lg border border-line bg-surface p-4 text-sm text-ink-500">{{ __('agenda.no_options') }}</p>
 @else
@@ -18,8 +21,8 @@
                             <div class="flex flex-wrap gap-1.5">
                                 @foreach ($sessions as $item)
                                     @php($value = $hour['slot']->id.'|'.$item['kind'].'|'.$item['modality'].'|')
-                                    @php($selected = $option === $value)
-                                    <button type="button" wire:key="option-{{ $value }}" wire:click="$set('option', '{{ $value }}')" aria-pressed="{{ $selected ? 'true' : 'false' }}"
+                                    @php($selected = $current === $value)
+                                    <button type="button" wire:key="option-{{ $value }}" wire:click="$set('{{ $model }}', '{{ $selected ? '' : $value }}')" aria-pressed="{{ $selected ? 'true' : 'false' }}"
                                             @class([$chip, 'border-primary-500 bg-primary-50 ring-2 ring-primary-500' => $selected, 'border-line hover:border-primary-500' => ! $selected])>
                                         <span class="font-semibold">{{ $item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person') }}</span>
                                         <span @class(['text-xs', 'text-warning-700' => $item['waitlist'], 'text-ink-500' => ! $item['waitlist']])>
@@ -36,8 +39,8 @@
                             <div class="flex flex-wrap gap-1.5">
                                 @foreach ($clubs as $item)
                                     @php($value = $hour['slot']->id.'|'.$item['kind'].'|'.$item['modality'].'|'.$item['club_session_id'])
-                                    @php($selected = $option === $value)
-                                    <button type="button" wire:key="option-{{ $value }}" wire:click="$set('option', '{{ $value }}')" aria-pressed="{{ $selected ? 'true' : 'false' }}"
+                                    @php($selected = $current === $value)
+                                    <button type="button" wire:key="option-{{ $value }}" wire:click="$set('{{ $model }}', '{{ $selected ? '' : $value }}')" aria-pressed="{{ $selected ? 'true' : 'false' }}"
                                             @class([$chip, 'border-primary-500 bg-primary-50 ring-2 ring-primary-500' => $selected, 'border-line hover:border-primary-500' => ! $selected])>
                                         <span class="font-semibold">{{ $item['label'] }}</span>
                                         <span class="text-xs text-ink-500">

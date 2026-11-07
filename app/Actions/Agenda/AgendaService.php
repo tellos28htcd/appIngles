@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Support\ProgressPath;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -425,42 +426,12 @@ final class AgendaService
                 $fail('max_clubs', ['max' => $school->max_clubs]);
             }
 
-            $path = new ProgressPath($school);
             $booking = new Booking([
                 'school_id' => $school->id, 'student_id' => $student->id, 'date' => $date->toDateString(), 'schedule_slot_id' => $slot->id,
                 'kind' => $kind, 'modality' => $modality, 'status' => BookingStatus::Booked, 'booked_by_reception' => $byReception, 'user_id' => $user?->id,
             ]);
 
-            if ($kind === BookingKind::Club) {
-                $club = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
-                    ->where('schedule_slot_id', $slot->id)->with('club')->lockForUpdate()->find($clubSessionId);
-
-                if ($club === null || ! $this->clubAllows($school, $club, $this->nextActivity($student, $path), $path)) {
-                    $fail('club_not_allowed');
-                }
-                if ($this->clubFreeSeats($school, $club) < 1) {
-                    $fail('full');
-                }
-
-                $booking->fill(['club_session_id' => $club->id, 'modality' => $club->modality, 'teacher_id' => $club->teacher_id, 'classroom_id' => $club->classroom_id]);
-            } else {
-                $step = $this->nextActivity($student, $path) ?? $fail('no_activity');
-                $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
-
-                if ($modality === ClubModality::Online) {
-                    $rooms = $this->freeVirtualRooms($school, $date, $slot);
-
-                    if ($rooms !== []) {
-                        $booking->classroom_id = $rooms[array_rand($rooms)];
-                        $booking->teacher_id = $this->virtualTeacherId($school, $date, $slot, $booking->classroom_id);
-                    } else {
-                        // Aulas virtuales llenas (o la escuela no tiene): híbrida con un teacher presencial (ocupa un lugar de su aula).
-                        $this->placeInRoom($school, $booking, $date, $slot, allowWaitlist: false) || $fail('full');
-                    }
-                } else {
-                    $this->placeInRoom($school, $booking, $date, $slot) || $fail('full');
-                }
-            }
+            $this->place($school, $student, $date, $slot, $kind, $modality, $clubSessionId, $booking, $fail);
 
             $booking->save();
             $this->log($booking, $booking->is_waitlist ? 'waitlisted' : 'booked', $booking->placeLabel(), $user);
@@ -469,7 +440,47 @@ final class AgendaService
         });
     }
 
-    /** Aula al azar entre las que tienen lugar; si están llenas, a la lista de espera (si se permite). */
+    /**
+     * Lugar de una reservación según su tipo: club (con su cupo y nivel) o práctica con su actividad (LLA),
+     * presencial (aula al azar o lista de espera) o en línea (aula virtual o híbrida).
+     */
+    private function place(School $school, Student $student, CarbonImmutable $date, ScheduleSlot $slot, BookingKind $kind, ClubModality $modality,
+        ?int $clubSessionId, Booking $booking, Closure $fail): void
+    {
+        $path = new ProgressPath($school);
+
+        if ($kind === BookingKind::Club) {
+            $club = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+                ->where('schedule_slot_id', $slot->id)->with('club')->lockForUpdate()->find($clubSessionId);
+
+            if ($club === null || ! $this->clubAllows($school, $club, $this->nextActivity($student, $path), $path)) {
+                $fail('club_not_allowed');
+            }
+            if ($this->clubFreeSeats($school, $club) < 1) {
+                $fail('full');
+            }
+
+            $booking->fill(['club_session_id' => $club->id, 'modality' => $club->modality, 'teacher_id' => $club->teacher_id, 'classroom_id' => $club->classroom_id]);
+        } else {
+            $step = $this->nextActivity($student, $path) ?? $fail('no_activity');
+            $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
+
+            if ($modality === ClubModality::Online) {
+                $rooms = $this->freeVirtualRooms($school, $date, $slot);
+
+                if ($rooms !== []) {
+                    $booking->classroom_id = $rooms[array_rand($rooms)];
+                    $booking->teacher_id = $this->virtualTeacherId($school, $date, $slot, $booking->classroom_id);
+                } else {
+                    // Aulas virtuales llenas (o la escuela no tiene): híbrida con un teacher presencial (ocupa un lugar de su aula).
+                    $this->placeInRoom($school, $booking, $date, $slot, allowWaitlist: false) || $fail('full');
+                }
+            } else {
+                $this->placeInRoom($school, $booking, $date, $slot) || $fail('full');
+            }
+        }
+    }
+
     /**
      * ¿Se agenda en lista de espera cuando las aulas se llenan? Sí si el panel tiene a esa hora la
      * columna "Lista de espera" (su aula de espera) o si Mi Instituto lo permite.
@@ -482,6 +493,7 @@ final class AgendaService
             || ((bool) $school->books_without_classroom && $cells->isNotEmpty());
     }
 
+    /** Aula al azar entre las que tienen lugar; si están llenas, a la lista de espera (si se permite). */
     private function placeInRoom(School $school, Booking $booking, CarbonInterface $date, ScheduleSlot $slot, bool $allowWaitlist = true): bool
     {
         $free = $this->freeSessionCells($school, $date, $slot);
@@ -564,6 +576,54 @@ final class AgendaService
 
             return $booking;
         });
+    }
+
+    /**
+     * El alumno llegó a otra actividad (p. ej. reservó club y viene a práctica): la reservación cambia a la
+     * opción elegida de esa misma hora si hay lugar (libera su lugar actual y se vuelve a acomodar).
+     */
+    public function changeActivity(Booking $booking, BookingKind $kind, ClubModality $modality, ?int $clubSessionId, ?User $user): Booking
+    {
+        abort_unless($booking->canBeChanged(), 422);
+        $fail = fn (string $key, array $replace = []) => throw ValidationException::withMessages(['booking' => __("agenda.validation.$key", $replace)]);
+        $school = School::findOrFail($booking->school_id);
+
+        return DB::transaction(function () use ($booking, $kind, $modality, $clubSessionId, $user, $fail, $school): Booking {
+            $student = Student::withoutGlobalScope('school')->findOrFail($booking->student_id);
+            $day = Booking::withoutGlobalScope('school')->where('student_id', $student->id)->whereDate('date', $booking->date->toDateString())
+                ->active()->whereKeyNot($booking->id)->lockForUpdate()->get();
+
+            if ($kind === BookingKind::Session && $school->max_sessions && $day->where('kind', BookingKind::Session)->count() >= $school->max_sessions) {
+                $fail('max_sessions', ['max' => $school->max_sessions]);
+            }
+            if ($kind === BookingKind::Club && $school->max_clubs && $day->where('kind', BookingKind::Club)->count() >= $school->max_clubs) {
+                $fail('max_clubs', ['max' => $school->max_clubs]);
+            }
+
+            $before = $booking->kind->label().' '.$booking->activityLabel();
+            // Libera su lugar mientras se acomoda de nuevo (si no hay lugar, la transacción lo deja como estaba).
+            $booking->update(['status' => BookingStatus::Cancelled]);
+            $booking->fill([
+                'status' => BookingStatus::Booked, 'kind' => $kind, 'modality' => $modality,
+                'teacher_availability_id' => null, 'club_session_id' => null, 'teacher_id' => null, 'classroom_id' => null, 'virtual_room' => null,
+                'is_waitlist' => false, 'book_id' => null, 'lesson_id' => null, 'activity_number' => null,
+            ]);
+            $this->place($school, $student, CarbonImmutable::parse($booking->date->toDateString()), $booking->slot, $kind, $modality, $clubSessionId, $booking, $fail);
+            $booking->save();
+            $booking->unsetRelation('classroom')->unsetRelation('clubSession')->unsetRelation('book')->unsetRelation('lesson');
+            $this->log($booking, 'activity_changed', mb_substr($before.' → '.$booking->kind->label().' '.$booking->activityLabel().' · '.$booking->placeLabel(), 0, 255), $user);
+
+            return $booking;
+        });
+    }
+
+    /** Asistencia marcada por error: regresa a Reservada. */
+    public function undoAttendance(Booking $booking, ?User $user): void
+    {
+        abort_unless($booking->status === BookingStatus::Attended, 422);
+
+        $booking->update(['status' => BookingStatus::Booked]);
+        $this->log($booking, 'attendance_undone', null, $user);
     }
 
     /**

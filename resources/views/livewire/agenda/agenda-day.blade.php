@@ -1,11 +1,13 @@
 <div class="flex flex-col gap-6">
-    <x-ui.page-header :title="__('agenda.title')" :subtitle="__('agenda.subtitle')">
-        <x-slot:actions>
-            @if ($canManage && $isReady)
-                <x-ui.button wire:click="create"><x-ui.icon name="plus" class="size-4" />{{ __('agenda.actions.new') }}</x-ui.button>
-            @endif
-        </x-slot:actions>
-    </x-ui.page-header>
+    <x-ui.page-header :title="__('agenda.title')" :subtitle="__('agenda.subtitle')" />
+
+    @if ($canManage && $isReady)
+        {{-- Siempre a la mano al bajar por el calendario y el listado. --}}
+        <button type="button" wire:click="create"
+                class="fixed right-4 bottom-4 z-40 inline-flex h-13 items-center gap-2 rounded-full bg-primary-600 px-6 text-base font-bold text-on-primary shadow-pop transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 md:right-8 md:bottom-8">
+            <x-ui.icon name="plus" class="size-5" />{{ __('agenda.actions.new') }}
+        </button>
+    @endif
 
     {{-- Semana: navegación, fecha y leyenda --}}
     @php($nav = 'flex size-11 items-center justify-center rounded-md border-[1.5px] border-line-strong bg-white text-ink-700 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200')
@@ -107,7 +109,11 @@
                                     <tr wire:key="booking-{{ $booking->id }}" @class(['border-t border-line', $tint, 'text-ink-400' => ! $active])>
                                         <td class="px-4 py-3">
                                             <span @class(['font-bold', 'text-warning-700' => $booking->is_waitlist && $active])>{{ $booking->placeLabel() }}</span>
-                                            <span class="block text-sm text-ink-700">{{ $booking->modality === \App\Enums\ClubModality::Online ? __('agenda.online') : __('agenda.in_person') }}</span>
+                                            @if ($booking->modality === \App\Enums\ClubModality::Online)
+                                                <span class="block text-sm font-semibold text-info-700">{{ __('agenda.online') }}</span>
+                                            @else
+                                                <span class="block text-sm text-ink-700">{{ __('agenda.in_person') }}</span>
+                                            @endif
                                         </td>
                                         <td class="px-4 py-3 font-semibold">{{ $booking->teacher?->panelName() ?? '—' }}</td>
                                         <td class="px-4 py-3">
@@ -126,9 +132,17 @@
                                             <span class="block font-bold tabular-nums">{{ $booking->activityLabel() }}</span>
                                         </td>
                                         <td class="px-4 py-3">
-                                            <x-ui.badge :variant="match ($booking->status) { \App\Enums\BookingStatus::Attended => 'success', \App\Enums\BookingStatus::Cancelled => 'neutral', default => $booking->is_waitlist ? 'warning' : 'info' }">
-                                                {{ $booking->status->label() }}
-                                            </x-ui.badge>
+                                            @if ($canManage && $booking->status === \App\Enums\BookingStatus::Attended)
+                                                {{-- Asistencia marcada por error: doble clic la quita. --}}
+                                                <button type="button" wire:dblclick="undoAttendance({{ $booking->id }})" title="{{ __('agenda.actions.undo_attendance') }}"
+                                                        aria-label="{{ __('agenda.actions.undo_attendance') }}" class="cursor-pointer rounded-full select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                                                    <x-ui.badge variant="success">{{ $booking->status->label() }}</x-ui.badge>
+                                                </button>
+                                            @else
+                                                <x-ui.badge :variant="match ($booking->status) { \App\Enums\BookingStatus::Attended => 'success', \App\Enums\BookingStatus::Cancelled => 'neutral', default => $booking->is_waitlist ? 'warning' : 'info' }">
+                                                    {{ $booking->status->label() }}
+                                                </x-ui.badge>
+                                            @endif
                                             @if ($booking->cancellationReason)
                                                 <span class="mt-1 block text-sm">{{ $booking->cancellationReason->name }}</span>
                                             @endif
@@ -204,14 +218,25 @@
             </x-slot:footer>
         </x-ui.modal>
 
-        {{-- Cambiar reservación: aula y teacher por separado, o pasar el lugar a otro alumno. --}}
+        {{-- Cambiar reservación: actividad, aula (con su teacher), corregir el alumno o pasar el lugar a la lista de espera. --}}
         <x-ui.modal wire:model="editingId" size="md" :title="__('agenda.edit.title')">
             @if ($edit['booking'])
                 @php($editable = $edit['booking']->kind === \App\Enums\BookingKind::Session)
                 <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">
                     {{ $edit['booking']->date->translatedFormat('l j \d\e F') }} · {{ $edit['booking']->slot?->range() }} · {{ $edit['booking']->kind->label() }} {{ $edit['booking']->activityLabel() }}
                 </p>
-                @if ($editable)
+                {{-- Cambiar actividad: el alumno viene a otra (club ↔ práctica, presencial ↔ en línea) si hay lugar. --}}
+                <div class="flex flex-col gap-2">
+                    <span class="text-sm font-semibold text-ink-700">{{ __('agenda.edit.activity') }}</span>
+                    @if ($edit['activities'] === [])
+                        <p class="text-sm text-ink-500">{{ __('agenda.edit.no_activities') }}</p>
+                    @else
+                        <p class="-mt-1 text-xs text-ink-500">{{ __('agenda.edit.activity_hint') }}</p>
+                        @include('livewire.agenda.partials.options', ['options' => $edit['activities'], 'model' => 'editActivity', 'current' => $editActivity])
+                    @endif
+                </div>
+
+                @if ($editable && $editActivity === '')
                     <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :hint="__('agenda.edit.room_hint')" wire:model.live="editRoomId" required />
                     @php($chosen = $edit['choices'][$editRoomId] ?? null)
                     @if ($chosen)
@@ -219,8 +244,6 @@
                             {{ __('agenda.edit.teacher_of_room') }} <span class="font-bold">{{ $chosen['teacher'] !== '' ? $chosen['teacher'] : '—' }}</span>
                         </p>
                     @endif
-                @else
-                    <p class="rounded-lg bg-surface p-3 text-sm text-ink-700">{{ __('agenda.edit.club_note') }}</p>
                 @endif
 
                 {{-- Pasar el lugar: solo a alumnos de la lista de espera de ese día y hora. --}}
@@ -230,6 +253,27 @@
                         <span class="font-bold">{{ $edit['booking']->student?->fullName() }}</span>
                         <span class="ml-2 text-sm text-ink-500 tabular-nums">{{ $edit['booking']->student?->enrollment_number }}</span>
                     </div>
+                    @if ($edit['student'] && $edit['student']->id !== $edit['booking']->student_id)
+                        <p class="rounded-lg bg-primary-50 px-3 py-2 text-[15px] text-primary-700">
+                            → <span class="font-bold">{{ $edit['student']->fullName() }}</span> <span class="text-sm tabular-nums">{{ $edit['student']->enrollment_number }}</span>
+                        </p>
+                    @endif
+                    <x-ui.input name="editSearch" :label="__('agenda.edit.fix_student')" :placeholder="__('agenda.form.search_placeholder')" wire:model.live.debounce.300ms="editSearch" autocomplete="off" />
+                    @if (mb_strlen(trim($editSearch)) >= 2)
+                        <ul class="flex flex-col gap-1.5">
+                            @forelse ($this->editStudents as $student)
+                                <li wire:key="edit-pick-{{ $student->id }}">
+                                    <button type="button" wire:click="pickEditStudent({{ $student->id }})"
+                                            class="flex w-full items-center justify-between gap-3 rounded-lg border border-line px-3 py-2 text-left transition hover:border-primary-500 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                                        <span class="font-semibold">{{ $student->fullName() }}</span>
+                                        <span class="text-xs text-ink-500 tabular-nums">{{ $student->enrollment_number }}</span>
+                                    </button>
+                                </li>
+                            @empty
+                                <li class="text-sm text-ink-500">{{ __('agenda.form.no_results') }}</li>
+                            @endforelse
+                        </ul>
+                    @endif
                     @if ($editable && ! $edit['booking']->is_waitlist)
                         <span class="text-sm font-semibold text-ink-700">{{ __('agenda.edit.give_seat') }}</span>
                         @if ($edit['waiting']->isEmpty())
