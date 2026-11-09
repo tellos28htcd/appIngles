@@ -91,3 +91,4 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 - **Corregir alumno:** si se reservó al alumno equivocado, se busca y elige el correcto (con sus validaciones). Pasar el lugar a la lista de espera se conserva.
 - **Asistencia por error:** doble clic en "Asistió" regresa la reservación a "Reservada".
 - "En línea" se muestra en morado en el listado; "+ Nueva reservación" es un botón flotante siempre visible.
+- **Coordinador evaluando:** a la fecha y hora de una Evaluación de Club (Horas Coordinador), los teachers con cargo de Coordinador académico no reciben alumnos: sus lugares no cuentan en el calendario, ni al reservar, ni para aula virtual o híbrida, ni en "Cambiar".

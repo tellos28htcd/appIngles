@@ -14,6 +14,8 @@ use App\Models\BookingEvent;
 use App\Models\CancellationReason;
 use App\Models\Classroom;
 use App\Models\ClubSession;
+use App\Models\CoordinatorSession;
+use App\Models\Role;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
@@ -44,6 +46,7 @@ use Illuminate\Validation\ValidationException;
  * - Por día: máximo de prácticas (Mi Instituto) y de horas según la asistencia de los últimos
  *   7 días (≥ 0.8 o sin historial: 2 horas; menos: 1).
  * - Cada práctica lleva la actividad que le toca (LLA) según la ruta de avance.
+ * - Un teacher con cargo de Coordinador no recibe alumnos a la hora de una Evaluación de Club.
  */
 final class AgendaService
 {
@@ -111,10 +114,36 @@ final class AgendaService
     /** Horas del panel con aula para práctica (sin clubs ni revisiones) a esa hora. @return Collection<int, TeacherAvailability> */
     private function sessionCells(School $school, CarbonInterface $date, ScheduleSlot $slot): Collection
     {
-        return TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+        $cells = TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
             ->where('schedule_slot_id', $slot->id)->where('is_absent', false)->whereNotNull('classroom_id')
             ->whereNull('club_session_id')->whereNull('coordinator_session_id')
             ->with(['teacher:id,is_waitlist,short_name,first_name', 'classroom:id,name,capacity'])->get();
+
+        return $this->withoutEvaluatingCoordinators($school, $cells, $date->toDateString(), $date->toDateString());
+    }
+
+    /**
+     * Quita las horas de los teachers con cargo de Coordinador cuando a esa fecha y hora hay una
+     * Evaluación de Club en Horas Coordinador: están evaluando, no pueden recibir alumnos.
+     *
+     * @param  Collection<int, TeacherAvailability>  $cells
+     * @return Collection<int, TeacherAvailability>
+     */
+    private function withoutEvaluatingCoordinators(School $school, Collection $cells, string $from, string $to): Collection
+    {
+        $evaluations = CoordinatorSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereBetween('date', [$from, $to])
+            ->with('activity')->get()->filter(fn (CoordinatorSession $session) => $session->activity?->evaluatesClubs())
+            ->map(fn (CoordinatorSession $session) => $session->date->toDateString().'|'.$session->schedule_slot_id);
+
+        if ($evaluations->isEmpty()) {
+            return $cells;
+        }
+
+        $coordinators = Teacher::withoutGlobalScope('school')->where('school_id', $school->id)
+            ->whereHas('user.role', fn ($role) => $role->where('slug', Role::ACADEMIC_COORDINATOR))->pluck('id');
+
+        return $cells->reject(fn (TeacherAvailability $cell) => $coordinators->contains($cell->teacher_id)
+            && $evaluations->contains($cell->date->toDateString().'|'.$cell->schedule_slot_id))->values();
     }
 
     private function cellCapacity(School $school, TeacherAvailability $cell): int
@@ -233,6 +262,7 @@ final class AgendaService
         $cells = TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id)->whereBetween('date', [$from, $to])
             ->where('is_absent', false)->whereNotNull('classroom_id')->whereNull('club_session_id')->whereNull('coordinator_session_id')
             ->with(['teacher:id,is_waitlist', 'classroom:id,capacity'])->get();
+        $cells = $this->withoutEvaluatingCoordinators($school, $cells, $from, $to);
         $bookings = Booking::withoutGlobalScope('school')->where('school_id', $school->id)->whereBetween('date', [$from, $to])->active()
             ->get(['id', 'date', 'schedule_slot_id', 'kind', 'modality', 'teacher_availability_id', 'club_session_id', 'is_waitlist']);
         $clubs = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereBetween('date', [$from, $to])

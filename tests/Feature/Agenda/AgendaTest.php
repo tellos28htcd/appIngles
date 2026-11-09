@@ -18,6 +18,8 @@ use App\Models\CancellationReason;
 use App\Models\Classroom;
 use App\Models\Club;
 use App\Models\ClubSession;
+use App\Models\CoordinatorActivity;
+use App\Models\CoordinatorSession;
 use App\Models\Lesson;
 use App\Models\Role;
 use App\Models\ScheduleSlot;
@@ -543,5 +545,32 @@ class AgendaTest extends TestCase
         $this->receptionBooks($student, 10);
 
         $this->assertSame(['L1-L1-A1-BA', 'L1-L1-A2-1P'], Booking::orderBy('id')->with(['book', 'lesson'])->get()->map->activityLabel()->all());
+    }
+
+    public function test_a_coordinator_teacher_gets_no_students_during_a_club_evaluation(): void
+    {
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $dulce = Teacher::where('short_name', 'DULCE')->sole();
+        $melissa->update(['user_id' => $this->user(Role::ACADEMIC_COORDINATOR)->id]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        $evaluation = CoordinatorActivity::create(['school_id' => $this->school->id, 'name' => 'Evaluación de Club', 'authorized_hours' => 2,
+            'per_teacher' => true, 'requires_teacher' => true, 'sort_order' => 1, 'is_active' => true]);
+        $meeting = CoordinatorActivity::create(['school_id' => $this->school->id, 'name' => 'Junta mensual', 'authorized_hours' => 1, 'sort_order' => 2, 'is_active' => true]);
+        CoordinatorSession::create(['school_id' => $this->school->id, 'coordinator_activity_id' => $evaluation->id, 'teacher_id' => $dulce->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[9]->id]);
+        CoordinatorSession::create(['school_id' => $this->school->id, 'coordinator_activity_id' => $meeting->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id]);
+
+        // A las 9 evalúa: solo queda el aula de Dulce (cupo 2) en el calendario y en las reservaciones.
+        $days = app(AvailabilityPlanner::class)->days($this->school, CarbonImmutable::parse(self::MONDAY));
+        $week = app(AgendaService::class)->weekAvailability($this->school, $days);
+        $this->assertSame(2, $week[self::MONDAY.'|'.$this->slots[9]->id]['session']['capacity']);
+
+        foreach (range(1, 2) as $i) {
+            $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
+        }
+        $this->assertSame([$dulce->id], Booking::pluck('teacher_id')->unique()->values()->all());
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+
+        // Otra actividad (junta) no la bloquea: a las 10 sigue recibiendo alumnos.
+        $this->assertSame(4, $week[self::MONDAY.'|'.$this->slots[10]->id]['session']['capacity']);
     }
 }
