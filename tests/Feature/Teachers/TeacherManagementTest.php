@@ -280,4 +280,50 @@ class TeacherManagementTest extends TestCase
         $this->assertModelMissing($teacher);
         $this->assertModelMissing($teacherUser);
     }
+
+    public function test_the_additional_role_uses_one_account_and_keeps_the_teacher(): void
+    {
+        Notification::fake();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        // Con cargo adicional se necesita correo.
+        $this->fillTeacher(Livewire::test(TeacherEditor::class))->set('form.email', '')->set('form.additional_role', Role::ACADEMIC_COORDINATOR)
+            ->call('save')->assertHasErrors('form.email');
+
+        $this->fillTeacher(Livewire::test(TeacherEditor::class))->set('form.additional_role', Role::ACADEMIC_COORDINATOR)->call('save')->assertHasNoErrors();
+        $teacher = Teacher::with('user.role')->sole();
+        $this->assertSame(Role::ACADEMIC_COORDINATOR, $teacher->user->role->slug);
+        $this->assertSame(1, User::where('email', 'maria.perez@appingles.com')->count());
+
+        // Se ve en el listado y al editar; se cambia a Mentor y con "Ninguno" regresa a Teacher, siempre la misma ficha y usuario.
+        Livewire::test(TeacherIndex::class)->assertSee(Role::where('slug', Role::ACADEMIC_COORDINATOR)->value('name'));
+        $page = Livewire::test(TeacherEditor::class, ['teacher' => $teacher])->assertSet('form.additional_role', Role::ACADEMIC_COORDINATOR);
+        $page->set('form.additional_role', Role::MENTOR)->call('save')->assertHasNoErrors();
+        $this->assertSame(Role::MENTOR, $teacher->user->fresh()->role->slug);
+        $page->set('form.additional_role', '')->call('save')->assertHasNoErrors();
+        $this->assertSame(Role::TEACHER, $teacher->user->fresh()->role->slug);
+        $this->assertSame([$teacher->id, $teacher->user_id], [Teacher::sole()->id, Teacher::sole()->user_id]);
+
+        // Solo esos cargos: no se puede dar otro rol por aquí.
+        Livewire::test(TeacherEditor::class, ['teacher' => $teacher->fresh()])->set('form.additional_role', Role::SCHOOL_ADMIN)->call('save')->assertHasErrors('form.additional_role');
+    }
+
+    public function test_only_the_school_admin_assigns_the_additional_role_and_other_roles_are_kept(): void
+    {
+        Notification::fake();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        $this->fillTeacher(Livewire::test(TeacherEditor::class))->call('save')->assertHasNoErrors();
+        $teacher = Teacher::with('user')->sole();
+
+        // El coordinador edita teachers, pero el cargo adicional no se le aplica.
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR, $this->schoolA));
+        Livewire::test(TeacherEditor::class, ['teacher' => $teacher])->set('form.additional_role', Role::MENTOR)->call('save');
+        $this->assertSame(Role::TEACHER, $teacher->user->fresh()->role->slug);
+
+        // Un administrador que además da clases conserva su rol.
+        $teacher->user->update(['role_id' => Role::where('slug', Role::SCHOOL_ADMIN)->value('id')]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+        Livewire::test(TeacherEditor::class, ['teacher' => $teacher->fresh()])->set('form.additional_role', Role::MENTOR)->call('save');
+        $this->assertSame(Role::SCHOOL_ADMIN, $teacher->user->fresh()->role->slug);
+    }
 }

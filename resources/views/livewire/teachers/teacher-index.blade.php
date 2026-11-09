@@ -42,6 +42,9 @@
                                 <div class="flex min-w-0 flex-col">
                                     <span class="font-bold leading-snug [overflow-wrap:anywhere]">{{ $teacher->fullName() }}</span>
                                     <span class="truncate text-sm text-ink-500">{{ $teacher->user?->email ?? __('teachers.no_email') }}</span>
+                                    @if ($teacher->additionalRole())
+                                        <span class="mt-1"><x-ui.badge variant="info">{{ $teacher->additionalRole()->name }}</x-ui.badge></span>
+                                    @endif
                                     @if ($isPlatform)
                                         <span class="text-xs text-ink-500"><span class="font-mono">{{ $teacher->school->code }}</span> · {{ $teacher->school->name }}</span>
                                     @endif

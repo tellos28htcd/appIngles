@@ -58,3 +58,14 @@ El catálogo "Salones" se llama ahora **Aulas**.
   "Día anterior" = el alumno reserva hasta el día anterior y recepción también puede agendar; "A cualquier hora" = el alumno.
 - Si una incidencia quita horas con alumnos reservados, las reservaciones pasan automáticamente a quien cubre, en la
   misma aula (RN-28).
+
+## Cargo adicional
+
+Un teacher que además es Coordinador académico o Mentor usa **una sola cuenta**. En su ficha (Acceso), el campo "Cargo adicional" (Ninguno / Coordinador académico / Mentor) define el rol de su usuario; la ficha de teacher no cambia, así que sigue en el panel y dando clases.
+
+- Lo asigna solo el administrador de la escuela o Plataforma.
+- Necesita correo, porque el cargo vive en el usuario.
+- "Ninguno" regresa el usuario al rol Teacher.
+- Si el usuario tiene otro rol (p. ej. administrador de escuela), se conserva y se cambia en Usuarios.
+- El listado de Teachers muestra el cargo con una etiqueta.
+- Los módulos para el teacher deben identificarlo por su ficha (`teachers.user_id`), no por su rol.

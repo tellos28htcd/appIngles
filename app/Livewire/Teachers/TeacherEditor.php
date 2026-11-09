@@ -6,6 +6,7 @@ use App\Actions\Users\SendInvitation;
 use App\Enums\ContractType;
 use App\Enums\TeacherStatus;
 use App\Livewire\Forms\TeacherForm;
+use App\Models\Role;
 use App\Models\School;
 use App\Models\State;
 use App\Models\Teacher;
@@ -98,6 +99,9 @@ class TeacherEditor extends Component
 
         return view('livewire.teachers.teacher-editor', [
             'editing' => $editing,
+            'canChangeAdditionalRole' => $this->form->canChangeAdditionalRole(),
+            'additionalRoles' => Role::whereIn('slug', Teacher::ADDITIONAL_ROLES)->orderBy('sort_order')->pluck('name', 'slug')->all(),
+            'currentRoleName' => $this->form->teacher?->user?->role?->name,
             'isPlatform' => $isPlatform,
             'schoolOptions' => $isPlatform
                 ? School::orderBy('name')->get(['id', 'code', 'name'])->mapWithKeys(fn (School $s) => [$s->id => "{$s->code} · {$s->name}"])->all()

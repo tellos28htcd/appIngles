@@ -19,8 +19,9 @@ use Illuminate\Validation\Rule;
 use Livewire\Form;
 
 /**
- * Alta y edición de un teacher. Su usuario (rol Teacher) se crea o actualiza en
- * el mismo paso; al darlo de alta recibe el correo para crear su contraseña.
+ * Alta y edición de un teacher. Su usuario se crea o actualiza en el mismo paso; al darlo
+ * de alta recibe el correo para crear su contraseña. El cargo adicional (Coordinador o
+ * Mentor) es el rol de ese usuario: una sola cuenta, sigue dando clases.
  */
 class TeacherForm extends Form
 {
@@ -79,6 +80,9 @@ class TeacherForm extends Form
 
     public bool $is_waitlist = false;
 
+    /** Cargo adicional: slug del rol (vacío = solo Teacher). */
+    public string $additional_role = '';
+
     /** Resultado del envío de la invitación en el último alta (null si no hubo alta). */
     public ?bool $invitationSent = null;
 
@@ -103,7 +107,33 @@ class TeacherForm extends Form
             'short_name' => (string) $teacher->short_name,
             'panel_number' => $teacher->panel_number,
             'is_waitlist' => (bool) $teacher->is_waitlist,
+            'additional_role' => (string) $teacher->additionalRole()?->slug,
         ]);
+    }
+
+    /**
+     * Solo el administrador de la escuela (o Plataforma) asigna el cargo adicional, y solo si el
+     * usuario no tiene otro rol (p. ej. un administrador que además da clases conserva el suyo).
+     */
+    public function canChangeAdditionalRole(): bool
+    {
+        $actor = auth()->user();
+        $role = $this->teacher?->user?->role?->slug;
+
+        return ($actor->isPlatformAdmin() || $actor->isSchoolAdmin())
+            && ($role === null || in_array($role, [Role::TEACHER, ...Teacher::ADDITIONAL_ROLES], true));
+    }
+
+    /** Rol del usuario al guardar: el cargo adicional, o Teacher; sin permiso para cambiarlo se conserva. */
+    private function roleIdFor(?User $user, ?string $additionalRole): int
+    {
+        if ($user?->exists && ! $this->canChangeAdditionalRole()) {
+            return $user->role_id;
+        }
+
+        $slug = $this->canChangeAdditionalRole() && $additionalRole !== null ? $additionalRole : Role::TEACHER;
+
+        return Role::where('slug', $slug)->value('id');
     }
 
     /** Tiempo completo y medio tiempo tienen tope fijo; hora clase usa las horas asignadas. */
@@ -134,7 +164,7 @@ class TeacherForm extends Form
             ],
             'email' => [
                 // Opcional: sin correo el teacher queda sin acceso. Si ya tiene usuario, su correo no se quita.
-                Rule::requiredIf(fn () => $this->teacher?->user_id !== null),
+                Rule::requiredIf(fn () => $this->teacher?->user_id !== null || $this->additional_role !== ''),
                 'nullable', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($this->teacher?->user_id),
             ],
             'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048', new RealImage],
@@ -151,6 +181,7 @@ class TeacherForm extends Form
             'contract_type' => ['required', Rule::enum(ContractType::class)],
             'weekly_hours' => ['required', 'integer', 'min:1', 'max:'.ContractType::MAX_WEEKLY_HOURS],
             'status' => ['required', Rule::enum(TeacherStatus::class)],
+            'additional_role' => ['nullable', Rule::in(Teacher::ADDITIONAL_ROLES)],
             'hired_on' => ['required', 'date'],
             'terminated_on' => [Rule::requiredIf($this->status === TeacherStatus::Terminated->value), 'nullable', 'date'],
             'short_name' => ['nullable', 'string', 'max:20'],
@@ -170,6 +201,7 @@ class TeacherForm extends Form
             'email.unique' => __('users.validation.email_taken'),
             'weekly_hours.max' => __('teachers.validation.weekly_hours'),
             'municipality_id.exists' => __('schools.validation.municipality_state'),
+            ...($this->additional_role !== '' ? ['email.required' => __('teachers.validation.additional_role_email')] : []),
         ];
     }
 
@@ -216,7 +248,7 @@ class TeacherForm extends Form
                 $userCreated = ! $user->exists;
 
                 $user->fill([
-                    'role_id' => $user->role_id ?? Role::where('slug', Role::TEACHER)->value('id'),
+                    'role_id' => $this->roleIdFor($user, $data['additional_role'] ?? null),
                     'school_id' => $data['school_id'],
                     'first_name' => $data['first_name'],
                     'last_name' => $data['last_name'],
@@ -228,7 +260,7 @@ class TeacherForm extends Form
             }
 
             $teacher = $this->teacher ?? new Teacher;
-            $teacher->fill([...collect($data)->except('email')->all(), 'user_id' => $user?->id])->save();
+            $teacher->fill([...collect($data)->except('email', 'additional_role')->all(), 'user_id' => $user?->id])->save();
 
             return $teacher;
         });

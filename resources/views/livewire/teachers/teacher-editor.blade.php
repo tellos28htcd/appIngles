@@ -86,6 +86,12 @@
                 @if ($form->status === \App\Enums\TeacherStatus::Terminated->value)
                     <x-ui.input name="form.terminated_on" type="date" :label="__('teachers.fields.terminated_on')" wire:model="form.terminated_on" required />
                 @endif
+                @if ($canChangeAdditionalRole)
+                    <x-ui.select name="form.additional_role" :label="__('teachers.fields.additional_role')" :options="$additionalRoles" :placeholder="__('teachers.no_additional_role')"
+                                 :hint="__('teachers.fields.additional_role_hint')" wire:model="form.additional_role" />
+                @elseif ($currentRoleName)
+                    <p class="text-sm text-ink-500">{{ __('teachers.current_role', ['role' => $currentRoleName]) }}</p>
+                @endif
             </x-ui.card>
         </div>
 

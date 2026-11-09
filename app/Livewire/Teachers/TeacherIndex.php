@@ -90,7 +90,7 @@ class TeacherIndex extends Component
         $term = trim($this->search);
 
         return Teacher::query()
-            ->with(['user:id,email,password,status', 'school:id,code,name'])
+            ->with(['user:id,email,password,status,role_id', 'user.role:id,slug,name', 'school:id,code,name'])
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $q) => $q
                 ->where('first_name', 'like', "%{$term}%")
                 ->orWhere('last_name', 'like', "%{$term}%")

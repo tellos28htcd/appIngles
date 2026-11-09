@@ -28,6 +28,17 @@ class Teacher extends Model
     /** @use HasFactory<TeacherFactory> */
     use Auditable, BelongsToSchool, HasFactory;
 
+    /** Roles que un teacher puede tener como cargo adicional (sigue dando clases). */
+    public const ADDITIONAL_ROLES = [Role::ACADEMIC_COORDINATOR, Role::MENTOR];
+
+    /** Cargo adicional: el rol de su usuario, si es uno de ADDITIONAL_ROLES. */
+    public function additionalRole(): ?Role
+    {
+        $role = $this->user?->role;
+
+        return $role !== null && in_array($role->slug, self::ADDITIONAL_ROLES, true) ? $role : null;
+    }
+
     protected function casts(): array
     {
         return [

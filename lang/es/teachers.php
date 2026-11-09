@@ -14,6 +14,8 @@ return [
     'incomplete' => 'Datos incompletos',
     'no_email' => 'Sin correo',
     'no_access' => 'Sin acceso',
+    'no_additional_role' => 'Ninguno',
+    'current_role' => 'Su usuario tiene el rol :role; se cambia en Usuarios.',
     'hours_per_week' => '{1} 1 h por semana|[2,*] :count h por semana',
     'hours_max' => '{1} máx. 1 h/sem|[2,*] máx. :count h/sem',
     'hours_assigned' => 'horas asignadas (máx. 48 h/sem)',
@@ -71,6 +73,8 @@ return [
         'weekly_hours_hint' => 'Horas asignadas; nunca más de 48 por semana.',
         'status' => 'Estatus',
         'status_hint' => 'Solo un teacher Activo inicia sesión y recibe clases.',
+        'additional_role' => 'Cargo adicional',
+        'additional_role_hint' => 'Sigue dando clases y, con la misma cuenta, tiene también los permisos de ese cargo.',
         'terminated_on' => 'Fecha de baja',
         'hired_on' => 'Fecha de ingreso',
         'hired_on_hint' => 'Aparece en el panel de disponibilidad desde esta fecha.',
@@ -108,6 +112,7 @@ return [
     ],
 
     'validation' => [
+        'additional_role_email' => 'Captura su correo: el cargo adicional necesita un usuario.',
         'curp' => 'La CURP debe tener 18 caracteres con el formato oficial (p. ej. GOMA850101HQTRRN09).',
         'rfc' => 'El RFC de persona física tiene 13 caracteres (p. ej. GOMA850101AB1).',
         'weekly_hours' => 'Un teacher nunca puede tener más de 48 horas por semana.',
