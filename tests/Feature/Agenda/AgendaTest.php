@@ -11,6 +11,7 @@ use App\Enums\LessonType;
 use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
 use App\Livewire\Agenda\MyAgenda;
+use App\Models\Activity;
 use App\Models\Book;
 use App\Models\Booking;
 use App\Models\CancellationReason;
@@ -528,5 +529,19 @@ class AgendaTest extends TestCase
 
         $this->assertSame(BookingStatus::Booked, $booking->refresh()->status);
         $this->assertSame(['booked', 'attended', 'attendance_undone'], $booking->events()->pluck('event')->all());
+    }
+
+    public function test_the_activity_label_includes_its_code_from_the_catalog(): void
+    {
+        foreach ([1 => 'BA', 2 => '1P'] as $number => $code) {
+            Activity::create(['school_id' => $this->school->id, 'number' => $number, 'code' => $code, 'description' => $code, 'is_active' => true]);
+        }
+        $this->actingAs($this->user(Role::RECEPTION));
+        $student = $this->student();
+
+        $this->receptionBooks($student, 9);
+        $this->receptionBooks($student, 10);
+
+        $this->assertSame(['L1-L1-A1-BA', 'L1-L1-A2-1P'], Booking::orderBy('id')->with(['book', 'lesson'])->get()->map->activityLabel()->all());
     }
 }

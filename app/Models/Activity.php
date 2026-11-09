@@ -22,6 +22,16 @@ class Activity extends Model
         ];
     }
 
+    /**
+     * Códigos de la escuela por número de actividad (se consulta una sola vez por petición).
+     *
+     * @return array<int, string> número => código (BA, 1P, M…)
+     */
+    public static function codesFor(int $schoolId): array
+    {
+        return once(fn (): array => self::withoutGlobalScope('school')->where('school_id', $schoolId)->pluck('code', 'number')->all());
+    }
+
     public function canBeDeleted(): bool
     {
         return true;

@@ -107,7 +107,7 @@ class Booking extends Model
         return $this->hasMany(BookingEvent::class)->orderBy('id');
     }
 
-    /** Actividad que le toca, p. ej. "L1-L3-A4" (o la abreviatura del club). */
+    /** Actividad que le toca, p. ej. "L1-L3-A2-1P" (o la abreviatura del club). */
     public function activityLabel(): string
     {
         if ($this->kind === BookingKind::Club) {
@@ -115,7 +115,7 @@ class Booking extends Model
         }
 
         return $this->book && $this->lesson && $this->activity_number
-            ? "L{$this->book->level}-L{$this->lesson->number}-A{$this->activity_number}"
+            ? "L{$this->book->level}-L{$this->lesson->number}-A{$this->activity_number}".(isset(Activity::codesFor($this->school_id)[$this->activity_number]) ? '-'.Activity::codesFor($this->school_id)[$this->activity_number] : '')
             : '—';
     }
 

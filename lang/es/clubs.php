@@ -56,6 +56,7 @@ return [
         'teacher' => 'El teacher no tiene esa hora libre (horario base, incidencias u otro club).',
         'no_room_in_person' => 'No hay aula audiovisual física libre a esa hora (ocupada o reservada para otra actividad).',
         'no_room_online' => 'No hay aula virtual libre a esa hora: registra otra en Configuración → Aulas (marca "Aula virtual").',
+        'room_reserved' => 'El aula audiovisual está reservada para otra actividad a esa hora: no se pueden programar clubs.',
         'room_taken' => 'Esa aula audiovisual no está libre a esa hora.',
     ],
 

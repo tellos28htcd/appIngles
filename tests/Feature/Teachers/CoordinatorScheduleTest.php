@@ -166,6 +166,16 @@ class CoordinatorScheduleTest extends TestCase
         $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10, 11], 2 => [9]]);
         $dulce = $this->teacher('DULCE', 2, [1 => [11], 2 => [10]]);
         $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+        $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 10, 'is_active' => true, 'codes' => [['code' => 'C12', 'levels' => [1], 'color' => 1, 'is_active' => true]]]);
+        $room = Classroom::create(['school_id' => $this->school->id, 'name' => '7', 'capacity' => 20, 'is_club_room' => true, 'is_active' => true]);
+        foreach ([[$melissa, '2026-07-27', 9], [$melissa, '2026-07-27', 10], [$melissa, '2026-07-28', 9], [$dulce, '2026-07-28', 10]] as [$teacher, $date, $hour]) {
+            ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => $teacher->id, 'classroom_id' => $room->id, 'date' => $date, 'schedule_slot_id' => $this->slots[$hour]->id, 'modality' => 'in_person']);
+        }
+
+        // Solo el teacher con club en esa fecha y hora se puede elegir (Dulce trabaja el lunes a las 11, sin club).
+        $options = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')->call('add', '2026-07-27', $this->slots[9]->id)->set('activityId', $evaluation->id)->get('teacherOptions');
+        $this->assertSame([$melissa->id], array_keys($options));
+        $this->program('2026-07-27', 11, $evaluation, $dulce)->assertHasErrors('teacherKey');
 
         $this->program('2026-07-27', 9, $evaluation, $melissa)->assertHasNoErrors();
         $this->program('2026-07-27', 10, $evaluation, $melissa)->assertHasNoErrors();

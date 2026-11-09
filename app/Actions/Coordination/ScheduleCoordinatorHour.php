@@ -3,6 +3,7 @@
 namespace App\Actions\Coordination;
 
 use App\Actions\Teachers\AvailabilityPlanner;
+use App\Models\ClubSession;
 use App\Models\CoordinatorActivity;
 use App\Models\CoordinatorSession;
 use App\Models\Holiday;
@@ -114,6 +115,12 @@ final class ScheduleCoordinatorHour
         }
 
         $teacherId = (int) ($data['teacher_id'] ?? 0);
+
+        // Evaluación de Club: solo el teacher que tiene club programado en esa fecha y hora.
+        if ($activity->evaluatesClubs() && ! ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+            ->where('schedule_slot_id', $slot->id)->where('teacher_id', $teacherId)->exists()) {
+            return ['teacherId', __('coordination.validation.teacher_club')];
+        }
 
         if ($activity->uses_teacher_hour && ! in_array($teacherId, $this->planner->availableTeacherIds($school, $date, $slot, null, $session?->id), true)) {
             return ['teacherId', __('coordination.validation.teacher')];

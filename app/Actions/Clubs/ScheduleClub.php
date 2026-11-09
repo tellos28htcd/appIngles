@@ -62,6 +62,17 @@ final class ScheduleClub
             || $closures->contains(fn (ClassroomClosure $closure) => $closure->classroom_id === $room->id && $closure->covers($date, $slot)))->values();
     }
 
+    /** ¿Todas las aulas físicas de clubs (audiovisual) están reservadas para otra actividad a esa hora? Entonces no se programan clubs. */
+    public function clubRoomsReserved(School $school, CarbonImmutable $date, ScheduleSlot $slot): bool
+    {
+        $rooms = $this->clubRooms($school, ClubModality::InPerson);
+        $closures = ClassroomClosure::withoutGlobalScope('school')->whereIn('classroom_id', $rooms->modelKeys())
+            ->whereDate('starts_on', '<=', $date->toDateString())->whereDate('ends_on', '>=', $date->toDateString())
+            ->with(['fromSlot', 'toSlot'])->get();
+
+        return $rooms->isNotEmpty() && $rooms->every(fn (Classroom $room) => $closures->contains(fn (ClassroomClosure $closure) => $closure->classroom_id === $room->id && $closure->covers($date, $slot)));
+    }
+
     /**
      * @param  array{club_id: int, code: string, teacher_id: int, date: string, schedule_slot_id: int, modality: string, classroom_id?: ?int, repeats?: bool}  $data
      */
@@ -126,6 +137,7 @@ final class ScheduleClub
             $slot === null || ! $this->planner->slotAppliesOn($slot, $date->dayOfWeekIso) => ['slot', __('clubs.validation.slot')],
             Holiday::withoutGlobalScope('school')->where('school_id', $school->id)->covering($date->toDateString())->exists() => ['slot', __('clubs.validation.holiday')],
             ! in_array((int) ($data['teacher_id'] ?? 0), $this->planner->availableTeacherIds($school, $date, $slot, $session?->id), true) => ['teacherId', __('clubs.validation.teacher')],
+            $session === null && $this->clubRoomsReserved($school, $date, $slot) => ['slot', __('clubs.validation.room_reserved')],
             $this->freeRooms($school, $date, $slot, $modality, $session?->id)->isEmpty() => ['slot', __('clubs.validation.no_room_'.$modality->value)],
             ! empty($data['classroom_id']) && ! $this->freeRooms($school, $date, $slot, $modality, $session?->id)->contains('id', (int) $data['classroom_id']) => ['classroomId', __('clubs.validation.room_taken')],
             default => null,

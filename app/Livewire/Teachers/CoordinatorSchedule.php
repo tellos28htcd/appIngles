@@ -296,7 +296,7 @@ class CoordinatorSchedule extends Component
         return $this->sessionsOf($this->month);
     }
 
-    /** Opciones del teacher: los que tienen esa hora libre (si la actividad la ocupa) o "Actividad Coordinación". @return array<string, string> */
+    /** Opciones del teacher: Evaluación de Club, el que tiene club a esa hora; los que tienen esa hora libre (si la actividad la ocupa) o "Actividad Coordinación". @return array<string, string> */
     #[Computed]
     public function teacherOptions(): array
     {
@@ -319,9 +319,12 @@ class CoordinatorSchedule extends Component
         $school = $this->school();
         $planner = app(AvailabilityPlanner::class);
         $date = CarbonImmutable::parse($this->date);
-        $ids = $activity->uses_teacher_hour
-            ? $planner->availableTeacherIds($school, $date, $slot, null, $this->sessionId)
-            : $planner->workingTeacherIds($school, $date, $slot);
+        $ids = match (true) {
+            $activity->evaluatesClubs() => ClubSession::query()->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+                ->where('schedule_slot_id', $slot->id)->pluck('teacher_id')->all(),
+            $activity->uses_teacher_hour => $planner->availableTeacherIds($school, $date, $slot, null, $this->sessionId),
+            default => $planner->workingTeacherIds($school, $date, $slot),
+        };
 
         return Teacher::query()->where('school_id', $school->id)->whereKey($ids)->where('is_waitlist', false)->orderBy('panel_number')->get()
             ->mapWithKeys(fn (Teacher $teacher) => [(string) $teacher->id => $teacher->panelName()])->all();

@@ -173,6 +173,13 @@ class ClubScheduleTest extends TestCase
         $this->schedule('2026-07-27', 9, $melissa)->assertHasErrors('classroomId');
         $this->schedule('2026-07-27', 10, $melissa)->assertHasNoErrors();
 
+        // Aula audiovisual reservada: tampoco un club en línea y la celda no ofrece "+" a esa hora.
+        Classroom::create(['school_id' => $this->school->id, 'name' => 'Zoom 1', 'capacity' => 30, 'is_virtual' => true, 'is_active' => true]);
+        $this->schedule('2026-07-27', 9, $melissa, 'C12', 'online')->assertHasErrors('slot');
+        $html = $this->withFilters(ClubSchedule::class, ['month' => '2026-07'])->get(route('clubs.schedule'))->getContent();
+        $this->assertStringNotContainsString("add('2026-07-27', {$this->slots[9]->id})", $html);
+        $this->assertStringContainsString("add('2026-07-28', {$this->slots[9]->id})", $html);
+
         // La reserva aparece en la programación como "Reservada para otra actividad" y queda en el historial.
         $this->withFilters(ClubSchedule::class, ['month' => '2026-07'])->get(route('clubs.schedule'))->assertOk()->assertSee('Reservada para otra actividad');
         $this->assertSame(['Mantenimiento'], Livewire::test(ClassroomIndex::class)->call('openClosures', $this->audiovisual->id)->get('closures')->pluck('reason')->all());

@@ -351,6 +351,11 @@ class ClubSchedule extends Component
             $reserved = $reservedAt($day, $slot)->pluck('classroom_id');
             $sessions = $grid->get($day->toDateString().'|'.$slot->id, collect());
 
+            // Aula audiovisual reservada para otra actividad: esa hora no admite clubs (sin "+").
+            if ($physical->isNotEmpty() && $physical->whereNotIn('id', $reserved)->isEmpty()) {
+                return 0;
+            }
+
             return max(0, $physical->whereNotIn('id', $reserved)->count() - $sessions->where('modality', ClubModality::InPerson)->count())
                 + max(0, $virtual->whereNotIn('id', $reserved)->count() - $sessions->where('modality', ClubModality::Online)->count());
         };
