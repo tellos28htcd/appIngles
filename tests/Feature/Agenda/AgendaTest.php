@@ -584,6 +584,7 @@ class AgendaTest extends TestCase
         // Sin botones "Cambiar" ni "Asistió": el aula abre la ventana y "Reservada" marca la asistencia.
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->assertSeeHtml('wire:click="editBooking('.$booking->id.')"')->assertSeeHtml('wire:click="markAttended('.$booking->id.')"')
+            ->assertSeeHtmlInOrder(['wire:click="editBooking('.$booking->id.')"', 'wire:click="editBooking('.$booking->id.')"'])
             ->call('markAttended', $booking->id)->assertDispatched('toast', type: 'success')
             ->assertDontSeeHtml('wire:click="markAttended('.$booking->id.')"');
 

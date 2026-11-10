@@ -125,7 +125,12 @@
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-1 font-semibold">{{ $booking->teacher?->panelName() ?? '—' }}</td>
                                         <td class="px-4 py-1">
-                                            <span class="font-bold">{{ $booking->student?->fullName() }}</span>
+                                            @if ($canManage && $booking->canBeChanged())
+                                                <button type="button" wire:click="editBooking({{ $booking->id }})" title="{{ __('agenda.edit.open') }}"
+                                                        class="rounded text-left font-bold text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">{{ $booking->student?->fullName() }}</button>
+                                            @else
+                                                <span class="font-bold">{{ $booking->student?->fullName() }}</span>
+                                            @endif
                                             <span class="text-sm text-ink-700 tabular-nums">· {{ $booking->student?->enrollment_number }}@if ($booking->booked_by_reception) · {{ __('agenda.by_reception') }}@endif</span>
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-1">
