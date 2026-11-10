@@ -10,6 +10,7 @@ use App\Livewire\Teachers\AvailabilityPanel;
 use App\Livewire\Teachers\ClubSchedule;
 use App\Livewire\Teachers\TeacherIncidentIndex;
 use App\Models\Classroom;
+use App\Models\ClassroomClosure;
 use App\Models\Club;
 use App\Models\ClubSession;
 use App\Models\Holiday;
@@ -186,6 +187,24 @@ class ClubScheduleTest extends TestCase
 
         Holiday::create(['school_id' => $this->school->id, 'name' => 'Asueto', 'type' => HolidayType::School, 'starts_on' => '2026-07-28', 'ends_on' => '2026-07-28', 'is_active' => true]);
         $this->schedule('2026-07-28', 9, $melissa)->assertHasErrors('slot');
+    }
+
+    public function test_a_room_reservation_is_not_saved_while_a_club_is_scheduled_in_it(): void
+    {
+        $melissa = $this->teacher('MELISSA', 1, [1 => [9, 10]]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $this->schedule('2026-07-27', 9, $melissa)->assertHasNoErrors();
+
+        $reserve = fn (int $hour) => Livewire::test(ClassroomIndex::class)->call('openClosures', $this->audiovisual->id)
+            ->set('closureFrom', '2026-07-27')->set('closureTo', '2026-07-27')->set('closureAllDay', false)
+            ->set('closureFromSlot', $this->slots[$hour]->id)->set('closureToSlot', $this->slots[$hour]->id)->set('closureReason', 'Junta')
+            ->call('saveClosure');
+
+        $reserve(9)->assertHasErrors('closureFrom')->assertDispatched('toast', type: 'error');
+        $this->assertSame(0, ClassroomClosure::count());
+
+        $reserve(10)->assertHasNoErrors();
+        $this->assertSame(1, ClassroomClosure::count());
     }
 
     public function test_a_covering_teacher_can_give_the_club_and_takes_it_when_the_owner_is_absent(): void

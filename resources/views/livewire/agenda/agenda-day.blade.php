@@ -20,7 +20,7 @@
         <input id="agenda-date" type="date" wire:model.live="date"
                class="h-11 rounded-md border-[1.5px] border-line-strong bg-white px-3 text-[15px] tabular-nums focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-100">
         <x-ui.button variant="ghost" size="sm" wire:click="goToday">{{ __('agenda.today') }}</x-ui.button>
-        @include('livewire.agenda.partials.legend')
+        @include('livewire.agenda.partials.legend', ['waitlist' => $waitlist])
     </div>
 
     @if ($isReady)
@@ -100,44 +100,50 @@
                         @foreach ($this->bookings as $group)
                             <tbody wire:key="slot-{{ $group['slot']?->id }}" class="border-t border-line">
                                 <tr class="bg-primary-50">
-                                    <th scope="colgroup" colspan="{{ $canManage ? 6 : 5 }}" class="px-4 py-2.5 text-left font-display text-lg font-bold tabular-nums text-primary-700">
+                                    <th scope="colgroup" colspan="{{ $canManage ? 6 : 5 }}" class="px-4 py-1 text-left font-display text-lg font-bold tabular-nums text-primary-700">
                                         {{ substr((string) $group['slot']?->starts_at, 0, 5) }} – {{ substr((string) $group['slot']?->ends_at, 0, 5) }}
                                     </th>
                                 </tr>
                                 @foreach ($group['bookings'] as $booking)
                                     @php($active = $booking->status->isActive())
                                     @php($tint = $booking->classroom_id && ! $booking->is_waitlist ? \App\Support\RoomColors::tint($roomNumbers[$booking->classroom_id] ?? 1) : 'even:bg-row-alt')
-                                    <tr wire:key="booking-{{ $booking->id }}" @class(['border-t border-line', $tint, 'text-ink-400' => ! $active])>
-                                        <td class="px-4 py-3">
-                                            <span @class(['font-bold', 'text-warning-700' => $booking->is_waitlist && $active])>{{ $booking->placeLabel() }}</span>
-                                            @if ($booking->modality === \App\Enums\ClubModality::Online)
-                                                <span class="block text-sm font-semibold text-info-700">{{ __('agenda.online') }}</span>
-                                            @else
-                                                <span class="block text-sm text-ink-700">{{ __('agenda.in_person') }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-4 py-3 font-semibold">{{ $booking->teacher?->panelName() ?? '—' }}</td>
-                                        <td class="px-4 py-3">
+                                    {{-- Renglón compacto (todo en una línea): clic en el aula = cambiar; clic en "Reservada" = asistió; doble clic en "Asistió" = regresa a reservada. --}}
+                                    <tr wire:key="booking-{{ $booking->id }}" @class(['border-t border-line leading-tight', $tint, 'text-ink-400' => ! $active])>
+                                        <td class="whitespace-nowrap px-4 py-1">
                                             @if ($canManage && $booking->canBeChanged())
                                                 <button type="button" wire:click="editBooking({{ $booking->id }})" title="{{ __('agenda.edit.open') }}"
-                                                        class="rounded text-left font-bold text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
-                                                    {{ $booking->student?->fullName() }}
-                                                </button>
+                                                        @class(['rounded text-left font-bold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                                                            'text-warning-700' => $booking->is_waitlist, 'text-primary-700' => ! $booking->is_waitlist])>{{ $booking->placeLabel() }}</button>
                                             @else
-                                                <span class="font-bold">{{ $booking->student?->fullName() }}</span>
+                                                <span @class(['font-bold', 'text-warning-700' => $booking->is_waitlist && $active])>{{ $booking->placeLabel() }}</span>
                                             @endif
-                                            <span class="block text-sm text-ink-700 tabular-nums">{{ $booking->student?->enrollment_number }}@if ($booking->booked_by_reception) · {{ __('agenda.by_reception') }}@endif</span>
+                                            @if ($booking->modality === \App\Enums\ClubModality::Online)
+                                                <span class="text-sm font-semibold text-info-700">· {{ __('agenda.online') }}</span>
+                                            @else
+                                                <span class="text-sm text-ink-700">· {{ __('agenda.in_person') }}</span>
+                                            @endif
                                         </td>
-                                        <td class="px-4 py-3">
+                                        <td class="whitespace-nowrap px-4 py-1 font-semibold">{{ $booking->teacher?->panelName() ?? '—' }}</td>
+                                        <td class="px-4 py-1">
+                                            <span class="font-bold">{{ $booking->student?->fullName() }}</span>
+                                            <span class="text-sm text-ink-700 tabular-nums">· {{ $booking->student?->enrollment_number }}@if ($booking->booked_by_reception) · {{ __('agenda.by_reception') }}@endif</span>
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-1">
                                             <span class="text-sm font-bold uppercase text-ink-700">{{ $booking->kind->label() }}</span>
-                                            <span class="block font-bold tabular-nums">{{ $booking->activityLabel() }}</span>
+                                            <span class="font-bold tabular-nums">{{ $booking->activityLabel() }}</span>
                                         </td>
-                                        <td class="px-4 py-3">
+                                        <td class="whitespace-nowrap px-4 py-1">
                                             @if ($canManage && $booking->status === \App\Enums\BookingStatus::Attended)
                                                 {{-- Asistencia marcada por error: doble clic la quita. --}}
                                                 <button type="button" wire:dblclick="undoAttendance({{ $booking->id }})" title="{{ __('agenda.actions.undo_attendance') }}"
                                                         aria-label="{{ __('agenda.actions.undo_attendance') }}" class="cursor-pointer rounded-full select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                                                     <x-ui.badge variant="success">{{ $booking->status->label() }}</x-ui.badge>
+                                                </button>
+                                            @elseif ($canManage && $booking->canBeChanged() && ! $booking->is_waitlist)
+                                                {{-- Clic en "Reservada": el alumno asistió. --}}
+                                                <button type="button" wire:click="markAttended({{ $booking->id }})" title="{{ __('agenda.actions.mark_attended') }}"
+                                                        aria-label="{{ __('agenda.actions.mark_attended') }}" class="cursor-pointer rounded-full select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                                                    <x-ui.badge variant="info">{{ $booking->status->label() }}</x-ui.badge>
                                                 </button>
                                             @else
                                                 <x-ui.badge :variant="match ($booking->status) { \App\Enums\BookingStatus::Attended => 'success', \App\Enums\BookingStatus::Cancelled => 'neutral', default => $booking->is_waitlist ? 'warning' : 'info' }">
@@ -145,21 +151,13 @@
                                                 </x-ui.badge>
                                             @endif
                                             @if ($booking->cancellationReason)
-                                                <span class="mt-1 block text-sm">{{ $booking->cancellationReason->name }}</span>
+                                                <span class="text-sm">· {{ $booking->cancellationReason->name }}</span>
                                             @endif
                                         </td>
                                         @if ($canManage)
-                                            <td class="px-4 py-3">
+                                            <td class="px-4 py-1 text-right">
                                                 @if ($active)
-                                                    <div class="flex items-center justify-end gap-1.5">
-                                                        @if ($booking->canBeChanged())
-                                                            <x-ui.button size="sm" variant="outline" class="text-[15px]" wire:click="editBooking({{ $booking->id }})" :title="__('agenda.edit.open')">{{ __('agenda.actions.change') }}</x-ui.button>
-                                                        @endif
-                                                        @if ($booking->status !== \App\Enums\BookingStatus::Attended && ! $booking->is_waitlist)
-                                                            <x-ui.button size="sm" variant="secondary" class="text-[15px]" wire:click="markAttended({{ $booking->id }})">{{ __('agenda.actions.attended') }}</x-ui.button>
-                                                        @endif
-                                                        <x-ui.button size="sm" variant="ghost" class="text-[15px] text-danger-700 hover:bg-danger-50" wire:click="confirmCancel({{ $booking->id }})">{{ __('agenda.actions.cancel') }}</x-ui.button>
-                                                    </div>
+                                                    <x-ui.button size="sm" variant="ghost" class="h-7 text-[15px] text-danger-700 hover:bg-danger-50" wire:click="confirmCancel({{ $booking->id }})">{{ __('agenda.actions.cancel') }}</x-ui.button>
                                                 @endif
                                             </td>
                                         @endif

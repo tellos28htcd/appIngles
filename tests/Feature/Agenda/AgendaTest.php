@@ -11,6 +11,7 @@ use App\Enums\LessonType;
 use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
 use App\Livewire\Agenda\MyAgenda;
+use App\Livewire\Students\StudentShow;
 use App\Models\Activity;
 use App\Models\Book;
 use App\Models\Booking;
@@ -572,5 +573,97 @@ class AgendaTest extends TestCase
 
         // Otra actividad (junta) no la bloquea: a las 10 sigue recibiendo alumnos.
         $this->assertSame(4, $week[self::MONDAY.'|'.$this->slots[10]->id]['session']['capacity']);
+    }
+
+    public function test_the_room_opens_the_change_window_and_a_click_on_booked_marks_attendance(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $this->receptionBooks($this->student(), 9);
+        $booking = Booking::sole();
+
+        // Sin botones "Cambiar" ni "Asistió": el aula abre la ventana y "Reservada" marca la asistencia.
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
+            ->assertSeeHtml('wire:click="editBooking('.$booking->id.')"')->assertSeeHtml('wire:click="markAttended('.$booking->id.')"')
+            ->call('markAttended', $booking->id)->assertDispatched('toast', type: 'success')
+            ->assertDontSeeHtml('wire:click="markAttended('.$booking->id.')"');
+
+        $this->assertSame(BookingStatus::Attended, $booking->refresh()->status);
+    }
+
+    public function test_the_waitlist_label_lists_the_waiting_students_of_the_chosen_day(): void
+    {
+        $this->school->update(['books_without_classroom' => true, 'session_capacity' => 1]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis, $sofia] = [$this->student(), $this->student(), $this->student()];
+        $this->receptionBooks($ana, 9);
+        $this->receptionBooks($luis, 9);
+        $this->receptionBooks($sofia, 9)->assertDispatched('toast', type: 'warning');
+
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY);
+        $this->assertSame([$sofia->id], $page->viewData('waitlist')->pluck('student_id')->all());
+        $page->assertSee($sofia->fullName())->assertSee($this->slots[9]->range());
+
+        // Otro día: la lista de espera está vacía.
+        $this->assertTrue(Livewire::test(AgendaDay::class)->set('date', '2026-07-28')->viewData('waitlist')->isEmpty());
+    }
+
+    public function test_the_student_is_not_placed_with_the_teachers_excluded_in_the_student_file(): void
+    {
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $dulce = Teacher::where('short_name', 'DULCE')->sole();
+        [$ana, $luis, $sofia] = [$this->student(), $this->student(), $this->student()];
+
+        // Servicios escolares registra en el expediente que Ana no quiere practicar con Melissa (máximo 3).
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        Livewire::test(StudentShow::class, ['student' => $ana])->set('excludedTeacherId', (string) $melissa->id)->call('addExcludedTeacher')
+            ->assertHasNoErrors()->assertSee($melissa->fullName());
+        $this->assertSame([$melissa->id], $ana->excludedTeachers()->pluck('teachers.id')->all());
+
+        $this->actingAs($this->user(Role::RECEPTION));
+        // A las 9 hay lugar con los dos: el sistema siempre la pone con Dulce.
+        foreach (range(1, 5) as $i) {
+            $this->receptionBooks($ana, 9)->assertDispatched('toast', type: 'success');
+            $this->assertSame($dulce->id, Booking::where('student_id', $ana->id)->value('teacher_id'));
+            Booking::where('student_id', $ana->id)->delete();
+        }
+
+        // A las 10 el aula de Dulce está llena (cupo 2) y Melissa tiene lugar: a Ana no le queda lugar (ni en línea como híbrida).
+        $seat = fn (Student $student, Teacher $teacher) => Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => self::MONDAY,
+            'schedule_slot_id' => $this->slots[10]->id, 'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Booked,
+            'teacher_id' => $teacher->id, 'classroom_id' => TeacherAvailability::where('teacher_id', $teacher->id)->where('schedule_slot_id', $this->slots[10]->id)->value('classroom_id'),
+            'teacher_availability_id' => TeacherAvailability::where('teacher_id', $teacher->id)->where('schedule_slot_id', $this->slots[10]->id)->value('id')]);
+        $seat($luis, $dulce);
+        $seat($sofia, $dulce);
+        $withMelissa = $seat($this->student(), $melissa);
+        $this->receptionBooks($ana, 10)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+        $this->receptionBooks($ana, 10, 'session', 'online')->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+
+        // Corregir alumno: no se le puede dar a Ana un lugar con Melissa.
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $withMelissa->id)
+            ->call('pickEditStudent', $ana->id)->call('saveChange')
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.excluded_teacher', ['teacher' => 'MELISSA']));
+    }
+
+    public function test_up_to_three_teachers_can_be_excluded_and_only_from_the_same_school(): void
+    {
+        $student = $this->student();
+        $teachers = collect([Teacher::where('short_name', 'MELISSA')->sole(), Teacher::where('short_name', 'DULCE')->sole(), $this->teacher('ROSA', 3), $this->teacher('JUAN', 4)]);
+        $foreign = Teacher::factory()->create(['school_id' => School::factory()->create()->id, 'user_id' => null, 'short_name' => 'AJENO', 'panel_number' => 1]);
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $page = Livewire::test(StudentShow::class, ['student' => $student]);
+
+        $page->set('excludedTeacherId', (string) $foreign->id)->call('addExcludedTeacher')->assertHasErrors('excludedTeacherId');
+        foreach ($teachers->take(3) as $teacher) {
+            $page->set('excludedTeacherId', (string) $teacher->id)->call('addExcludedTeacher')->assertHasNoErrors();
+        }
+        $page->set('excludedTeacherId', (string) $teachers[3]->id)->call('addExcludedTeacher')->assertHasErrors('excludedTeacherId');
+        $this->assertSame(3, $student->excludedTeachers()->count());
+
+        $page->call('removeExcludedTeacher', $teachers[0]->id);
+        $this->assertSame(2, $student->excludedTeachers()->count());
+
+        // Recepción no modifica el expediente.
+        $this->actingAs($this->user(Role::RECEPTION));
+        Livewire::test(StudentShow::class, ['student' => $student])->call('removeExcludedTeacher', $teachers[1]->id)->assertForbidden();
     }
 }

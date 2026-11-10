@@ -158,15 +158,21 @@
                                 {{-- Días de otro mes: deshabilitados pero con el renglón alterno; gris solo festivos y horas que no se trabajan. --}}
                                 <td @class(['h-12 min-w-28 border-b border-l border-line p-1 align-top', 'bg-surface-2' => ! $open && ! $session && $day->month === $monthStart->month])>
                                     @if ($session)
+                                        {{-- Evaluación de Club: abreviatura del club evaluado y su color tenue (como en Programación de clubs). --}}
+                                        @php($evaluatedClub = $session->activity?->evaluatesClubs() ? $evaluatedClubs->get($day->toDateString().'|'.$slot->id.'|'.$session->teacher_id) : null)
                                         <button type="button" @if ($canManage) wire:click="edit({{ $session->id }})" @else disabled @endif
                                                 @class([
                                                     'flex w-full flex-col items-center rounded-md px-1 py-0.5 leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
-                                                    'bg-ink-900 text-white' => $session->activity?->uses_teacher_hour,
-                                                    'bg-primary-100 text-primary-700' => ! $session->activity?->uses_teacher_hour,
+                                                    \App\Support\RoomColors::tint($evaluatedClub?->color() ?? 1).' text-ink-900' => $evaluatedClub,
+                                                    'bg-ink-900 text-white' => ! $evaluatedClub && $session->activity?->uses_teacher_hour,
+                                                    'bg-primary-100 text-primary-700' => ! $evaluatedClub && ! $session->activity?->uses_teacher_hour,
                                                     'hover:opacity-85' => $canManage,
                                                 ])
-                                                title="{{ $session->activity?->name }} · {{ $session->teacher?->fullName() ?? __('coordination.coordination_option') }}">
+                                                title="{{ $session->activity?->name }}{{ $evaluatedClub ? ' '.$evaluatedClub->code : '' }} · {{ $session->teacher?->fullName() ?? __('coordination.coordination_option') }}">
                                             <span class="line-clamp-2 text-[11px] font-extrabold">{{ $session->activity?->name }}</span>
+                                            @if ($evaluatedClub)
+                                                <span class="text-[11px] font-extrabold tabular-nums">{{ $evaluatedClub->code }}</span>
+                                            @endif
                                             <span class="text-[10px] font-bold uppercase">{{ $session->teacher?->panelName() ?? __('coordination.coordination_short') }}</span>
                                         </button>
                                     @elseif ($canManage && $open)

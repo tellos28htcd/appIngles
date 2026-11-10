@@ -33,6 +33,8 @@ Reglas (`App\Actions\Coordination\ScheduleCoordinatorHour`):
   Programación de clubs (clubs y horas del mes).
 - Clic en "Evaluación de Club T. …": ventana con los clubs de ese teacher en el mes (fecha · hora · abreviatura); al
   elegir uno se programa la Evaluación de Club con ese teacher en la fecha y hora del club (marca los ya evaluados).
+- La Evaluación de Club muestra la abreviatura del club que evalúa (p. ej. C23) en la cuadrícula y en la lista de
+  teachers ("MELISSA · C23"), con el color tenue de esa abreviatura (el de Programación de clubs).
 
 ## Tablas
 `coordinator_activities`, `coordinator_sessions` (school_id, coordinator_activity_id, teacher_id nulo, date,

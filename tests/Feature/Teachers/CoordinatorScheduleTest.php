@@ -174,10 +174,12 @@ class CoordinatorScheduleTest extends TestCase
 
         // Solo el teacher con club en esa fecha y hora se puede elegir (Dulce trabaja el lunes a las 11, sin club).
         $options = Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')->call('add', '2026-07-27', $this->slots[9]->id)->set('activityId', $evaluation->id)->get('teacherOptions');
-        $this->assertSame([$melissa->id], array_keys($options));
+        $this->assertSame([$melissa->id => 'MELISSA · C12'], $options);
         $this->program('2026-07-27', 11, $evaluation, $dulce)->assertHasErrors('teacherKey');
 
         $this->program('2026-07-27', 9, $evaluation, $melissa)->assertHasNoErrors();
+        // En la cuadrícula la evaluación lleva la abreviatura del club con su color tenue.
+        Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')->assertSeeHtml('bg-room-1/10')->assertSee('C12');
         $this->program('2026-07-27', 10, $evaluation, $melissa)->assertHasNoErrors();
         // Melissa ya tiene sus 2 h; Dulce tiene las suyas aparte.
         $this->program('2026-07-28', 9, $evaluation, $melissa)->assertHasErrors('activityId');

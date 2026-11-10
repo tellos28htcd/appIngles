@@ -35,6 +35,9 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
 - **Tutor:** su usuario (rol Padre/Tutor) se crea a mano con "Dar acceso" en Alumnos → Tutores, solo cuando lo solicita.
   Verá únicamente a sus tutorados (portal "Mis alumnos", pendiente).
 - Alumno y Padre/Tutor no se asignan desde Usuarios.
+- **Teachers con los que no quiere practicar:** en el expediente se agregan hasta 3 (`student_excluded_teachers`).
+  La agenda no lo acomoda en sus aulas (presencial, aula virtual ni híbrida), no le pasa su lugar desde la lista de
+  espera ni lo pone en su lugar al corregir alumno. No aplica a clubs.
 - Un alumno se elimina (con su ficha, usuario y encuesta) solo mientras no tenga historial: ausencias, movimientos
   del plazo o cambios de estatus además del alta (y, con Cobranza, pagos). Con historial se da de baja con su motivo.
 - El usuario de un alumno o tutor no se elimina desde Usuarios: depende de su expediente.

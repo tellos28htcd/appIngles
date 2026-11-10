@@ -436,7 +436,7 @@ class AgendaDay extends Component
         $isReady = $planner->isGenerated($school, $days[0]);
 
         // Filtros con lo que hay ese día; color de cada aula como en el panel (por su número).
-        $dayBookings = Booking::query()->whereDate('date', $this->date)->with(['slot', 'classroom', 'teacher'])->get();
+        $dayBookings = Booking::query()->whereDate('date', $this->date)->with(['slot', 'classroom', 'teacher', 'student'])->get();
         $classrooms = Classroom::query()->ofCatalog($school->id)->orderByRaw('CAST(name AS UNSIGNED)')->orderBy('name')->get(['id', 'name']);
 
         return view('livewire.agenda.agenda-day', [
@@ -446,6 +446,9 @@ class AgendaDay extends Component
             'filterTeachers' => $dayBookings->pluck('teacher')->filter()->unique('id')->sortBy(fn (Teacher $teacher) => $teacher->panelName())
                 ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all(),
             'roomNumbers' => $classrooms->values()->mapWithKeys(fn (Classroom $room, int $index) => [$room->id => ctype_digit((string) $room->name) ? (int) $room->name : $index + 1])->all(),
+            // Lista de espera del día elegido (etiqueta "Lista de espera" de arriba), por hora y nombre.
+            'waitlist' => $dayBookings->filter(fn (Booking $booking) => $booking->is_waitlist && $booking->status->isActive())
+                ->sortBy(fn (Booking $booking) => $booking->slot?->starts_at.'|'.$booking->student?->fullName())->values(),
             'edit' => $this->editData(),
             'canManage' => auth()->user()->can('manage', Booking::class),
             'day' => $this->day(),

@@ -116,6 +116,19 @@ class Student extends Model
         return $this->belongsToMany(Guardian::class)->withPivot('relationship')->withTimestamps();
     }
 
+    /** Máximo de teachers con los que el alumno no quiere hacer prácticas. */
+    public const MAX_EXCLUDED_TEACHERS = 3;
+
+    /**
+     * Teachers con los que el alumno no quiere hacer prácticas: la agenda no lo acomoda en sus aulas.
+     *
+     * @return BelongsToMany<Teacher, $this>
+     */
+    public function excludedTeachers(): BelongsToMany
+    {
+        return $this->belongsToMany(Teacher::class, 'student_excluded_teachers')->withPivot('school_id')->withTimestamps();
+    }
+
     /** @return HasMany<StudentSurveyAnswer, $this> */
     public function surveyAnswers(): HasMany
     {

@@ -58,6 +58,7 @@ return [
         'survey' => 'Encuesta',
         'survey_hint' => 'Opcional. Ayuda a dar seguimiento al alumno.',
         'guardians' => 'Tutores',
+        'excluded_teachers' => 'Teachers con los que no quiere practicar',
         'history' => 'Histórico de estatus',
         'absences' => 'Ausencias',
         'term' => 'Plazo del curso',
@@ -241,6 +242,18 @@ return [
         'document_body' => 'El alumno tiene el beneficio de solicitar ausencia hasta por :max días naturales durante cada año de su programa. Durante el periodo autorizado no asistirá a clases. Los días de ausencia se suman a la fecha de fin del curso.',
         'document_sign_student' => 'Firma del alumno',
         'document_sign_school' => 'Firma y sello de la escuela',
+    ],
+
+    'excluded_teachers' => [
+        'hint' => 'Hasta :max. Al agendar sus prácticas no se le acomoda en las aulas de estos teachers.',
+        'teacher' => 'Teacher',
+        'add' => 'Agregar',
+        'empty' => 'Sin teachers excluidos.',
+        'remove' => 'Quitar a :name de la lista',
+        'remove_short' => 'Quitar',
+        'max' => 'Solo se pueden agregar hasta :max teachers.',
+        'added' => 'Teacher agregado a la lista.',
+        'removed' => 'Teacher quitado de la lista.',
     ],
 
     'guardians' => [

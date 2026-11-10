@@ -10,7 +10,8 @@ Decisiones del 21-oct-2026.
 - **Aulas**: "Aula virtual" (`classrooms.is_virtual`; sin marcar = física) y "Aula para clubs (audiovisual)"
   (`is_club_room`, físicas para los presenciales); los clubs en línea usan cualquier aula virtual. Las aulas para clubs tienen **reservas para otra actividad** (`classroom_closures`: fechas, todo el
   día o de una hora a otra, actividad), una por una, con su historial; en la programación aparecen como
-  "Reservada para otra actividad" al recorrer los meses.
+  "Reservada para otra actividad" al recorrer los meses. Una reserva **no se guarda** mientras haya clubs programados
+  en esa aula dentro del periodo: primero se mueven en Programación de clubs.
 
 ## Programación (Teachers → Programación de clubs)
 Calendario del mes: una cuadrícula por semana (días × horas del catálogo). En cada hora se agrega el club

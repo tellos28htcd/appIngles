@@ -37,6 +37,7 @@ return [
     ],
 
     'waitlist' => 'Lista de espera',
+    'waitlist_empty' => 'Nadie en lista de espera este día.',
     'virtual_room' => 'Aula virtual :number',
     'room' => 'Aula :name',
     'hybrid_room' => 'Aula :name (híbrida, en línea)',
@@ -134,6 +135,7 @@ return [
         'promote' => 'Pasar a aula',
         'change' => 'Cambiar',
         'undo_attendance' => 'Doble clic para regresar a Reservada',
+        'mark_attended' => 'Clic para marcar Asistió',
         'close' => 'Cerrar',
         'confirm_cancel' => 'Cancelar reservación',
         'change_student' => 'Cambiar alumno',
@@ -171,6 +173,7 @@ return [
         'max_clubs' => 'Llegó al máximo de :max clubs por día.',
         'club_not_allowed' => 'Ese club no corresponde a su nivel o avance.',
         'full' => 'Ya no hay lugar a esa hora.',
+        'excluded_teacher' => 'El alumno no quiere hacer prácticas con :teacher (expediente).',
         'no_activity' => 'No se encontró su siguiente actividad: revisa el punto de inicio de su ficha.',
         'option' => 'Elige una opción disponible.',
         'room' => 'Elige un aula activa.',

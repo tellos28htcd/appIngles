@@ -11,6 +11,7 @@ use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\StudentAbsence;
 use App\Models\StudentTermMovement;
+use App\Models\Teacher;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -106,6 +107,7 @@ class StudentShow extends Component
                 'absences' => fn ($query) => $query->latest('starts_on'),
                 'termMovements.user:id,name',
                 'guardians.user:id,email,password',
+                'excludedTeachers',
                 'surveyAnswers.question',
             ])
             ->findOrFail($this->studentId);
@@ -402,6 +404,47 @@ class StudentShow extends Component
         return Guardian::query()->where('school_id', auth()->user()->school_id)->orderBy('name')->get(['id', 'name', 'mobile_phone'])
             ->mapWithKeys(fn (Guardian $guardian) => [$guardian->id => trim($guardian->name.' '.($guardian->mobile_phone ? "· {$guardian->mobile_phone}" : ''))])
             ->all();
+    }
+
+    // ── Teachers que no quiere (prácticas) ─────────────────────────
+
+    /** Teacher elegido para agregar a la lista de teachers con los que no quiere hacer prácticas. */
+    public string $excludedTeacherId = '';
+
+    public function addExcludedTeacher(): void
+    {
+        $student = $this->authorizeUpdate();
+        $this->validate([
+            'excludedTeacherId' => ['required', 'integer', Rule::in(array_keys($this->excludedTeacherOptions))],
+        ], attributes: ['excludedTeacherId' => Str::lower(__('students.excluded_teachers.teacher'))]);
+
+        if ($student->excludedTeachers()->count() >= Student::MAX_EXCLUDED_TEACHERS) {
+            throw ValidationException::withMessages(['excludedTeacherId' => __('students.excluded_teachers.max', ['max' => Student::MAX_EXCLUDED_TEACHERS])]);
+        }
+
+        $student->excludedTeachers()->syncWithoutDetaching([(int) $this->excludedTeacherId => ['school_id' => $student->school_id]]);
+
+        $this->excludedTeacherId = '';
+        unset($this->student, $this->excludedTeacherOptions);
+        $this->dispatch('toast', type: 'success', message: __('students.excluded_teachers.added'));
+    }
+
+    public function removeExcludedTeacher(int $teacherId): void
+    {
+        $student = $this->authorizeUpdate();
+        $student->excludedTeachers()->detach($teacherId);
+
+        unset($this->student, $this->excludedTeacherOptions);
+        $this->dispatch('toast', type: 'success', message: __('students.excluded_teachers.removed'));
+    }
+
+    /** Teachers activos de la escuela que todavía no están en su lista. @return array<int, string> */
+    #[Computed]
+    public function excludedTeacherOptions(): array
+    {
+        return Teacher::query()->where('school_id', auth()->user()->school_id)->inPanel()->where('is_waitlist', false)
+            ->whereNotIn('id', $this->student->excludedTeachers->modelKeys())->get()
+            ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName().' · '.$teacher->fullName()])->all();
     }
 
     // ── Acceso ─────────────────────────────────────────────────────

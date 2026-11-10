@@ -60,7 +60,7 @@ return [
         'saved' => 'Reserva agregada.',
         'deleted' => 'Reserva eliminada.',
         'slot_order' => 'La hora final debe ser igual o posterior a la inicial.',
-        'affected' => '{1} Reserva agregada. Hay 1 club programado en ese horario: muévelo en Programación de clubs.|[2,*] Reserva agregada. Hay :count clubs programados en ese horario: muévelos en Programación de clubs.',
+        'affected' => '{1} No se guardó la reserva: hay 1 club programado en ese horario. Muévelo en Programación de clubs y vuelve a intentarlo.|[2,*] No se guardó la reserva: hay :count clubs programados en ese horario. Muévelos en Programación de clubs y vuelve a intentarlo.',
     ],
 
     'bank_accounts' => [

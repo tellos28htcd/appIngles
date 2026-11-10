@@ -180,6 +180,33 @@
                 @endif
             </x-ui.card>
 
+            {{-- Teachers con los que no quiere hacer prácticas (hasta 3): la agenda no lo acomoda en sus aulas. --}}
+            <x-ui.card :title="__('students.sections.excluded_teachers')" :description="__('students.excluded_teachers.hint', ['max' => \App\Models\Student::MAX_EXCLUDED_TEACHERS])">
+                @forelse ($student->excludedTeachers as $teacher)
+                    <div wire:key="excluded-{{ $teacher->id }}" class="flex items-center gap-3">
+                        <span class="min-w-0 flex-1 font-bold [overflow-wrap:anywhere]">{{ $teacher->panelName() }} <span class="font-normal text-ink-500">· {{ $teacher->fullName() }}</span></span>
+                        @if ($canUpdate)
+                            <button type="button" wire:click="removeExcludedTeacher({{ $teacher->id }})"
+                                    class="flex size-9 flex-none items-center justify-center rounded-[10px] text-danger-700 hover:bg-danger-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+                                    aria-label="{{ __('students.excluded_teachers.remove', ['name' => $teacher->panelName()]) }}" title="{{ __('students.excluded_teachers.remove_short') }}">
+                                <x-ui.icon name="close" class="size-4" />
+                            </button>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-sm text-ink-500">{{ __('students.excluded_teachers.empty') }}</p>
+                @endforelse
+                @if ($canUpdate && $student->excludedTeachers->count() < \App\Models\Student::MAX_EXCLUDED_TEACHERS)
+                    <div class="flex items-end gap-2">
+                        <div class="min-w-0 flex-1">
+                            <x-ui.select name="excludedTeacherId" :label="__('students.excluded_teachers.teacher')" :options="$this->excludedTeacherOptions"
+                                         :placeholder="__('students.select')" wire:model="excludedTeacherId" />
+                        </div>
+                        <x-ui.button variant="secondary" wire:click="addExcludedTeacher"><x-ui.icon name="plus" class="size-4" />{{ __('students.excluded_teachers.add') }}</x-ui.button>
+                    </div>
+                @endif
+            </x-ui.card>
+
             {{-- Histórico de estatus --}}
             <x-ui.card :title="__('students.sections.history')">
                 <ol class="flex flex-col gap-4 border-l-2 border-line pl-4">

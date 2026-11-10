@@ -319,15 +319,34 @@ class CoordinatorSchedule extends Component
         $school = $this->school();
         $planner = app(AvailabilityPlanner::class);
         $date = CarbonImmutable::parse($this->date);
+        // Evaluación de Club: el teacher que da club a esa hora, con la abreviatura del club (p. ej. "MELISSA · C23").
+        $clubCodes = $activity->evaluatesClubs()
+            ? ClubSession::query()->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+                ->where('schedule_slot_id', $slot->id)->pluck('code', 'teacher_id')
+            : collect();
         $ids = match (true) {
-            $activity->evaluatesClubs() => ClubSession::query()->where('school_id', $school->id)->whereDate('date', $date->toDateString())
-                ->where('schedule_slot_id', $slot->id)->pluck('teacher_id')->all(),
+            $activity->evaluatesClubs() => $clubCodes->keys()->all(),
             $activity->uses_teacher_hour => $planner->availableTeacherIds($school, $date, $slot, null, $this->sessionId),
             default => $planner->workingTeacherIds($school, $date, $slot),
         };
 
         return Teacher::query()->where('school_id', $school->id)->whereKey($ids)->where('is_waitlist', false)->orderBy('panel_number')->get()
-            ->mapWithKeys(fn (Teacher $teacher) => [(string) $teacher->id => $teacher->panelName()])->all();
+            ->mapWithKeys(fn (Teacher $teacher) => [(string) $teacher->id => $teacher->panelName()
+                .($clubCodes->has($teacher->id) ? ' · '.$clubCodes[$teacher->id] : '')])->all();
+    }
+
+    /**
+     * Clubs del mes por "fecha|hora|teacher": la Evaluación de Club muestra la abreviatura y el color del club que evalúa.
+     *
+     * @return \Illuminate\Support\Collection<string, ClubSession>
+     */
+    private function evaluatedClubs(): \Illuminate\Support\Collection
+    {
+        $first = CarbonImmutable::parse($this->month.'-01');
+
+        return ClubSession::query()->where('school_id', auth()->user()->school_id)
+            ->whereBetween('date', [$first->toDateString(), $first->endOfMonth()->toDateString()])->with('club')->get()
+            ->keyBy(fn (ClubSession $club) => $club->date->toDateString().'|'.$club->schedule_slot_id.'|'.$club->teacher_id);
     }
 
     private function editingSlot(): ?ScheduleSlot
@@ -421,6 +440,7 @@ class CoordinatorSchedule extends Component
             'scheduleSlots' => $slots,
             'holidays' => $planner->holidays($school, collect($weeks)->flatten(1)->all()),
             'grid' => $this->sessions->keyBy(fn (CoordinatorSession $session) => $session->date->toDateString().'|'.$session->schedule_slot_id),
+            'evaluatedClubs' => $this->evaluatedClubs(),
             'catalog' => $catalog,
             'columns' => $columns,
             'totalAuthorized' => $catalog->sum('authorized'),

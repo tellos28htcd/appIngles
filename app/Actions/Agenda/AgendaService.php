@@ -47,6 +47,7 @@ use Illuminate\Validation\ValidationException;
  *   7 días (≥ 0.8 o sin historial: 2 horas; menos: 1).
  * - Cada práctica lleva la actividad que le toca (LLA) según la ruta de avance.
  * - Un teacher con cargo de Coordinador no recibe alumnos a la hora de una Evaluación de Club.
+ * - En prácticas, el alumno no se acomoda con los teachers que excluyó en su expediente (hasta 3).
  */
 final class AgendaService
 {
@@ -158,19 +159,52 @@ final class AgendaService
             ->selectRaw('teacher_availability_id, count(*) as total')->groupBy('teacher_availability_id')->pluck('total', 'teacher_availability_id');
     }
 
-    /** Aulas (presenciales) con lugar a esa hora. @return Collection<int, TeacherAvailability> */
-    public function freeSessionCells(School $school, CarbonInterface $date, ScheduleSlot $slot): Collection
+    /**
+     * Aulas (presenciales) con lugar a esa hora; sin las de los teachers con los que el alumno no quiere practicar.
+     *
+     * @param  list<int>  $excludedTeacherIds
+     * @return Collection<int, TeacherAvailability>
+     */
+    public function freeSessionCells(School $school, CarbonInterface $date, ScheduleSlot $slot, array $excludedTeacherIds = []): Collection
     {
-        $cells = $this->sessionCells($school, $date, $slot)->reject(fn (TeacherAvailability $cell) => $cell->teacher?->is_waitlist);
+        $cells = $this->sessionCells($school, $date, $slot)
+            ->reject(fn (TeacherAvailability $cell) => $cell->teacher?->is_waitlist || in_array($cell->teacher_id, $excludedTeacherIds, true));
         $taken = $this->cellOccupancy($cells);
 
         return $cells->filter(fn (TeacherAvailability $cell) => ($taken[$cell->id] ?? 0) < $this->cellCapacity($school, $cell))->values();
+    }
+
+    /** Teachers con los que el alumno no quiere hacer prácticas (su expediente). @return list<int> */
+    public function excludedTeacherIds(?int $studentId): array
+    {
+        return $studentId === null ? [] : DB::table('student_excluded_teachers')->where('student_id', $studentId)
+            ->pluck('teacher_id')->map(fn ($id) => (int) $id)->all();
     }
 
     /** Aulas virtuales del catálogo (Aulas marcadas "Virtual") con lugar a esa hora para práctica en línea. @return list<int> */
     public function freeVirtualRooms(School $school, CarbonInterface $date, ScheduleSlot $slot): array
     {
         return array_keys($this->virtualSeats($school, $date, $slot));
+    }
+
+    /**
+     * Aulas virtuales con lugar y el teacher que atendería al alumno (sin los teachers que no quiere).
+     *
+     * @param  list<int>  $excludedTeacherIds
+     * @return array<int, ?int> id del aula => id del teacher
+     */
+    private function virtualRoomsFor(School $school, CarbonInterface $date, ScheduleSlot $slot, array $excludedTeacherIds): array
+    {
+        $rooms = [];
+        foreach ($this->freeVirtualRooms($school, $date, $slot) as $roomId) {
+            $teacherId = $this->virtualTeacherId($school, $date, $slot, $roomId, $excludedTeacherIds);
+
+            if ($excludedTeacherIds === [] || ($teacherId !== null && ! in_array($teacherId, $excludedTeacherIds, true))) {
+                $rooms[$roomId] = $teacherId;
+            }
+        }
+
+        return $rooms;
     }
 
     /** Lugares de una aula virtual: "Alumnos por aula virtual" de Mi Instituto (o la capacidad del aula). */
@@ -197,7 +231,8 @@ final class AgendaService
      * Teacher que atiende un aula virtual: el que el panel tenga en esa aula a esa hora; si no está
      * programada, uno de los que dan clase presencial a esa hora (el que lleve menos alumnos en línea).
      */
-    public function virtualTeacherId(School $school, CarbonInterface $date, ScheduleSlot $slot, int $classroomId): ?int
+    /** @param  list<int>  $excludedTeacherIds  teachers que no se eligen como respaldo */
+    public function virtualTeacherId(School $school, CarbonInterface $date, ScheduleSlot $slot, int $classroomId, array $excludedTeacherIds = []): ?int
     {
         $cells = $this->sessionCells($school, $date, $slot)->reject(fn (TeacherAvailability $cell) => $cell->teacher?->is_waitlist);
         $assigned = $cells->firstWhere('classroom_id', $classroomId);
@@ -205,6 +240,8 @@ final class AgendaService
         if ($assigned !== null) {
             return $assigned->teacher_id;
         }
+
+        $cells = $cells->reject(fn (TeacherAvailability $cell) => in_array($cell->teacher_id, $excludedTeacherIds, true));
 
         $online = Booking::withoutGlobalScope('school')->active()->where('school_id', $school->id)->whereDate('date', $date->toDateString())
             ->where('schedule_slot_id', $slot->id)->where('modality', ClubModality::Online)->whereNotNull('teacher_id')
@@ -351,6 +388,7 @@ final class AgendaService
         $path = new ProgressPath($school);
         $step = $this->nextActivity($student, $path);
         $clubs = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())->with(['club', 'classroom'])->get();
+        $excluded = $this->excludedTeacherIds($student->id);
         $result = [];
 
         foreach ($this->planner->slots($school) as $slot) {
@@ -360,7 +398,7 @@ final class AgendaService
 
             $options = [];
             $cells = $this->sessionCells($school, $date, $slot);
-            $free = $this->freeSessionCells($school, $date, $slot);
+            $free = $this->freeSessionCells($school, $date, $slot, $excluded);
             $taken = $this->cellOccupancy($free);
             $freeSeats = $free->sum(fn (TeacherAvailability $cell) => $this->cellCapacity($school, $cell) - ($taken[$cell->id] ?? 0));
 
@@ -373,7 +411,8 @@ final class AgendaService
             }
 
             // En línea (siempre se ofrece): aulas virtuales y, llenas o sin ellas, híbrida en un aula presencial con lugar.
-            $virtualSeats = array_sum($this->virtualSeats($school, $date, $slot)) + $freeSeats;
+            $roomSeats = $this->virtualSeats($school, $date, $slot);
+            $virtualSeats = array_sum($excluded === [] ? $roomSeats : array_intersect_key($roomSeats, $this->virtualRoomsFor($school, $date, $slot, $excluded))) + $freeSeats;
             if ($virtualSeats > 0) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::Online->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => $virtualSeats, 'waitlist' => false];
@@ -496,11 +535,11 @@ final class AgendaService
             $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
 
             if ($modality === ClubModality::Online) {
-                $rooms = $this->freeVirtualRooms($school, $date, $slot);
+                $rooms = $this->virtualRoomsFor($school, $date, $slot, $this->excludedTeacherIds($student->id));
 
                 if ($rooms !== []) {
-                    $booking->classroom_id = $rooms[array_rand($rooms)];
-                    $booking->teacher_id = $this->virtualTeacherId($school, $date, $slot, $booking->classroom_id);
+                    $booking->classroom_id = array_rand($rooms);
+                    $booking->teacher_id = $rooms[$booking->classroom_id];
                 } else {
                     // Aulas virtuales llenas (o la escuela no tiene): híbrida con un teacher presencial (ocupa un lugar de su aula).
                     $this->placeInRoom($school, $booking, $date, $slot, allowWaitlist: false) || $fail('full');
@@ -526,7 +565,7 @@ final class AgendaService
     /** Aula al azar entre las que tienen lugar; si están llenas, a la lista de espera (si se permite). */
     private function placeInRoom(School $school, Booking $booking, CarbonInterface $date, ScheduleSlot $slot, bool $allowWaitlist = true): bool
     {
-        $free = $this->freeSessionCells($school, $date, $slot);
+        $free = $this->freeSessionCells($school, $date, $slot, $this->excludedTeacherIds($booking->student_id));
 
         if ($free->isNotEmpty()) {
             $cell = $free->random();
@@ -569,6 +608,8 @@ final class AgendaService
                     ->active()->lockForUpdate()->get();
 
                 $day->contains('schedule_slot_id', $booking->schedule_slot_id) && $fail('duplicate');
+                $booking->kind === BookingKind::Session && $booking->teacher_id && in_array($booking->teacher_id, $this->excludedTeacherIds($student->id), true)
+                    && $fail('excluded_teacher', ['teacher' => Teacher::withoutGlobalScope('school')->find($booking->teacher_id)?->panelName() ?? '—']);
                 $limit = $this->dailyLimit($student, CarbonImmutable::now($timezone)->startOfDay());
                 $day->count() >= $limit && $fail('daily_limit', ['hours' => $limit]);
 
@@ -666,7 +707,9 @@ final class AgendaService
     {
         $school = School::findOrFail($booking->school_id);
         $slot = $booking->slot;
-        $cells = $this->sessionCells($school, $booking->date, $slot)->reject(fn (TeacherAvailability $cell) => $cell->teacher?->is_waitlist);
+        $excluded = $this->excludedTeacherIds($booking->student_id);
+        $cells = $this->sessionCells($school, $booking->date, $slot)->reject(fn (TeacherAvailability $cell) => $cell->teacher?->is_waitlist
+            || ($cell->classroom_id !== $booking->classroom_id && in_array($cell->teacher_id, $excluded, true)));
         $taken = Booking::withoutGlobalScope('school')->active()->where('is_waitlist', false)->whereKeyNot($booking->id)
             ->whereIn('teacher_availability_id', $cells->modelKeys())
             ->selectRaw('teacher_availability_id, count(*) as total')->groupBy('teacher_availability_id')->pluck('total', 'teacher_availability_id');
@@ -693,7 +736,10 @@ final class AgendaService
                 $free = $this->virtualCapacity($school, $room) - (int) ($virtualTaken[$room->id] ?? 0);
 
                 if ($free > 0 || $room->id === $booking->classroom_id) {
-                    $teacherId = $room->id === $booking->classroom_id && $booking->teacher_id ? $booking->teacher_id : $this->virtualTeacherId($school, $booking->date, $slot, $room->id);
+                    $teacherId = $room->id === $booking->classroom_id && $booking->teacher_id ? $booking->teacher_id : $this->virtualTeacherId($school, $booking->date, $slot, $room->id, $excluded);
+                    if ($room->id !== $booking->classroom_id && in_array($teacherId, $excluded, true)) {
+                        continue;
+                    }
                     $choices[$room->id] = [
                         'label' => __('agenda.virtual_classroom', ['name' => $room->name]),
                         'teacher' => (string) Teacher::withoutGlobalScope('school')->find($teacherId)?->panelName(),
@@ -769,7 +815,10 @@ final class AgendaService
     {
         return Booking::withoutGlobalScope('school')->where('school_id', $booking->school_id)->whereDate('date', $booking->date->toDateString())
             ->where('schedule_slot_id', $booking->schedule_slot_id)->where('kind', BookingKind::Session)->where('is_waitlist', true)->active()
-            ->whereKeyNot($booking->id)->with('student')->orderBy('created_at')->orderBy('id')->get();
+            ->whereKeyNot($booking->id)->with('student')->orderBy('created_at')->orderBy('id')->get()
+            // No se le pasa el lugar a quien no quiere practicar con el teacher de esa aula.
+            ->reject(fn (Booking $waiting) => $booking->teacher_id && in_array($booking->teacher_id, $this->excludedTeacherIds($waiting->student_id), true))
+            ->values();
     }
 
     /**

@@ -140,7 +140,7 @@ class ClassroomIndex extends Component
         ], attributes: collect(['closureFrom' => 'from', 'closureTo' => 'to', 'closureFromSlot' => 'from_hour', 'closureToSlot' => 'to_hour', 'closureReason' => 'reason'])
             ->map(fn (string $key) => Str::lower(__("settings.closures.$key")))->all());
 
-        $closure = ClassroomClosure::create([
+        $closure = new ClassroomClosure([
             'school_id' => $this->schoolId,
             'classroom_id' => $classroom->id,
             'starts_on' => $this->closureFrom,
@@ -149,23 +149,28 @@ class ClassroomIndex extends Component
             'to_slot_id' => $this->closureAllDay ? null : $this->closureToSlot,
             'reason' => trim($this->closureReason),
             'user_id' => auth()->id(),
-        ])->load(['fromSlot', 'toSlot']);
+        ]);
+        $closure->load(['fromSlot', 'toSlot']);
 
         if (! $closure->isAllDay() && $closure->fromSlot->starts_at > $closure->toSlot->starts_at) {
-            $closure->delete();
             throw ValidationException::withMessages(['closureToSlot' => __('settings.closures.slot_order')]);
         }
 
-        // Clubs ya programados que quedan dentro del periodo: se avisan para moverlos.
+        // Con clubs programados en el periodo no se guarda: primero se mueven en Programación de clubs.
         $affected = ClubSession::query()->where('classroom_id', $classroom->id)
             ->whereBetween('date', [$closure->starts_on->toDateString(), $closure->ends_on->toDateString()])->with('slot')->get()
             ->filter(fn (ClubSession $session) => $closure->covers($session->date, $session->slot))->count();
 
+        if ($affected > 0) {
+            $this->dispatch('toast', type: 'error', message: trans_choice('settings.closures.affected', $affected));
+
+            throw ValidationException::withMessages(['closureFrom' => trans_choice('settings.closures.affected', $affected)]);
+        }
+
+        $closure->save();
         $this->reset('closureReason');
         unset($this->closures);
-        $this->dispatch('toast', ...($affected > 0
-            ? ['type' => 'warning', 'message' => trans_choice('settings.closures.affected', $affected)]
-            : ['type' => 'success', 'message' => __('settings.closures.saved')]));
+        $this->dispatch('toast', type: 'success', message: __('settings.closures.saved'));
     }
 
     public function deleteClosure(int $id): void
