@@ -157,7 +157,8 @@
                                             <span class="font-bold tabular-nums">{{ $booking->activityLabel() }}</span>
                                         </td>
                                         @if ($canSeeWeights)
-                                            <td class="whitespace-nowrap px-4 py-1 text-right font-bold tabular-nums">{{ $group['weights'][$booking->id] ?? '—' }}</td>
+                                            <td @class(['whitespace-nowrap px-4 py-1 text-right tabular-nums', 'font-bold' => $active && ! $booking->is_waitlist, 'text-ink-400' => $booking->is_waitlist])
+                                                @if ($booking->is_waitlist && $active) title="{{ __('agenda.weights.waitlist_hint') }}" @endif>{{ $active ? ($group['weights'][$booking->id] ?? '—') : '—' }}</td>
                                         @endif
                                         <td class="whitespace-nowrap px-4 py-1">
                                             @if ($canManage && $booking->status === \App\Enums\BookingStatus::Attended)

@@ -56,6 +56,7 @@ return [
         'load' => 'Carga del aula (suma de pesos)',
         'loads' => 'Carga de cada aula',
         'hybrid' => 'híbrida',
+        'waitlist_hint' => 'En lista de espera: no cuenta en la carga hasta que tenga aula',
     ],
     'virtual_classroom' => 'Aula virtual :name',
     'online' => 'En línea',

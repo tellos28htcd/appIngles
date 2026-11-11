@@ -40,6 +40,13 @@ return [
         'club_room' => 'Aula para clubs (audiovisual)',
         'club_room_hint' => 'Aula física donde se dan los clubs presenciales. A la misma hora caben tantos clubs presenciales como aulas audiovisuales.',
         'club_room_badge' => 'Audiovisual · clubs',
+        'practice' => 'Habilitar para prácticas',
+        'practice_hint' => 'El aula audiovisual también recibe alumnos de práctica (máximo :max), salvo a las horas con un club o una reserva para otra actividad.',
+        'practice_badge' => 'Prácticas · máx. :max',
+        'practice_enable' => 'Habilitar para prácticas',
+        'practice_disable' => 'Quitar prácticas',
+        'practice_enabled' => 'Aula habilitada para prácticas.',
+        'practice_disabled' => 'El aula ya no recibe prácticas.',
     ],
 
     'closures' => [

@@ -179,7 +179,7 @@ class CoordinatorScheduleTest extends TestCase
 
         $this->program('2026-07-27', 9, $evaluation, $melissa)->assertHasNoErrors();
         // En la cuadrícula la evaluación lleva la abreviatura del club con su color tenue.
-        Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')->assertSeeHtml('bg-room-1/10')->assertSee('C12');
+        Livewire::test(CoordinatorSchedule::class)->set('month', '2026-07')->assertSeeHtml('bg-room-1/30')->assertSee('C12');
         $this->program('2026-07-27', 10, $evaluation, $melissa)->assertHasNoErrors();
         // Melissa ya tiene sus 2 h; Dulce tiene las suyas aparte.
         $this->program('2026-07-28', 9, $evaluation, $melissa)->assertHasErrors('activityId');

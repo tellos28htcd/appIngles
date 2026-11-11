@@ -38,6 +38,9 @@ class ClassroomIndex extends Component
 
     public bool $isClubRoom = false;
 
+    /** Aula audiovisual habilitada para prácticas (máximo 5 alumnos). */
+    public bool $allowsPractice = false;
+
     /** Aula virtual (sin marcar = física). */
     public bool $isVirtual = false;
 
@@ -72,6 +75,7 @@ class ClassroomIndex extends Component
         $this->capacity = $classroom?->capacity;
         $this->description = (string) $classroom?->description;
         $this->isClubRoom = (bool) $classroom?->is_club_room;
+        $this->allowsPractice = (bool) $classroom?->allows_practice;
         $this->isVirtual = (bool) $classroom?->is_virtual;
         $this->editing = true;
     }
@@ -85,6 +89,7 @@ class ClassroomIndex extends Component
             'capacity' => ['required', 'integer', 'min:1', 'max:999'],
             'description' => ['nullable', 'string', 'max:255'],
             'isClubRoom' => ['boolean'],
+            'allowsPractice' => ['boolean'],
             'isVirtual' => ['boolean'],
         ], attributes: [
             'name' => Str::lower(__('settings.fields.name')),
@@ -101,11 +106,23 @@ class ClassroomIndex extends Component
             'capacity' => $data['capacity'],
             'description' => trim((string) $data['description']) ?: null,
             'is_club_room' => $data['isClubRoom'],
+            'allows_practice' => $data['isClubRoom'] && $data['allowsPractice'],
             'is_virtual' => $data['isVirtual'],
         ])->save();
 
         $this->editing = null;
         $this->dispatch('toast', type: 'success', message: __('settings.messages.saved'));
+    }
+
+    /** Botón de la lista: habilita o deshabilita el aula audiovisual como aula de práctica. */
+    public function togglePractice(int $id): void
+    {
+        $this->authorizeCatalog();
+        $classroom = $this->findInCatalog(Classroom::class, $id);
+        abort_unless($classroom->is_club_room, 422);
+
+        $classroom->update(['allows_practice' => ! $classroom->allows_practice]);
+        $this->dispatch('toast', type: 'success', message: __($classroom->allows_practice ? 'settings.classrooms.practice_enabled' : 'settings.classrooms.practice_disabled'));
     }
 
     public function toggle(int $id): void

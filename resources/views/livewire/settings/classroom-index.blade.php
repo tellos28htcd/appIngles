@@ -37,6 +37,11 @@
                                 @endif
                                 @if ($classroom->is_club_room)
                                     <x-ui.badge variant="info" class="ml-1">{{ __('settings.classrooms.club_room_badge') }}</x-ui.badge>
+                                    @if ($classroom->allows_practice)
+                                        <x-ui.badge variant="success" class="ml-1">{{ __('settings.classrooms.practice_badge', ['max' => \App\Models\Classroom::AUDIOVISUAL_PRACTICE_CAPACITY]) }}</x-ui.badge>
+                                    @endif
+                                    <button type="button" wire:click="togglePractice({{ $classroom->id }})" aria-pressed="{{ $classroom->allows_practice ? 'true' : 'false' }}"
+                                            class="ml-1 text-sm font-semibold text-primary-700 underline-offset-2 hover:underline">{{ __($classroom->allows_practice ? 'settings.classrooms.practice_disable' : 'settings.classrooms.practice_enable') }}</button>
                                     @if ($schoolId !== null)
                                         <button type="button" wire:click="openClosures({{ $classroom->id }})"
                                                 class="ml-1 text-sm font-semibold text-primary-700 underline-offset-2 hover:underline">{{ __('settings.closures.open') }}</button>
@@ -66,7 +71,10 @@
         <p class="-mt-2 text-[13px] text-ink-500">{{ __('settings.classrooms.capacity_hint') }}</p>
         <x-ui.input name="description" :label="__('settings.fields.description')" :hint="__('settings.classrooms.description_hint')" wire:model="description" maxlength="255" />
         <x-ui.toggle name="isVirtual" :label="__('settings.classrooms.virtual')" :description="__('settings.classrooms.virtual_hint')" wire:model="isVirtual" />
-        <x-ui.toggle name="isClubRoom" :label="__('settings.classrooms.club_room')" :description="__('settings.classrooms.club_room_hint')" wire:model="isClubRoom" />
+        <x-ui.toggle name="isClubRoom" :label="__('settings.classrooms.club_room')" :description="__('settings.classrooms.club_room_hint')" wire:model.live="isClubRoom" />
+        @if ($isClubRoom)
+            <x-ui.toggle name="allowsPractice" :label="__('settings.classrooms.practice')" :description="__('settings.classrooms.practice_hint', ['max' => \App\Models\Classroom::AUDIOVISUAL_PRACTICE_CAPACITY])" wire:model="allowsPractice" />
+        @endif
         <x-slot:footer>
             <x-ui.button variant="ghost" x-on:click="open = null">{{ __('settings.actions.cancel') }}</x-ui.button>
             <x-ui.button wire:click="save">{{ __('settings.actions.save') }}</x-ui.button>

@@ -13,12 +13,14 @@ use App\Livewire\Agenda\AgendaDay;
 use App\Livewire\Agenda\MyAgenda;
 use App\Livewire\BookingNotices;
 use App\Livewire\Catalogs\WeightsTab;
+use App\Livewire\Settings\ClassroomIndex;
 use App\Livewire\Students\StudentShow;
 use App\Models\Activity;
 use App\Models\Book;
 use App\Models\Booking;
 use App\Models\CancellationReason;
 use App\Models\Classroom;
+use App\Models\ClassroomClosure;
 use App\Models\Club;
 use App\Models\ClubSession;
 use App\Models\CoordinatorActivity;
@@ -164,8 +166,12 @@ class AgendaTest extends TestCase
     public function test_the_week_calendar_shows_free_places_by_day_and_hour(): void
     {
         $this->school->update(['virtual_rooms_per_slot' => 2, 'virtual_room_capacity' => 3]);
-        Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
-        Classroom::create(['school_id' => $this->school->id, 'name' => '11', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+        // Las dos aulas virtuales tienen teacher programado a las 9 (a las 10 no: no hay lugares en línea).
+        foreach (['10' => 'ROSA', '11' => 'JUAN'] as $name => $short) {
+            $room = Classroom::create(['school_id' => $this->school->id, 'name' => $name, 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+            TeacherAvailability::create(['school_id' => $this->school->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[9]->id, 'classroom_id' => $room->id, 'is_absent' => false,
+                'teacher_id' => Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => $short, 'panel_number' => (int) $name])->id]);
+        }
         $this->actingAs($this->user(Role::RECEPTION));
         $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
 
@@ -178,6 +184,7 @@ class AgendaTest extends TestCase
         $this->assertSame(['free' => 6, 'capacity' => 6], $nine['online']);
         $this->assertSame(1, $nine['booked']);
         $this->assertSame(['free' => 4, 'capacity' => 4, 'in_person' => 0, 'online' => 0], $week[self::MONDAY.'|'.$this->slots[10]->id]['session']);
+        $this->assertSame(['free' => 0, 'capacity' => 0], $week[self::MONDAY.'|'.$this->slots[10]->id]['online']);
         $this->assertArrayNotHasKey('2026-07-28|'.$this->slots[9]->id, $week);
 
         // El calendario lo muestra y la celda abre la reservación de esa hora.
@@ -306,9 +313,13 @@ class AgendaTest extends TestCase
 
     public function test_online_practice_fills_hybrid_rooms_first_and_then_the_virtual_room(): void
     {
-        $this->school->update(['virtual_rooms_per_slot' => 1, 'virtual_room_capacity' => 1, 'session_capacity' => 5]);
-        Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+        $this->school->update(['virtual_rooms_per_slot' => 0, 'virtual_room_capacity' => 1, 'session_capacity' => 5]);
+        $ten = Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+        // El aula virtual 11 no tiene teacher programado en la disponibilidad: no se ofrece.
         Classroom::create(['school_id' => $this->school->id, 'name' => '11', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+        $rosa = Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => 'ROSA', 'panel_number' => 3]);
+        TeacherAvailability::create(['school_id' => $this->school->id, 'teacher_id' => $rosa->id, 'date' => self::MONDAY,
+            'schedule_slot_id' => $this->slots[9]->id, 'classroom_id' => $ten->id, 'is_absent' => false]);
         $this->actingAs($this->user(Role::RECEPTION));
 
         // En línea: primero híbrida en las aulas físicas (a lo más 2 en línea por aula), repartidos.
@@ -323,8 +334,8 @@ class AgendaTest extends TestCase
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
         $virtual = Booking::with('classroom')->latest('id')->first();
         $this->assertSame(__('agenda.virtual_classroom', ['name' => '10']), $virtual->placeLabel());
-        // El aula virtual no está en el panel: la atiende un teacher que da clase presencial a esa hora.
-        $this->assertContains($virtual->teacher_id, Teacher::whereIn('short_name', ['MELISSA', 'DULCE'])->pluck('id')->all());
+        // La atiende el teacher programado en esa aula virtual (no uno presencial).
+        $this->assertSame($rosa->id, $virtual->teacher_id);
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
 
         // Un aula híbrida tiene máximo 3: a cada una le cabe 1 presencial más (aunque el cupo por sesión sea 5).
@@ -882,5 +893,56 @@ class AgendaTest extends TestCase
         $this->actingAs($this->user(Role::TEACHER));
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertOk()
             ->assertDontSee(__('agenda.weights.weight'))->assertDontSee(__('agenda.weights.loads'))->assertSee('(híbrida, en línea)');
+    }
+
+    public function test_the_audiovisual_room_can_be_enabled_for_practice_with_five_students_at_most(): void
+    {
+        $this->school->update(['session_capacity' => 8]);
+        $audiovisual = $this->rooms[1];
+        $audiovisual->update(['is_club_room' => true]);
+        $days = app(AvailabilityPlanner::class)->days($this->school, CarbonImmutable::parse(self::MONDAY));
+        $capacity = fn (int $hour) => app(AgendaService::class)->weekAvailability($this->school, $days)[self::MONDAY.'|'.$this->slots[$hour]->id]['session']['capacity'];
+        $this->assertSame(8, $capacity(9));
+
+        // Botón del catálogo de Aulas: habilitada para prácticas, máximo 5 (aunque el cupo por sesión sea 8).
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        Livewire::test(ClassroomIndex::class, ['schoolId' => $this->school->id])->call('togglePractice', $audiovisual->id)->assertDispatched('toast', type: 'success');
+        $this->assertTrue($audiovisual->refresh()->allows_practice);
+        $this->assertSame(13, $capacity(9));
+
+        // A la hora de un club en esa aula (o de una reserva para otra actividad) no recibe prácticas.
+        $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 1, 'is_active' => true, 'codes' => [['code' => 'C12', 'levels' => [1], 'color' => 1, 'is_active' => true]]]);
+        ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),
+            'classroom_id' => $audiovisual->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[9]->id, 'modality' => 'in_person']);
+        ClassroomClosure::create(['school_id' => $this->school->id, 'classroom_id' => $audiovisual->id, 'starts_on' => self::MONDAY, 'ends_on' => self::MONDAY,
+            'from_slot_id' => $this->slots[10]->id, 'to_slot_id' => $this->slots[10]->id, 'reason' => 'Junta']);
+        $this->assertSame(8, $capacity(9));
+        $this->assertSame(8, $capacity(10));
+
+        // Sin el club ni la reserva, recepción agenda ahí hasta 5.
+        ClubSession::query()->delete();
+        ClassroomClosure::query()->delete();
+        $this->actingAs($this->user(Role::RECEPTION));
+        foreach (range(1, 13) as $i) {
+            $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
+        }
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+        $this->assertSame(5, Booking::where('classroom_id', $audiovisual->id)->count());
+    }
+
+    public function test_a_cancelled_booking_shows_no_weight_and_does_not_count_in_the_room_load(): void
+    {
+        $this->weights();
+        $this->school->update(['session_capacity' => 5]);
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $this->seat($this->student(), $melissa, 3);
+        $cancelled = $this->seat($this->student(), $melissa, 4);
+        $cancelled->update(['status' => BookingStatus::Cancelled]);
+
+        $this->actingAs($this->user(Role::RECEPTION));
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY);
+        $this->assertSame([40], collect($page->instance()->bookings->first()['loads'])->pluck('total')->all());
+        // En la columna "Peso" la cancelada muestra "—".
+        $page->assertSeeHtml('>—</td>');
     }
 }

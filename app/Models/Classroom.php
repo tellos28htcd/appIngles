@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** Salón / aula del plantel. Su capacidad es física; el cupo de una sesión es el menor entre ambos. */
-#[Fillable(['school_id', 'base_id', 'name', 'capacity', 'description', 'is_club_room', 'is_virtual', 'is_active'])]
+#[Fillable(['school_id', 'base_id', 'name', 'capacity', 'description', 'is_club_room', 'allows_practice', 'is_virtual', 'is_active'])]
 class Classroom extends Model
 {
     use Auditable, BelongsToSchool;
+
+    /** Máximo de alumnos de práctica en el aula audiovisual habilitada para prácticas. */
+    public const AUDIOVISUAL_PRACTICE_CAPACITY = 5;
 
     protected function casts(): array
     {
@@ -20,6 +23,7 @@ class Classroom extends Model
             'capacity' => 'integer',
             'is_active' => 'boolean',
             'is_club_room' => 'boolean',
+            'allows_practice' => 'boolean',
             'is_virtual' => 'boolean',
         ];
     }
