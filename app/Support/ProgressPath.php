@@ -29,11 +29,15 @@ final class ProgressPath
             ->orderBy('sort_order')->orderBy('number')->get()->groupBy('book_id');
 
         $codes = Activity::codesFor($school->id);
+        $weights = Activity::weightsFor($school->id)['weights'];
 
-        $this->steps = $books->flatMap(fn (Book $book) => $lessons->get($book->id, collect())->flatMap(function (Lesson $lesson) use ($book, $codes) {
-            $count = $lesson->type === LessonType::CheckPoint ? self::ACTIVITIES_PER_LESSON + 1 : self::ACTIVITIES_PER_LESSON;
+        $this->steps = $books->flatMap(fn (Book $book) => $lessons->get($book->id, collect())->flatMap(function (Lesson $lesson) use ($book, $codes, $weights) {
+            // Con pesos capturados, solo las actividades que se hacen en ese tipo de lección (las demás se saltan).
+            $numbers = $weights !== []
+                ? array_keys($weights[$lesson->type->value] ?? [])
+                : range(1, $lesson->type === LessonType::CheckPoint ? self::ACTIVITIES_PER_LESSON + 1 : self::ACTIVITIES_PER_LESSON);
 
-            return collect(range(1, $count))->map(fn (int $activity) => [
+            return collect($numbers)->map(fn (int $activity) => [
                 'book_id' => $book->id, 'level' => (int) $book->level, 'lesson_id' => $lesson->id, 'lesson_number' => (int) $lesson->number,
                 'activity_number' => $activity, 'label' => "L{$book->level}-L{$lesson->number}-A{$activity}".(isset($codes[$activity]) ? '-'.$codes[$activity] : ''),
             ]);
@@ -56,6 +60,25 @@ final class ProgressPath
         $index = $this->steps->search(fn (array $step) => $step['lesson_id'] === $lessonId && $step['activity_number'] === $activityNumber);
 
         return $index === false ? null : $index;
+    }
+
+    /**
+     * Posición más cercana cuando la actividad ya no está en la ruta (p. ej. una que dejó de hacerse en ese tipo
+     * de lección): la última de la lección anterior a ella ($before) o la primera posterior.
+     */
+    public function nearestIndex(?int $lessonId, ?int $activityNumber, bool $before): ?int
+    {
+        $exact = $this->indexOf($lessonId, $activityNumber);
+        if ($exact !== null || $lessonId === null || $activityNumber === null) {
+            return $exact;
+        }
+
+        $candidates = $this->steps->filter(fn (array $step) => $step['lesson_id'] === $lessonId
+            && ($before ? $step['activity_number'] < $activityNumber : $step['activity_number'] > $activityNumber));
+
+        $index = $before ? $candidates->keys()->last() : $candidates->keys()->first();
+
+        return $index ?? ($before ? null : $this->firstOfLesson($lessonId));
     }
 
     /** @return array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string}|null */

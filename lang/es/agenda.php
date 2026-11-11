@@ -34,6 +34,14 @@ return [
         'changed' => 'Cambió aula o alumno',
         'activity_changed' => 'Cambió la actividad',
         'attendance_undone' => 'Quitó la asistencia',
+        'rebalanced' => 'Cambió de aula por balanceo',
+    ],
+
+    'moved' => [
+        'title' => 'Cambiamos tu aula',
+        'body' => 'Para equilibrar los grupos, tu práctica sigue a la misma fecha y hora, pero en otra aula:',
+        'with' => 'con :teacher',
+        'ok' => 'Entendido',
     ],
 
     'waitlist' => 'Lista de espera',

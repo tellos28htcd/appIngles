@@ -39,6 +39,43 @@
         @endif
     </x-catalog.section>
 
+    @if ($this->activities->isNotEmpty())
+        {{-- Pesos por tipo de lección (balanceo de aulas): vacío = no se hace; la ruta de avance la salta. --}}
+        <x-catalog.section :title="__('catalogs.activities.weights')" :description="__('catalogs.activities.weights_description')" class="mt-6 max-w-4xl">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[560px] text-sm">
+                    <thead class="bg-primary-700 text-on-primary">
+                        <tr>
+                            <th scope="col" class="px-4 py-2 text-left font-bold">{{ __('catalogs.activities.lesson_type') }}</th>
+                            @foreach ($this->activities->where('is_active', true) as $activity)
+                                <th scope="col" class="px-2 py-2 text-right font-bold" title="{{ $activity->description }}">
+                                    <span class="block text-[11px] font-semibold opacity-80">{{ $activity->number }}</span>{{ $activity->code }}
+                                </th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (\App\Enums\LessonType::cases() as $type)
+                            <tr wire:key="weights-{{ $type->value }}">
+                                <th scope="row" class="px-4 py-2 text-left font-semibold">{{ $type->label() }}</th>
+                                @foreach ($this->activities->where('is_active', true) as $activity)
+                                    @php($weight = $activity->weightFor($type))
+                                    @if ($weight === null)
+                                        <td class="bg-ink-700 px-2 py-2" title="{{ __('catalogs.activities.not_done') }}"><span class="sr-only">{{ __('catalogs.activities.not_done') }}</span></td>
+                                    @else
+                                        <td class="px-2 py-2 text-right font-bold tabular-nums">
+                                            {{ $weight }}@if ($activity->is_one_to_one)<span class="ml-1 text-[10px] text-primary-700" title="{{ __('catalogs.activities.one_to_one') }}">1:1</span>@endif
+                                        </td>
+                                    @endif
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </x-catalog.section>
+    @endif
+
     <x-ui.modal wire:model="editing" :title="__($activityId ? 'catalogs.activities.edit' : 'catalogs.activities.add')">
         <div class="grid gap-4 sm:grid-cols-3">
             <x-ui.input name="number" type="number" :label="__('catalogs.fields.activity_number')" wire:model="number" min="1" class="tabular-nums" required />
@@ -46,6 +83,16 @@
             <x-ui.input name="minutes" type="number" :label="__('catalogs.fields.minutes')" wire:model="minutes" min="1" class="tabular-nums" />
         </div>
         <x-ui.input name="description" :label="__('catalogs.fields.description')" wire:model="description" maxlength="150" required />
+        <fieldset class="flex flex-col gap-2">
+            <legend class="text-sm font-semibold text-ink-900">{{ __('catalogs.activities.weights') }}</legend>
+            <p class="text-xs text-ink-500">{{ __('catalogs.activities.weights_hint') }}</p>
+            <div class="grid gap-4 sm:grid-cols-3">
+                <x-ui.input name="weightLesson" type="number" :label="__('catalogs.lesson_types.lesson')" wire:model="weightLesson" min="0" max="999" class="tabular-nums" />
+                <x-ui.input name="weightCheckpoint" type="number" :label="__('catalogs.lesson_types.checkpoint')" wire:model="weightCheckpoint" min="0" max="999" class="tabular-nums" />
+                <x-ui.input name="weightVerbInContext" type="number" :label="__('catalogs.lesson_types.verb_in_context')" wire:model="weightVerbInContext" min="0" max="999" class="tabular-nums" />
+            </div>
+        </fieldset>
+        <x-ui.toggle name="isOneToOne" :label="__('catalogs.activities.one_to_one')" :description="__('catalogs.activities.one_to_one_hint')" wire:model="isOneToOne" />
         <x-slot:footer>
             <x-ui.button variant="ghost" x-on:click="open = null">{{ __('catalogs.actions.cancel') }}</x-ui.button>
             <x-ui.button wire:click="save">{{ __('catalogs.actions.save') }}</x-ui.button>

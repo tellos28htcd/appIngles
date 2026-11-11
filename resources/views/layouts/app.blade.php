@@ -85,6 +85,7 @@
 
     @auth
         <livewire:birthday-greeting />
+        <livewire:booking-notices />
     @endauth
 
     <x-ui.toasts />

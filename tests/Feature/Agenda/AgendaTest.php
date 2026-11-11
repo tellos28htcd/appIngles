@@ -11,6 +11,8 @@ use App\Enums\LessonType;
 use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
 use App\Livewire\Agenda\MyAgenda;
+use App\Livewire\BookingNotices;
+use App\Livewire\Catalogs\ActivitiesTab;
 use App\Livewire\Students\StudentShow;
 use App\Models\Activity;
 use App\Models\Book;
@@ -31,6 +33,7 @@ use App\Models\Teacher;
 use App\Models\TeacherAvailability;
 use App\Models\TeacherScheduleBlock;
 use App\Models\User;
+use App\Support\ProgressPath;
 use Carbon\CarbonImmutable;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\RoleSeeder;
@@ -301,33 +304,38 @@ class AgendaTest extends TestCase
         $this->assertSame('C12', Booking::with('clubSession')->sole()->activityLabel());
     }
 
-    public function test_online_practice_fills_the_virtual_rooms_and_then_joins_a_class_as_hybrid(): void
+    public function test_online_practice_fills_hybrid_rooms_first_and_then_the_virtual_room(): void
     {
-        $this->school->update(['virtual_rooms_per_slot' => 1, 'virtual_room_capacity' => 1, 'session_capacity' => 2]);
+        $this->school->update(['virtual_rooms_per_slot' => 1, 'virtual_room_capacity' => 1, 'session_capacity' => 5]);
         Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
         Classroom::create(['school_id' => $this->school->id, 'name' => '11', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
         $this->actingAs($this->user(Role::RECEPTION));
 
-        // 1.º en línea: aula virtual. Llena: los siguientes en línea entran a una clase presencial (híbrida).
+        // En línea: primero híbrida en las aulas físicas (a lo más 2 en línea por aula), repartidos.
+        foreach (range(1, 4) as $i) {
+            $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
+        }
+        $hybrid = Booking::with('classroom')->get();
+        $this->assertSame([2, 2], $hybrid->countBy('classroom_id')->values()->all());
+        $this->assertSame(__('agenda.hybrid_room', ['name' => $hybrid[0]->classroom->name]), $hybrid[0]->placeLabel());
+
+        // Híbridas con 2 en línea: el siguiente en línea va al aula virtual; llena, ya no hay lugar en línea.
         $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
-        $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'success');
-        [$virtual, $hybrid] = Booking::with('classroom')->orderBy('id')->get()->all();
+        $virtual = Booking::with('classroom')->latest('id')->first();
         $this->assertSame(__('agenda.virtual_classroom', ['name' => '10']), $virtual->placeLabel());
         // El aula virtual no está en el panel: la atiende un teacher que da clase presencial a esa hora.
         $this->assertContains($virtual->teacher_id, Teacher::whereIn('short_name', ['MELISSA', 'DULCE'])->pluck('id')->all());
-        $this->assertNotNull($hybrid->teacher_availability_id);
-        $this->assertSame(__('agenda.hybrid_room', ['name' => $hybrid->classroom->name]), $hybrid->placeLabel());
+        $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
 
-        // El híbrido ocupa un lugar del aula: 2 aulas × 2 = 4, quedan 3; el calendario cuenta por modalidad.
-        foreach (range(1, 3) as $i) {
+        // Un aula híbrida tiene máximo 3: a cada una le cabe 1 presencial más (aunque el cupo por sesión sea 5).
+        foreach (range(1, 2) as $i) {
             $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
         }
         $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
-        $this->receptionBooks($this->student(), 9, 'session', 'online')->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
 
         $days = app(AvailabilityPlanner::class)->days($this->school, CarbonImmutable::parse(self::MONDAY));
         $nine = app(AgendaService::class)->weekAvailability($this->school, $days)[self::MONDAY.'|'.$this->slots[9]->id];
-        $this->assertSame(['free' => 0, 'capacity' => 4, 'in_person' => 3, 'online' => 2], $nine['session']);
+        $this->assertSame(['free' => 0, 'capacity' => 10, 'in_person' => 2, 'online' => 5], $nine['session']);
         $this->assertSame(['free' => 0, 'capacity' => 1], $nine['online']);
     }
 
@@ -666,5 +674,172 @@ class AgendaTest extends TestCase
         // Recepción no modifica el expediente.
         $this->actingAs($this->user(Role::RECEPTION));
         Livewire::test(StudentShow::class, ['student' => $student])->call('removeExcludedTeacher', $teachers[1]->id)->assertForbidden();
+    }
+
+    // ── Balanceo por pesos ────────────────────────────────────────
+
+    /** Pesos del catálogo de Actividades (como el Excel): número => [Lesson, Check Point, Verb in context, uno a uno]. */
+    private function weights(): void
+    {
+        $weights = [1 => ['BA', 5, 5, null, false], 2 => ['1P', 10, null, null, false], 3 => ['M', 40, 40, null, false], 4 => ['WS', 40, null, null, false],
+            5 => ['2P', 15, null, null, false], 6 => ['WP', 40, 40, 40, false], 7 => ['SP', 20, null, 20, false], 8 => ['PR', null, 240, null, true]];
+
+        foreach ($weights as $number => [$code, $lesson, $checkpoint, $verb, $oneToOne]) {
+            Activity::create(['school_id' => $this->school->id, 'number' => $number, 'code' => $code, 'description' => $code, 'is_active' => true,
+                'weight_lesson' => $lesson, 'weight_checkpoint' => $checkpoint, 'weight_verb_in_context' => $verb, 'is_one_to_one' => $oneToOne]);
+        }
+    }
+
+    /** Reservación ya hecha en el aula de un teacher (a las 9, 1.ª lección). */
+    private function seat(Student $student, Teacher $teacher, int $activity, int $hour = 9, ?Lesson $lesson = null): Booking
+    {
+        $cell = TeacherAvailability::where('teacher_id', $teacher->id)->where('schedule_slot_id', $this->slots[$hour]->id)->firstOrFail();
+
+        return Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[$hour]->id,
+            'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Booked, 'teacher_id' => $teacher->id, 'classroom_id' => $cell->classroom_id,
+            'teacher_availability_id' => $cell->id, 'book_id' => ($lesson ?? $this->firstLesson)->book_id, 'lesson_id' => ($lesson ?? $this->firstLesson)->id, 'activity_number' => $activity]);
+    }
+
+    /** @return array<int, int> id del teacher => carga (suma de pesos) a esa hora */
+    private function loads(int $hour = 9): array
+    {
+        $weights = [1 => 5, 2 => 10, 3 => 40, 4 => 40, 5 => 15, 6 => 40, 7 => 20];
+
+        return Booking::active()->where('is_waitlist', false)->where('schedule_slot_id', $this->slots[$hour]->id)->get()
+            ->groupBy('teacher_id')->map(fn ($bookings) => $bookings->sum(fn (Booking $booking) => $weights[$booking->activity_number] ?? 0))->all();
+    }
+
+    public function test_a_new_booking_rebalances_the_rooms_by_activity_weight_and_the_moved_student_is_notified(): void
+    {
+        $this->weights();
+        $this->school->update(['session_capacity' => 5]);
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $dulce = Teacher::where('short_name', 'DULCE')->sole();
+        $heavy = collect([3, 4, 6])->map(fn (int $activity) => $this->seat($this->student($this->user(Role::STUDENT)), $melissa, $activity));
+        $this->assertSame([$melissa->id => 120], $this->loads());
+
+        // Llega un alumno nuevo (BA, peso 5): el sistema reparte a los de Melissa para emparejar las cargas.
+        $this->actingAs($this->user(Role::RECEPTION));
+        $newcomer = $this->student();
+        $this->receptionBooks($newcomer, 9)->assertDispatched('toast', type: 'success');
+
+        $this->assertSame([45, 80], collect($this->loads())->sort()->values()->all());
+        $moved = $heavy->map->refresh()->filter(fn (Booking $booking) => $booking->teacher_id === $dulce->id);
+        $this->assertCount(1, $moved);
+        $this->assertSame([$this->slots[9]->id, self::MONDAY], [$moved->first()->schedule_slot_id, $moved->first()->date->toDateString()]);
+        $this->assertSame('rebalanced', $moved->first()->events()->pluck('event')->last());
+        $this->assertNotContains('rebalanced', Booking::where('student_id', $newcomer->id)->sole()->events()->pluck('event')->all());
+
+        // El alumno movido ve el aviso al entrar (y en Mi agenda su aula nueva).
+        $user = $moved->first()->student->user;
+        $this->assertSame(1, $user->unreadNotifications()->count());
+        $this->actingAs($user);
+        Livewire::test(BookingNotices::class)->assertSee(__('agenda.moved.title'))->assertSee('DULCE')
+            ->call('dismiss')->assertDontSee(__('agenda.moved.title'));
+        $this->assertSame(0, $user->unreadNotifications()->count());
+    }
+
+    public function test_rebalancing_respects_excluded_teachers_attendance_and_stops_three_minutes_before(): void
+    {
+        $this->weights();
+        $this->school->update(['session_capacity' => 5]);
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $dulce = Teacher::where('short_name', 'DULCE')->sole();
+        $noDulce = $this->student();
+        $noDulce->excludedTeachers()->attach($dulce->id, ['school_id' => $this->school->id]);
+        $this->seat($noDulce, $melissa, 3);
+        $this->seat($this->student(), $melissa, 4)->update(['status' => BookingStatus::Attended]);
+        $free = $this->seat($this->student(), $melissa, 6);
+        $service = app(AgendaService::class);
+
+        // Tres minutos antes de empezar ya no se balancea.
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 08:57:30', 'America/Mexico_City'));
+        $this->assertSame(0, $service->rebalance($this->school, CarbonImmutable::parse(self::MONDAY), $this->slots[9], null));
+
+        // Antes, solo se mueve el que no asistió ni excluyó a Dulce.
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 08:00', 'America/Mexico_City'));
+        $this->assertSame(1, $service->rebalance($this->school, CarbonImmutable::parse(self::MONDAY), $this->slots[9], null));
+        $this->assertSame($dulce->id, $free->refresh()->teacher_id);
+        $this->assertSame([$melissa->id => 80, $dulce->id => 40], $this->loads());
+    }
+
+    public function test_cancelling_rebalances_the_hour(): void
+    {
+        $this->weights();
+        $this->school->update(['session_capacity' => 5]);
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $dulce = Teacher::where('short_name', 'DULCE')->sole();
+        $this->seat($this->student(), $melissa, 3);
+        $this->seat($this->student(), $melissa, 4);
+        $leaving = $this->seat($this->student(), $dulce, 6);
+        $this->seat($this->student(), $dulce, 1);
+
+        $this->actingAs($this->user(Role::RECEPTION));
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('confirmCancel', $leaving->id)->call('cancel')->assertDispatched('toast', type: 'success');
+
+        $this->assertSame([45, 40], collect($this->loads())->sortDesc()->values()->all());
+    }
+
+    public function test_the_audiovisual_room_never_takes_practice(): void
+    {
+        $this->rooms[1]->update(['is_club_room' => true]);
+        $this->actingAs($this->user(Role::RECEPTION));
+
+        foreach (range(1, 2) as $i) {
+            $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
+        }
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+        $this->assertSame([$this->rooms[0]->id], Booking::pluck('classroom_id')->unique()->values()->all());
+
+        $days = app(AvailabilityPlanner::class)->days($this->school, CarbonImmutable::parse(self::MONDAY));
+        $this->assertSame(2, app(AgendaService::class)->weekAvailability($this->school, $days)[self::MONDAY.'|'.$this->slots[9]->id]['session']['capacity']);
+    }
+
+    public function test_activities_not_done_in_a_lesson_type_are_skipped_and_the_presentation_is_one_to_one(): void
+    {
+        $this->weights();
+        $book = $this->firstLesson->book_id;
+        $checkpoint = Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 3, 'name' => 'Check Point C1', 'type' => LessonType::CheckPoint, 'sort_order' => 3, 'is_active' => true]);
+        Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 4, 'name' => 'Verb in context 1', 'type' => LessonType::VerbInContext, 'sort_order' => 4, 'is_active' => true]);
+
+        $labels = (new ProgressPath($this->school))->steps()->pluck('label')->filter(fn (string $label) => str_starts_with($label, 'L1-L3') || str_starts_with($label, 'L1-L4'))->values()->all();
+        $this->assertSame(['L1-L3-A1-BA', 'L1-L3-A3-M', 'L1-L3-A6-WP', 'L1-L3-A8-PR', 'L1-L4-A6-WP', 'L1-L4-A7-SP'], $labels);
+
+        // Le toca la presentación (PR): necesita un aula para él solo. A las 9 las dos tienen alumnos: lista de espera.
+        $presenter = $this->student();
+        Booking::create(['school_id' => $this->school->id, 'student_id' => $presenter->id, 'date' => '2026-07-20', 'schedule_slot_id' => $this->slots[9]->id,
+            'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Attended, 'book_id' => $book, 'lesson_id' => $checkpoint->id, 'activity_number' => 6]);
+        $this->seat($this->student(), Teacher::where('short_name', 'MELISSA')->sole(), 1);
+        $this->seat($this->student(), Teacher::where('short_name', 'DULCE')->sole(), 1);
+        $this->actingAs($this->user(Role::RECEPTION));
+
+        $this->receptionBooks($presenter, 9)->assertDispatched('toast', type: 'warning');
+        $waiting = Booking::where('student_id', $presenter->id)->latest('id')->first();
+        $this->assertTrue($waiting->is_waitlist);
+        $this->assertSame(8, $waiting->activity_number);
+        $waiting->delete();
+
+        // A las 10 está vacía: toma un aula y nadie más entra con ese teacher.
+        $this->receptionBooks($presenter, 10)->assertDispatched('toast', type: 'success');
+        $pr = Booking::where('student_id', $presenter->id)->where('schedule_slot_id', $this->slots[10]->id)->sole();
+        $this->assertSame('L1-L3-A8-PR', $pr->activityLabel());
+        foreach (range(1, 2) as $i) {
+            $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'success');
+        }
+        $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+        $this->assertSame(1, Booking::where('schedule_slot_id', $this->slots[10]->id)->where('teacher_id', $pr->teacher_id)->count());
+    }
+
+    public function test_activity_weights_are_edited_in_the_catalog(): void
+    {
+        $this->weights();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $ws = Activity::where('school_id', $this->school->id)->where('number', 4)->sole();
+
+        Livewire::test(ActivitiesTab::class, ['schoolId' => $this->school->id])->call('edit', $ws->id)
+            ->set('weightLesson', 35)->set('weightCheckpoint', 20)->set('weightVerbInContext', null)->call('save')->assertHasNoErrors()
+            ->assertSee(__('catalogs.activities.weights'));
+
+        $this->assertSame([35, 20, null, false], [$ws->refresh()->weight_lesson, $ws->weight_checkpoint, $ws->weight_verb_in_context, $ws->is_one_to_one]);
     }
 }

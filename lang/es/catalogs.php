@@ -74,6 +74,14 @@ return [
     ],
 
     'activities' => [
+        'weights' => 'Pesos para balancear aulas',
+        'weights_hint' => 'Peso de la actividad en cada tipo de lección. Vacío = no se hace en ese tipo (la ruta de avance la salta).',
+        'weights_description' => 'La carga de un teacher es la suma de los pesos de sus alumnos; la agenda acomoda a los alumnos para que las cargas queden parejas. Para cambiar un peso, edita la actividad.',
+        'weight_for' => 'Peso en :type',
+        'lesson_type' => 'Tipo de lección',
+        'not_done' => 'No se hace',
+        'one_to_one' => 'Asesoría uno a uno',
+        'one_to_one_hint' => 'Como la presentación (PR): el teacher no recibe a ningún otro alumno a esa hora.',
         'title' => 'Actividades',
         'description' => 'Códigos con los que el teacher evalúa cada clase.',
         'add' => 'Nueva actividad',

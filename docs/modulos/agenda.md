@@ -34,9 +34,9 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 - **Horas futuras:** solo se reservan horas que todavía no empiezan, en la zona horaria de la escuela.
 - **Práctica presencial:**
   - Se ofrecen las horas del panel con aula, sin club ni actividad de coordinación, y sin la columna "Lista de espera".
-  - El aula se asigna **al azar** entre las que tienen lugar.
+  - El aula la asigna el **balanceo por pesos** (ver abajo): la de menor carga entre las que aceptan al alumno.
   - Si todas están llenas y "Agendar en lista de espera" está activo, el alumno entra a la **lista de espera** y lo ve así en Mi agenda.
-- **Práctica en línea:** cupo = aulas virtuales por horario × alumnos por aula virtual, solo a horas en las que hay teachers en el panel. Se asigna "Aula virtual N".
+- **Práctica en línea:** primero híbrida en un aula física; llenas, un aula virtual del catálogo (ver "Balanceo por pesos").
 - **Club:**
   - Se ofrecen los clubs programados.
   - El nivel del alumno debe estar en la abreviatura del club.
@@ -79,7 +79,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 ## Ajustes (nov-2026)
 
 - **Práctica** (antes "Asesoría"): al elegir la hora se escoge **Presencial** o **En línea**; las opciones son botones (Tab para recorrer, Enter para elegir).
-- **En línea / híbrida:** primero un aula virtual del catálogo de Aulas (las marcadas "Virtual" sin club en línea ni reserva a esa hora; "Aulas virtuales por horario" limita cuántas, 0 = todas), cada una con "Alumnos por aula virtual" lugares (o su capacidad). Llenas (o si la escuela tiene 0 aulas virtuales), el alumno entra en línea a la clase de un teacher presencial con lugar ("Aula X (híbrida, en línea)") y ocupa un lugar del cupo por sesión de esa aula. El calendario muestra cuántos van presencial y cuántos en línea.
+- **En línea / híbrida (reemplazado por "Balanceo por pesos": ahora primero híbrida y luego virtual):** primero un aula virtual del catálogo de Aulas (las marcadas "Virtual" sin club en línea ni reserva a esa hora; "Aulas virtuales por horario" limita cuántas, 0 = todas), cada una con "Alumnos por aula virtual" lugares (o su capacidad). Llenas (o si la escuela tiene 0 aulas virtuales), el alumno entra en línea a la clase de un teacher presencial con lugar ("Aula X (híbrida, en línea)") y ocupa un lugar del cupo por sesión de esa aula. El calendario muestra cuántos van presencial y cuántos en línea.
 - **Tolerancia:** recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo, p. ej. por una cancelación); el alumno solo antes de que empiece.
 - **Portal del alumno:** una sola opción "Agendar" (prácticas y clubs). "Agendar club" queda desactivada en el menú (su código se conserva).
 - **Ventanas:** todas las ventanas de captura se mueven arrastrando su título.
@@ -95,3 +95,22 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 - **Lista de espera (arriba, en la leyenda):** clic en "Lista de espera" muestra los alumnos en lista de espera del día elegido, con fecha y hora.
 - **Teachers excluidos:** las prácticas no se acomodan con los teachers que el alumno excluyó en su expediente (hasta 3); ver docs/modulos/alumnos.md.
 - **Coordinador evaluando:** a la fecha y hora de una Evaluación de Club (Horas Coordinador), los teachers con cargo de Coordinador académico no reciben alumnos: sus lugares no cuentan en el calendario, ni al reservar, ni para aula virtual o híbrida, ni en "Cambiar".
+
+## Balanceo por pesos (nov-2026)
+
+- **Pesos:** Catálogos académicos → Actividades. Cada actividad tiene un peso por tipo de lección (Lesson, Check Point, Verb in context) y la marca "uno a uno"; vacío = no se hace en ese tipo. Base en Plataforma y copia por escuela (`activities.weight_lesson`, `weight_checkpoint`, `weight_verb_in_context`, `is_one_to_one`). Valores iniciales: Lesson BA 5, 1P 10, M 40, WS 40, 2P 15, WP 40, SP 20; Check Point BA 5, M 40, WP 40, PR 240 (uno a uno); Verb in context WP 40, SP 20.
+- **Ruta de avance:** salta las actividades que no se hacen y conserva su número: Check Point A1-BA → A3-M → A6-WP → A8-PR; Verb in context A6-WP → A7-SP. Si la escuela no tiene pesos, se usan todas (7; 8 en Check Point).
+- **Carga de un teacher** = suma de los pesos de las actividades de sus alumnos a esa hora (sin pesos, cuenta 1 por alumno). Se busca que las cargas queden parejas (alrededor del promedio).
+- **Aulas:**
+  - El aula audiovisual (marcada para clubs) nunca recibe prácticas mientras tenga esa marca.
+  - Física solo presencial: el cupo por sesión de Mi Instituto.
+  - Física híbrida (con alumnos en línea): máximo 3 (sin pasar el cupo por sesión) y a lo más 2 en línea.
+  - En línea: primero híbrida en un aula física; llenas, un aula virtual del catálogo.
+  - Presentación (PR, uno a uno): el alumno va solo con el teacher; si no hay un aula libre, entra a la lista de espera.
+- **Al agendar:** el alumno va al aula de menor carga que lo acepta; después se **rebalancea** la hora.
+- **Rebalanceo** (al agendar, cancelar, pasar de la lista de espera o cambiar de actividad): se mueven alumnos (o se intercambian) solo de aula y teacher, misma fecha y hora, mientras bajen las diferencias de carga. Físicas e híbridas se balancean juntas; las virtuales entre ellas.
+  - No se mueve a quien ya asistió, ni a un aula con un teacher que el alumno excluyó en su expediente; se respetan las reglas de aulas.
+  - Se deja de balancear **3 minutos antes** de la clase. La tolerancia de 10 minutos de recepción para agendar después de empezar sigue igual.
+  - Cada movimiento queda en el historial ("Cambió de aula por balanceo") y el alumno recibe un aviso en su cuenta (ventana al entrar, hasta "Entendido"); en Mi agenda ve su aula nueva.
+  - "Cambiar reservación" (manual) no rebalancea; el siguiente rebalanceo de esa hora puede volver a mover al alumno.
+- **Código:** `App\Support\RoomBalancer` (reglas de aulas y búsqueda del balance), `AgendaService::placeSession()` y `rebalance()`, aviso `App\Notifications\BookingMoved` y ventana `App\Livewire\BookingNotices`.

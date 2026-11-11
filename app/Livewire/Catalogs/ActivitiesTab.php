@@ -27,6 +27,16 @@ class ActivitiesTab extends Component
 
     public ?int $minutes = null;
 
+    /** Pesos para el balanceo de aulas por tipo de lección (vacío = la actividad no se hace en ese tipo). */
+    public ?int $weightLesson = null;
+
+    public ?int $weightCheckpoint = null;
+
+    public ?int $weightVerbInContext = null;
+
+    /** Asesoría uno a uno (PR, presentación): el teacher no recibe a nadie más a esa hora. */
+    public bool $isOneToOne = false;
+
     public function mount(?int $schoolId): void
     {
         $this->schoolId = $schoolId;
@@ -44,6 +54,10 @@ class ActivitiesTab extends Component
         $this->code = (string) $activity?->code;
         $this->description = (string) $activity?->description;
         $this->minutes = $activity?->minutes;
+        $this->weightLesson = $activity?->weight_lesson;
+        $this->weightCheckpoint = $activity?->weight_checkpoint;
+        $this->weightVerbInContext = $activity?->weight_verb_in_context;
+        $this->isOneToOne = (bool) $activity?->is_one_to_one;
         $this->editing = true;
     }
 
@@ -57,6 +71,10 @@ class ActivitiesTab extends Component
             'code' => ['required', 'string', 'max:10', 'regex:/^[A-Z0-9]+$/', $this->uniqueInCatalog('activities', 'code', $this->activityId)],
             'description' => ['required', 'string', 'max:150'],
             'minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
+            'weightLesson' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'weightCheckpoint' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'weightVerbInContext' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'isOneToOne' => ['boolean'],
         ], [
             'code.regex' => __('catalogs.validation.code'),
         ], [
@@ -64,13 +82,20 @@ class ActivitiesTab extends Component
             'code' => Str::lower(__('catalogs.fields.code')),
             'description' => Str::lower(__('catalogs.fields.description')),
             'minutes' => Str::lower(__('catalogs.fields.minutes')),
+            'weightLesson' => Str::lower(__('catalogs.activities.weight_for', ['type' => __('catalogs.lesson_types.lesson')])),
+            'weightCheckpoint' => Str::lower(__('catalogs.activities.weight_for', ['type' => __('catalogs.lesson_types.checkpoint')])),
+            'weightVerbInContext' => Str::lower(__('catalogs.activities.weight_for', ['type' => __('catalogs.lesson_types.verb_in_context')])),
         ]);
 
         $activity = $this->activityId ? $this->findInCatalog(Activity::class, $this->activityId) : new Activity([
             'school_id' => $this->schoolId,
             'is_active' => true,
         ]);
-        $activity->fill([...$data, 'description' => trim($data['description'])])->save();
+        $activity->fill([
+            'number' => $data['number'], 'code' => $data['code'], 'description' => trim($data['description']), 'minutes' => $data['minutes'],
+            'weight_lesson' => $data['weightLesson'], 'weight_checkpoint' => $data['weightCheckpoint'],
+            'weight_verb_in_context' => $data['weightVerbInContext'], 'is_one_to_one' => $data['isOneToOne'],
+        ])->save();
 
         $this->editing = null;
         $this->dispatch('toast', type: 'success', message: __('catalogs.messages.saved'));

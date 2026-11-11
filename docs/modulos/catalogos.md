@@ -9,6 +9,8 @@ Fuente: `Información general.xlsx` (pestaña *Catálogos*) y decisiones del 5-o
 
 Pestañas: Turnos y horarios · Libros y lecciones · Actividades · Clubes.
 
+**Actividades → pesos:** cada actividad lleva su peso por tipo de lección (Lesson, Check Point, Verb in context; vacío = no se hace) y la marca "uno a uno" (PR). La tabla de pesos se ve debajo de las actividades; se cambia editando la actividad. Los usa la agenda para balancear aulas y la ruta de avance para saltar actividades (ver docs/modulos/agenda.md).
+
 ## Datos
 `school_id` nulo = catálogo base; con escuela = su copia. `base_id` = registro base del que viene la copia.
 
