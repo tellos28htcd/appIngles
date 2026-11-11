@@ -316,6 +316,12 @@ final class AgendaService
         ];
     }
 
+    /** Peso newton de una práctica (su actividad en su lección); null en clubs. */
+    public function weightOf(School $school, Booking $booking): ?int
+    {
+        return $booking->kind === BookingKind::Session ? $this->itemFor($school, $booking, [])['weight'] : null;
+    }
+
     /** @param  array<string, array<string, mixed>>  $rooms */
     private function roomKeyOf(Booking $booking, array $rooms): ?string
     {

@@ -367,7 +367,7 @@ class AgendaDay extends Component
     /**
      * Reservaciones del día agrupadas por hora; dentro, ordenadas por aula → teacher → alumno.
      *
-     * @return Collection<int, array{slot: ScheduleSlot, bookings: Collection<int, Booking>}>
+     * @return Collection<int, array{loads: list<array{room: string, virtual: bool, hybrid: bool, teacher: string, total: int}>, weights: array<int, ?int>, hybrid: list<int>, slot: ScheduleSlot, bookings: Collection<int, Booking>}>
      */
     #[Computed]
     public function bookings(): Collection
@@ -376,6 +376,23 @@ class AgendaDay extends Component
             ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason'])
             ->get();
 
+        // Peso newton de cada práctica; carga por aula y aulas híbridas de cada hora (con todas las reservaciones, sin filtros).
+        $school = $this->school();
+        $agenda = app(AgendaService::class);
+        $weights = $bookings->mapWithKeys(fn (Booking $booking) => [$booking->id => $agenda->weightOf($school, $booking)]);
+        $placed = $bookings->filter(fn (Booking $booking) => $booking->kind === BookingKind::Session && ! $booking->is_waitlist && $booking->status->isActive());
+        $roomKey = fn (Booking $booking) => $booking->teacher_availability_id !== null ? 'c'.$booking->teacher_availability_id : 'v'.$booking->classroom_id;
+        $hybrid = $placed->filter(fn (Booking $booking) => $booking->teacher_availability_id !== null && $booking->modality === ClubModality::Online)
+            ->map(fn (Booking $booking) => $booking->teacher_availability_id)->unique()->values()->all();
+        $loads = $placed->groupBy('schedule_slot_id')->map(fn (Collection $items) => $items->groupBy($roomKey)
+            ->map(fn (Collection $room) => [
+                'room' => (string) $room->first()->classroom?->name,
+                'virtual' => $room->first()->teacher_availability_id === null,
+                'hybrid' => in_array($room->first()->teacher_availability_id, $hybrid, true),
+                'teacher' => $room->first()->teacher?->panelName() ?? '—',
+                'total' => (int) $room->sum(fn (Booking $booking) => $weights[$booking->id] ?? 0),
+            ])->sortBy(fn (array $room) => ($room['virtual'] ? '1' : '0').sprintf('%05d', (int) $room['room']).$room['room'])->values()->all());
+
         $bookings = $bookings
             ->when($this->filterSlot !== '', fn (Collection $items) => $items->where('schedule_slot_id', (int) $this->filterSlot))
             ->when($this->filterRoom !== '', fn (Collection $items) => $items->where('classroom_id', (int) $this->filterRoom))
@@ -383,6 +400,9 @@ class AgendaDay extends Component
 
         return $bookings->groupBy('schedule_slot_id')
             ->map(fn (Collection $items) => [
+                'loads' => $loads->get($items->first()->schedule_slot_id, []),
+                'weights' => $weights->only($items->modelKeys())->all(),
+                'hybrid' => $hybrid,
                 'slot' => $items->first()->slot,
                 'bookings' => $items->sortBy(fn (Booking $booking) => sprintf('%d|%s|%s|%s',
                     $booking->status->isActive() ? 0 : 1, $booking->is_waitlist ? 'zz' : $booking->placeLabel(),
@@ -451,6 +471,7 @@ class AgendaDay extends Component
                 ->sortBy(fn (Booking $booking) => $booking->slot?->starts_at.'|'.$booking->student?->fullName())->values(),
             'edit' => $this->editData(),
             'canManage' => auth()->user()->can('manage', Booking::class),
+            'canSeeWeights' => auth()->user()->can('viewWeights', Booking::class),
             'day' => $this->day(),
             'days' => $days,
             'planner' => $planner,

@@ -24,6 +24,12 @@ class BookingPolicy
         return $this->viewAny($actor) && $actor->loadMissing('role')->role?->slug !== Role::TEACHER;
     }
 
+    /** Pesos newton y carga de cada aula en el listado del día: solo Administrador de escuela y Recepción. */
+    public function viewWeights(User $actor): bool
+    {
+        return $this->viewAny($actor) && in_array($actor->loadMissing('role')->role?->slug, [Role::SCHOOL_ADMIN, Role::RECEPTION], true);
+    }
+
     /** "Mi agenda": el alumno ligado a su usuario. */
     public function bookOwn(User $actor): bool
     {

@@ -856,4 +856,31 @@ class AgendaTest extends TestCase
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
         Livewire::test(WeightsTab::class, ['schoolId' => $other->id])->assertForbidden();
     }
+
+    public function test_the_day_list_shows_weights_room_loads_and_hybrid_rooms_only_to_admin_and_reception(): void
+    {
+        $this->weights();
+        $this->school->update(['session_capacity' => 5]);
+        $melissa = Teacher::where('short_name', 'MELISSA')->sole();
+        $this->seat($this->student(), $melissa, 3);                       // M = 40, presencial
+        $this->seat($this->student(), $melissa, 2)->update(['modality' => 'online']); // 1P = 10, en línea: el aula 1 es híbrida
+        $this->seat($this->student(), Teacher::where('short_name', 'DULCE')->sole(), 1); // BA = 5
+
+        foreach ([Role::RECEPTION, Role::SCHOOL_ADMIN] as $role) {
+            $this->actingAs($this->user($role));
+            $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
+                ->assertSee(__('agenda.weights.weight'))->assertSee(__('agenda.weights.hybrid'));
+            $group = $page->instance()->bookings->first();
+            $this->assertSame([['Aula 1', true, 'MELISSA', 50], ['Aula 2', false, 'DULCE', 5]],
+                collect($group['loads'])->map(fn (array $load) => [__('agenda.room', ['name' => $load['room']]), $load['hybrid'], $load['teacher'], $load['total']])->all());
+            $this->assertEqualsCanonicalizing([40, 10, 5], array_values($group['weights']));
+            // Todos los renglones del aula híbrida lo dicen: presencial y en línea.
+            $page->assertSee('(híbrida, presencial)')->assertSee('(híbrida, en línea)');
+        }
+
+        // Un teacher consulta la agenda pero no ve pesos ni cargas.
+        $this->actingAs($this->user(Role::TEACHER));
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertOk()
+            ->assertDontSee(__('agenda.weights.weight'))->assertDontSee(__('agenda.weights.loads'))->assertSee('(híbrida, en línea)');
+    }
 }

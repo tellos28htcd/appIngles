@@ -91,6 +91,9 @@
                                 <th scope="col" class="px-4 py-3">{{ __('agenda.teacher') }}</th>
                                 <th scope="col" class="px-4 py-3">{{ __('agenda.student') }}</th>
                                 <th scope="col" class="px-4 py-3">{{ __('agenda.activity') }}</th>
+                                @if ($canSeeWeights)
+                                    <th scope="col" class="px-4 py-3 text-right" title="{{ __('agenda.weights.hint') }}">{{ __('agenda.weights.weight') }}</th>
+                                @endif
                                 <th scope="col" class="px-4 py-3">{{ __('agenda.status') }}</th>
                                 @if ($canManage)
                                     <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('agenda.actions.cancel') }}</span></th>
@@ -100,8 +103,19 @@
                         @foreach ($this->bookings as $group)
                             <tbody wire:key="slot-{{ $group['slot']?->id }}" class="border-t border-line">
                                 <tr class="bg-primary-50">
-                                    <th scope="colgroup" colspan="{{ $canManage ? 6 : 5 }}" class="px-4 py-1 text-left font-display text-lg font-bold tabular-nums text-primary-700">
-                                        {{ substr((string) $group['slot']?->starts_at, 0, 5) }} – {{ substr((string) $group['slot']?->ends_at, 0, 5) }}
+                                    <th scope="colgroup" colspan="{{ 5 + ($canManage ? 1 : 0) + ($canSeeWeights ? 1 : 0) }}" class="px-4 py-1 text-left">
+                                        <span class="font-display text-lg font-bold tabular-nums text-primary-700">{{ substr((string) $group['slot']?->starts_at, 0, 5) }} – {{ substr((string) $group['slot']?->ends_at, 0, 5) }}</span>
+                                        @if ($canSeeWeights && $group['loads'] !== [])
+                                            {{-- Carga (suma de pesos newton) de cada aula a esa hora. --}}
+                                            <span class="ml-3 inline-flex flex-wrap gap-1.5 align-middle" aria-label="{{ __('agenda.weights.loads') }}">
+                                                @foreach ($group['loads'] as $load)
+                                                    <span class="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-white px-2.5 py-0.5 text-sm font-semibold text-ink-700">
+                                                        {{ $load['virtual'] ? __('agenda.virtual_classroom', ['name' => $load['room']]) : __('agenda.room', ['name' => $load['room']]) }}@if ($load['hybrid']) <span class="text-xs font-normal text-info-700">({{ __('agenda.weights.hybrid') }})</span>@endif
+                                                        · {{ $load['teacher'] }} · <span class="font-bold tabular-nums text-primary-700" title="{{ __('agenda.weights.load') }}">{{ $load['total'] }}</span>
+                                                    </span>
+                                                @endforeach
+                                            </span>
+                                        @endif
                                     </th>
                                 </tr>
                                 @foreach ($group['bookings'] as $booking)
@@ -109,15 +123,20 @@
                                     @php($tint = $booking->classroom_id && ! $booking->is_waitlist ? \App\Support\RoomColors::tint($roomNumbers[$booking->classroom_id] ?? 1) : 'even:bg-row-alt')
                                     {{-- Renglón compacto (todo en una línea): clic en el aula = cambiar; clic en "Reservada" = asistió; doble clic en "Asistió" = regresa a reservada. --}}
                                     <tr wire:key="booking-{{ $booking->id }}" @class(['border-t border-line leading-tight', $tint, 'text-ink-400' => ! $active])>
+                                        @php($isOnline = $booking->modality === \App\Enums\ClubModality::Online)
+                                        @php($isHybrid = $active && ! $booking->is_waitlist && $booking->kind === \App\Enums\BookingKind::Session && in_array($booking->teacher_availability_id, $group['hybrid'], true))
+                                        @php($place = $isHybrid ? __('agenda.room', ['name' => $booking->classroom?->name]) : $booking->placeLabel())
                                         <td class="whitespace-nowrap px-4 py-1">
                                             @if ($canManage && $booking->canBeChanged())
                                                 <button type="button" wire:click="editBooking({{ $booking->id }})" title="{{ __('agenda.edit.open') }}"
                                                         @class(['rounded text-left font-bold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
-                                                            'text-warning-700' => $booking->is_waitlist, 'text-primary-700' => ! $booking->is_waitlist])>{{ $booking->placeLabel() }}</button>
+                                                            'text-warning-700' => $booking->is_waitlist, 'text-primary-700' => ! $booking->is_waitlist])>{{ $place }}</button>
                                             @else
-                                                <span @class(['font-bold', 'text-warning-700' => $booking->is_waitlist && $active])>{{ $booking->placeLabel() }}</span>
+                                                <span @class(['font-bold', 'text-warning-700' => $booking->is_waitlist && $active])>{{ $place }}</span>
                                             @endif
-                                            @if ($booking->modality === \App\Enums\ClubModality::Online)
+                                            @if ($isHybrid)
+                                                <span @class(['text-sm', 'font-semibold text-info-700' => $isOnline, 'text-ink-700' => ! $isOnline])>({{ __('agenda.hybrid_mode', ['modality' => \Illuminate\Support\Str::lower(__($isOnline ? 'agenda.online' : 'agenda.in_person'))]) }})</span>
+                                            @elseif ($isOnline)
                                                 <span class="text-sm font-semibold text-info-700">· {{ __('agenda.online') }}</span>
                                             @else
                                                 <span class="text-sm text-ink-700">· {{ __('agenda.in_person') }}</span>
@@ -137,6 +156,9 @@
                                             <span class="text-sm font-bold uppercase text-ink-700">{{ $booking->kind->label() }}</span>
                                             <span class="font-bold tabular-nums">{{ $booking->activityLabel() }}</span>
                                         </td>
+                                        @if ($canSeeWeights)
+                                            <td class="whitespace-nowrap px-4 py-1 text-right font-bold tabular-nums">{{ $group['weights'][$booking->id] ?? '—' }}</td>
+                                        @endif
                                         <td class="whitespace-nowrap px-4 py-1">
                                             @if ($canManage && $booking->status === \App\Enums\BookingStatus::Attended)
                                                 {{-- Asistencia marcada por error: doble clic la quita. --}}

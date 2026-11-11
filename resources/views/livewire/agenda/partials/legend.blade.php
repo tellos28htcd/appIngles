@@ -14,14 +14,14 @@
                 <x-ui.icon name="chevron-down" class="size-4" />
             </button>
             <div id="agenda-waitlist" x-show="open" x-cloak x-transition.opacity
-                 class="absolute right-0 z-50 mt-1 max-h-80 w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-line bg-white p-2 shadow-pop">
+                 class="absolute right-0 z-50 mt-1 max-h-80 w-[32rem] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-line bg-white p-2 shadow-pop">
                 @if ($waitlist->isEmpty())
                     <p class="px-2 py-1.5 text-sm font-normal text-ink-500">{{ __('agenda.waitlist_empty') }}</p>
                 @else
                     <ul class="flex flex-col divide-y divide-line">
                         @foreach ($waitlist as $waiting)
                             <li wire:key="legend-waiting-{{ $waiting->id }}" class="flex items-baseline justify-between gap-3 px-2 py-1.5">
-                                <span class="font-bold text-ink-900">{{ $waiting->student?->fullName() }}</span>
+                                <span class="font-bold text-ink-900 sm:whitespace-nowrap">{{ $waiting->student?->fullName() }}</span>
                                 <span class="whitespace-nowrap text-xs tabular-nums text-ink-500">{{ $waiting->date->translatedFormat('j M') }} · {{ $waiting->slot?->range() }}</span>
                             </li>
                         @endforeach
