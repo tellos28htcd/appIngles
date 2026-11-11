@@ -12,7 +12,7 @@ use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
 use App\Livewire\Agenda\MyAgenda;
 use App\Livewire\BookingNotices;
-use App\Livewire\Catalogs\ActivitiesTab;
+use App\Livewire\Catalogs\WeightsTab;
 use App\Livewire\Students\StudentShow;
 use App\Models\Activity;
 use App\Models\Book;
@@ -678,16 +678,14 @@ class AgendaTest extends TestCase
 
     // ── Balanceo por pesos ────────────────────────────────────────
 
-    /** Pesos del catálogo de Actividades (como el Excel): número => [Lesson, Check Point, Verb in context, uno a uno]. */
+    /** Actividades (PR uno a uno) y pesos newton de cada lección de la escuela (los del Excel). */
     private function weights(): void
     {
-        $weights = [1 => ['BA', 5, 5, null, false], 2 => ['1P', 10, null, null, false], 3 => ['M', 40, 40, null, false], 4 => ['WS', 40, null, null, false],
-            5 => ['2P', 15, null, null, false], 6 => ['WP', 40, 40, 40, false], 7 => ['SP', 20, null, 20, false], 8 => ['PR', null, 240, null, true]];
-
-        foreach ($weights as $number => [$code, $lesson, $checkpoint, $verb, $oneToOne]) {
-            Activity::create(['school_id' => $this->school->id, 'number' => $number, 'code' => $code, 'description' => $code, 'is_active' => true,
-                'weight_lesson' => $lesson, 'weight_checkpoint' => $checkpoint, 'weight_verb_in_context' => $verb, 'is_one_to_one' => $oneToOne]);
+        foreach ([1 => 'BA', 2 => '1P', 3 => 'M', 4 => 'WS', 5 => '2P', 6 => 'WP', 7 => 'SP', 8 => 'PR'] as $number => $code) {
+            Activity::create(['school_id' => $this->school->id, 'number' => $number, 'code' => $code, 'description' => $code, 'is_active' => true, 'is_one_to_one' => $code === 'PR']);
         }
+
+        Lesson::where('school_id', $this->school->id)->get()->each(fn (Lesson $lesson) => $lesson->update(['activity_weights' => Lesson::DEFAULT_WEIGHTS[$lesson->type->value]]));
     }
 
     /** Reservación ya hecha en el aula de un teacher (a las 9, 1.ª lección). */
@@ -795,12 +793,14 @@ class AgendaTest extends TestCase
         $this->assertSame(2, app(AgendaService::class)->weekAvailability($this->school, $days)[self::MONDAY.'|'.$this->slots[9]->id]['session']['capacity']);
     }
 
-    public function test_activities_not_done_in_a_lesson_type_are_skipped_and_the_presentation_is_one_to_one(): void
+    public function test_activities_not_done_in_a_lesson_are_skipped_and_the_presentation_is_one_to_one(): void
     {
         $this->weights();
         $book = $this->firstLesson->book_id;
-        $checkpoint = Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 3, 'name' => 'Check Point C1', 'type' => LessonType::CheckPoint, 'sort_order' => 3, 'is_active' => true]);
-        Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 4, 'name' => 'Verb in context 1', 'type' => LessonType::VerbInContext, 'sort_order' => 4, 'is_active' => true]);
+        $checkpoint = Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 3, 'name' => 'Check Point C1', 'type' => LessonType::CheckPoint, 'sort_order' => 3, 'is_active' => true,
+            'activity_weights' => Lesson::DEFAULT_WEIGHTS['checkpoint']]);
+        Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 4, 'name' => 'Verb in context 1', 'type' => LessonType::VerbInContext, 'sort_order' => 4, 'is_active' => true,
+            'activity_weights' => Lesson::DEFAULT_WEIGHTS['verb_in_context']]);
 
         $labels = (new ProgressPath($this->school))->steps()->pluck('label')->filter(fn (string $label) => str_starts_with($label, 'L1-L3') || str_starts_with($label, 'L1-L4'))->values()->all();
         $this->assertSame(['L1-L3-A1-BA', 'L1-L3-A3-M', 'L1-L3-A6-WP', 'L1-L3-A8-PR', 'L1-L4-A6-WP', 'L1-L4-A7-SP'], $labels);
@@ -830,16 +830,30 @@ class AgendaTest extends TestCase
         $this->assertSame(1, Booking::where('schedule_slot_id', $this->slots[10]->id)->where('teacher_id', $pr->teacher_id)->count());
     }
 
-    public function test_activity_weights_are_edited_in_the_catalog(): void
+    public function test_each_lesson_has_its_own_weights_and_the_balance_uses_the_students_lesson(): void
     {
         $this->weights();
+        $secondLesson = Lesson::where('number', 2)->sole();
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
-        $ws = Activity::where('school_id', $this->school->id)->where('number', 4)->sole();
 
-        Livewire::test(ActivitiesTab::class, ['schoolId' => $this->school->id])->call('edit', $ws->id)
-            ->set('weightLesson', 35)->set('weightCheckpoint', 20)->set('weightVerbInContext', null)->call('save')->assertHasNoErrors()
-            ->assertSee(__('catalogs.activities.weights'));
+        // Pesos newton: todas las lecciones del libro; en la Lesson 2, WS pesa 80 y 2P no se hace.
+        $tab = Livewire::test(WeightsTab::class, ['schoolId' => $this->school->id])->assertSee('Lesson 1')->assertSee('Lesson 2')
+            ->assertSet("weights.{$secondLesson->id}.4", '40');
+        $tab->set("weights.{$secondLesson->id}.4", '80')->set("weights.{$secondLesson->id}.5", '')->call('save')->assertHasNoErrors();
+        $tab->set("weights.{$secondLesson->id}.1", '-3')->call('save')->assertHasErrors("weights.{$secondLesson->id}.1");
 
-        $this->assertSame([35, 20, null, false], [$ws->refresh()->weight_lesson, $ws->weight_checkpoint, $ws->weight_verb_in_context, $ws->is_one_to_one]);
+        $this->assertSame([1 => 5, 2 => 10, 3 => 40, 4 => 80, 6 => 40, 7 => 20], $secondLesson->refresh()->weights());
+        $this->assertSame(Lesson::DEFAULT_WEIGHTS['lesson'], $this->firstLesson->refresh()->weights());
+        $this->assertNotContains('L1-L2-A5-2P', (new ProgressPath($this->school))->steps()->pluck('label')->all());
+    }
+
+    public function test_the_weights_catalog_is_only_for_the_own_school(): void
+    {
+        $other = School::factory()->create();
+        $this->actingAs($this->user(Role::RECEPTION));
+        Livewire::test(WeightsTab::class, ['schoolId' => $this->school->id])->assertForbidden();
+
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        Livewire::test(WeightsTab::class, ['schoolId' => $other->id])->assertForbidden();
     }
 }

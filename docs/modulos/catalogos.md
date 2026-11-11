@@ -7,9 +7,9 @@ Fuente: `Información general.xlsx` (pestaña *Catálogos*) y decisiones del 5-o
 - **Configuración → Catálogos académicos** (Administrador escuela): la copia de su escuela, con aviso de
   **novedades del catálogo base** para incorporarlas cuando quiera.
 
-Pestañas: Turnos y horarios · Libros y lecciones · Actividades · Clubes.
+Pestañas: Turnos y horarios · Libros y lecciones · Actividades · Pesos newton · Clubes.
 
-**Actividades → pesos:** cada actividad lleva su peso por tipo de lección (Lesson, Check Point, Verb in context; vacío = no se hace) y la marca "uno a uno" (PR). La tabla de pesos se ve debajo de las actividades; se cambia editando la actividad. Los usa la agenda para balancear aulas y la ruta de avance para saltar actividades (ver docs/modulos/agenda.md).
+**Pesos newton** (pestaña propia): por libro, todas sus lecciones × actividades con el peso de cada actividad en esa lección (vacío = no se hace); se edita en la tabla y "Guardar pesos". En Actividades queda la marca "uno a uno" (PR). Los usa la agenda para balancear aulas y la ruta de avance para saltar actividades (ver docs/modulos/agenda.md).
 
 ## Datos
 `school_id` nulo = catálogo base; con escuela = su copia. `base_id` = registro base del que viene la copia.

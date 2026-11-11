@@ -36,6 +36,9 @@
             @case('actividades')
                 <livewire:catalogs.activities-tab :school-id="$schoolId" wire:key="activities-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
+            @case('pesos')
+                <livewire:catalogs.weights-tab :school-id="$schoolId" wire:key="weights-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
             @case('clubes')
                 <livewire:catalogs.clubs-tab :school-id="$schoolId" wire:key="clubs-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break

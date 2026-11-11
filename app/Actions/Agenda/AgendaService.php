@@ -42,8 +42,8 @@ use Illuminate\Validation\ValidationException;
  *   lista de espera (si hay columna "Lista de espera" o Mi Instituto lo permite).
  * - Práctica en línea: primero híbrida en un aula física (máximo 3 alumnos, a lo más 2 en línea); llenas,
  *   un aula virtual del catálogo ("alumnos por aula virtual").
- * - Balanceo por pesos (RoomBalancer): cada actividad pesa según el tipo de lección (catálogo de
- *   Actividades); el alumno va al aula de menor carga y, al agendar, cancelar o pasar de la lista de espera,
+ * - Balanceo por pesos newton (RoomBalancer): cada actividad pesa según la lección del alumno (catálogo
+ *   "Pesos newton"); el alumno va al aula de menor carga y, al agendar, cancelar o pasar de la lista de espera,
  *   se reacomodan los alumnos de esa hora (solo aula y teacher) hasta 3 minutos antes, con aviso al alumno.
  *   Las físicas e híbridas se balancean juntas; las virtuales entre ellas. La presentación (PR) es uno a uno.
  * - Tolerancia: recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo);
@@ -265,7 +265,7 @@ final class AgendaService
         $bookings = Booking::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
             ->where('schedule_slot_id', $slot->id)->where('kind', BookingKind::Session)->where('is_waitlist', false)->active()
             ->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))
-            ->with(['lesson:id,type', 'classroom:id,name,is_virtual', 'student.user'])->get();
+            ->with(['classroom:id,name,is_virtual', 'student.user'])->get();
 
         $rooms = [];
         foreach ($cells as $cell) {
@@ -295,7 +295,7 @@ final class AgendaService
     }
 
     /**
-     * Datos de una reservación para el balanceo: peso de su actividad según el tipo de lección (sin pesos
+     * Datos de una reservación para el balanceo: peso de su actividad en su lección (sin pesos
      * capturados cuenta 1 por alumno), si va en línea, si es uno a uno (PR) y si se puede mover.
      *
      * @param  list<int>  $excluded
@@ -303,15 +303,14 @@ final class AgendaService
      */
     private function itemFor(School $school, Booking $booking, array $excluded): array
     {
-        $catalog = Activity::weightsFor($school->id);
-        $lesson = $booking->relationLoaded('lesson') ? $booking->lesson : Lesson::withoutGlobalScope('school')->find($booking->lesson_id);
-        $weight = $lesson ? ($catalog['weights'][$lesson->type->value][$booking->activity_number] ?? null) : null;
+        $catalog = Lesson::weightsFor($school->id);
+        $weight = $catalog['lessons'][$booking->lesson_id][(int) $booking->activity_number] ?? null;
 
         return [
             'room' => null,
-            'weight' => $catalog['weights'] === [] ? 1 : (int) $weight,
+            'weight' => $catalog['configured'] ? (int) $weight : 1,
             'online' => $booking->modality === ClubModality::Online,
-            'one_to_one' => $weight !== null && in_array((int) $booking->activity_number, $catalog['one_to_one'], true),
+            'one_to_one' => $weight !== null && in_array((int) $booking->activity_number, Activity::oneToOneFor($school->id), true),
             'movable' => $booking->status === BookingStatus::Booked,
             'excluded' => $excluded,
         ];

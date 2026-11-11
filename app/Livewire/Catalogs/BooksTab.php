@@ -128,6 +128,8 @@ class BooksTab extends Component
                 'book_id' => $book->id,
                 'sort_order' => (int) $book->lessons()->max('sort_order') + 10,
                 'is_active' => true,
+                'activity_weights' => $this->catalog(Lesson::class)->where('type', $data['lessonType'])->whereNotNull('activity_weights')->latest('id')->first()?->activity_weights
+                    ?? Lesson::DEFAULT_WEIGHTS[$data['lessonType']],
             ]);
         $lesson->fill(['number' => $data['lessonNumber'], 'name' => trim($data['lessonName']), 'type' => $data['lessonType']])->save();
 

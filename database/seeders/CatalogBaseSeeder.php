@@ -50,16 +50,16 @@ class CatalogBaseSeeder extends Seeder
         [17, 'Check Point C2', LessonType::CheckPoint], [18, 'Verb in context 2', LessonType::VerbInContext],
     ];
 
-    /** Número, código, descripción, pesos (Lesson, Check Point, Verb in context; null = no se hace) y uno a uno. */
+    /** Número, código, descripción y si la asesoría es uno a uno (PR). Los pesos newton van en cada lección. */
     private const ACTIVITIES = [
-        [1, 'BA', 'Book Answered', 5, 5, null, false],
-        [2, '1P', 'Primera Pronunciation', 10, null, null, false],
-        [3, 'M', 'Mentoría', 40, 40, null, false],
-        [4, 'WS', 'Worksheet', 40, null, null, false],
-        [5, '2P', 'Segunda Pronunciation', 15, null, null, false],
-        [6, 'WP', 'Written performance', 40, 40, 40, false],
-        [7, 'SP', 'Spoken demonstration', 20, null, 20, false],
-        [8, 'PR', 'Presentación', null, 240, null, true],
+        [1, 'BA', 'Book Answered', false],
+        [2, '1P', 'Primera Pronunciation', false],
+        [3, 'M', 'Mentoría', false],
+        [4, 'WS', 'Worksheet', false],
+        [5, '2P', 'Segunda Pronunciation', false],
+        [6, 'WP', 'Written performance', false],
+        [7, 'SP', 'Spoken demonstration', false],
+        [8, 'PR', 'Presentación', true],
     ];
 
     /** Club => horas por nivel 1, 2, 3 (null = no se ofrece en ese nivel). */
@@ -196,6 +196,7 @@ class CatalogBaseSeeder extends Seeder
                 Lesson::ofCatalog(null)->firstOrCreate(['school_id' => null, 'book_id' => $book->id, 'number' => $number], [
                     'name' => $lessonName,
                     'type' => $type,
+                    'activity_weights' => Lesson::DEFAULT_WEIGHTS[$type->value],
                     'sort_order' => ($position + 1) * 10,
                     'is_active' => true,
                 ]);
@@ -207,13 +208,10 @@ class CatalogBaseSeeder extends Seeder
 
     private function seedActivities(): void
     {
-        foreach (self::ACTIVITIES as [$number, $code, $description, $lesson, $checkpoint, $verb, $oneToOne]) {
+        foreach (self::ACTIVITIES as [$number, $code, $description, $oneToOne]) {
             Activity::ofCatalog(null)->firstOrCreate(['school_id' => null, 'code' => $code], [
                 'number' => $number,
                 'description' => $description,
-                'weight_lesson' => $lesson,
-                'weight_checkpoint' => $checkpoint,
-                'weight_verb_in_context' => $verb,
                 'is_one_to_one' => $oneToOne,
                 'is_active' => true,
             ]);

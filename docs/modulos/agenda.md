@@ -98,9 +98,9 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 
 ## Balanceo por pesos (nov-2026)
 
-- **Pesos:** Catálogos académicos → Actividades. Cada actividad tiene un peso por tipo de lección (Lesson, Check Point, Verb in context) y la marca "uno a uno"; vacío = no se hace en ese tipo. Base en Plataforma y copia por escuela (`activities.weight_lesson`, `weight_checkpoint`, `weight_verb_in_context`, `is_one_to_one`). Valores iniciales: Lesson BA 5, 1P 10, M 40, WS 40, 2P 15, WP 40, SP 20; Check Point BA 5, M 40, WP 40, PR 240 (uno a uno); Verb in context WP 40, SP 20.
-- **Ruta de avance:** salta las actividades que no se hacen y conserva su número: Check Point A1-BA → A3-M → A6-WP → A8-PR; Verb in context A6-WP → A7-SP. Si la escuela no tiene pesos, se usan todas (7; 8 en Check Point).
-- **Carga de un teacher** = suma de los pesos de las actividades de sus alumnos a esa hora (sin pesos, cuenta 1 por alumno). Se busca que las cargas queden parejas (alrededor del promedio).
+- **Pesos newton:** Catálogos académicos → pestaña "Pesos newton". Cada **lección** tiene el peso de cada actividad (tabla lecciones × BA, 1P, M, WS, 2P, WP, SP, PR, por libro, editable); vacío = no se hace en esa lección. Base en Plataforma y copia por escuela (`lessons.activity_weights`, JSON número de actividad => peso). "Uno a uno" (PR) se marca en Actividades (`activities.is_one_to_one`). Valores iniciales: Lesson BA 5, 1P 10, M 40, WS 40, 2P 15, WP 40, SP 20; Check Point BA 5, M 40, WP 40, PR 240; Verb in context WP 40, SP 20. Una lección nueva toma los pesos de otra del mismo tipo.
+- **Ruta de avance:** salta las actividades que no se hacen en cada lección y conserva su número: Check Point A1-BA → A3-M → A6-WP → A8-PR; Verb in context A6-WP → A7-SP. Si la escuela no tiene pesos, se usan todas (7; 8 en Check Point).
+- **Carga de un teacher** = suma de los pesos de las actividades de sus alumnos a esa hora, cada una con el peso de **la lección del alumno** (sin pesos, cuenta 1 por alumno). Se busca que las cargas queden parejas (alrededor del promedio).
 - **Aulas:**
   - El aula audiovisual (marcada para clubs) nunca recibe prácticas mientras tenga esa marca.
   - Física solo presencial: el cupo por sesión de Mi Instituto.

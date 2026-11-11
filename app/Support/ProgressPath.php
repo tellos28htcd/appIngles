@@ -29,12 +29,13 @@ final class ProgressPath
             ->orderBy('sort_order')->orderBy('number')->get()->groupBy('book_id');
 
         $codes = Activity::codesFor($school->id);
-        $weights = Activity::weightsFor($school->id)['weights'];
+        $weights = Lesson::weightsFor($school->id);
 
         $this->steps = $books->flatMap(fn (Book $book) => $lessons->get($book->id, collect())->flatMap(function (Lesson $lesson) use ($book, $codes, $weights) {
-            // Con pesos capturados, solo las actividades que se hacen en ese tipo de lección (las demás se saltan).
-            $numbers = $weights !== []
-                ? array_keys($weights[$lesson->type->value] ?? [])
+            // Con pesos newton, solo las actividades que se hacen en esa lección (las demás se saltan).
+            $lessonWeights = $weights['configured'] ? ($weights['lessons'][$lesson->id] ?? null) : null;
+            $numbers = $lessonWeights !== null
+                ? array_keys($lessonWeights)
                 : range(1, $lesson->type === LessonType::CheckPoint ? self::ACTIVITIES_PER_LESSON + 1 : self::ACTIVITIES_PER_LESSON);
 
             return collect($numbers)->map(fn (int $activity) => [
