@@ -11,6 +11,8 @@ use App\Enums\StudentStatus;
 use App\Models\Booking;
 use App\Models\CancellationReason;
 use App\Models\Classroom;
+use App\Models\ClubSession;
+use App\Models\CoordinatorSession;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
@@ -472,6 +474,7 @@ class AgendaDay extends Component
             'edit' => $this->editData(),
             'canManage' => auth()->user()->can('manage', Booking::class),
             'canSeeWeights' => auth()->user()->can('viewWeights', Booking::class),
+            'coordination' => auth()->user()->can('viewCoordination', Booking::class) ? $this->coordination($days) : [],
             'day' => $this->day(),
             'days' => $days,
             'planner' => $planner,
@@ -484,6 +487,37 @@ class AgendaDay extends Component
             'nextActivity' => $this->selectedStudent ? $agenda->nextActivity($this->selectedStudent) : null,
             'dailyLimit' => $this->selectedStudent ? $agenda->dailyLimit($this->selectedStudent, $this->today()) : null,
         ])->title(__('agenda.title'));
+    }
+
+    /**
+     * Lo programado en Horas Coordinador en la semana, por "fecha|hora": actividad y teacher; la Evaluación de Club
+     * con la abreviatura y el color del club que evalúa.
+     *
+     * @param  list<CarbonImmutable>  $days
+     * @return array<string, list<array{activity: string, teacher: string, code: ?string, color: ?int, uses_teacher_hour: bool, slot: string}>>
+     */
+    private function coordination(array $days): array
+    {
+        $from = $days[0]->toDateString();
+        $to = end($days)->toDateString();
+        $clubs = ClubSession::query()->whereBetween('date', [$from, $to])->with('club')->get()
+            ->keyBy(fn (ClubSession $club) => $club->date->toDateString().'|'.$club->schedule_slot_id.'|'.$club->teacher_id);
+
+        return CoordinatorSession::query()->whereBetween('date', [$from, $to])->with(['activity', 'teacher', 'slot'])->get()
+            ->sortBy(fn (CoordinatorSession $session) => $session->activity?->sort_order.'|'.$session->teacher?->panel_number)
+            ->groupBy(fn (CoordinatorSession $session) => $session->date->toDateString().'|'.$session->schedule_slot_id)
+            ->map(fn ($sessions) => $sessions->map(function (CoordinatorSession $session) use ($clubs): array {
+                $club = $session->activity?->evaluatesClubs() ? $clubs->get($session->date->toDateString().'|'.$session->schedule_slot_id.'|'.$session->teacher_id) : null;
+
+                return [
+                    'activity' => (string) $session->activity?->name,
+                    'teacher' => $session->teacher?->panelName() ?? __('coordination.coordination_short'),
+                    'code' => $club?->code,
+                    'color' => $club?->color(),
+                    'uses_teacher_hour' => (bool) $session->activity?->uses_teacher_hour,
+                    'slot' => (string) $session->slot?->range(),
+                ];
+            })->values()->all())->all();
     }
 
     // ── Apoyo ─────────────────────────────────────────────────────

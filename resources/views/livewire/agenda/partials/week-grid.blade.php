@@ -1,5 +1,15 @@
 {{-- Calendario semanal de la agenda: por día y hora, lugares de práctica (presencial / en línea) y de cada club.
-     Variables: $days, $scheduleSlots, $availability, $holidays, $planner, $selectedDate (o null), $canPick (clic en la celda), $canSelectDay. --}}
+     Variables: $days, $scheduleSlots, $availability, $holidays, $planner, $selectedDate (o null), $canPick (clic en la celda), $canSelectDay.
+     $coordination (opcional, solo personal): lo programado en Horas Coordinador por "fecha|hora"; el alumno nunca lo recibe. --}}
+@php
+    $coordination = $coordination ?? [];
+    // Color de lo de Horas Coordinador: Evaluación de Club en el pastel de su club; si ocupa la hora del teacher, oscuro.
+    $coordinationChip = fn (array $item) => match (true) {
+        $item['color'] !== null => \App\Support\RoomColors::pastel($item['color']).' text-ink-900',
+        $item['uses_teacher_hour'] => 'bg-ink-900 text-white',
+        default => 'bg-primary-100 text-primary-700',
+    };
+@endphp
 <section class="overflow-x-auto rounded-xl border border-line bg-white shadow-xs">
     <table class="w-full min-w-[1040px] border-separate border-spacing-0 text-center text-sm">
         <thead>
@@ -43,6 +53,7 @@
                         @php($hasPlaces = $cell && ($cell['session']['capacity'] > 0 || $cell['online']['capacity'] > 0 || $cell['clubs'] !== []))
                         @php($clickable = $canPick && $hasPlaces && ! $cell['past'])
                         <td @class(['h-14 min-w-40 border-b border-l border-line p-1 align-top', 'bg-surface-2' => ! $hasPlaces, 'opacity-60' => $cell && $cell['past']])>
+                            @php($coordinationHere = $coordination[$day->toDateString().'|'.$slot->id] ?? [])
                             @if ($hasPlaces)
                                 <button type="button" @if ($clickable) wire:click="openSlot('{{ $day->toDateString() }}', {{ $slot->id }})" @else disabled @endif
                                         @class(['flex w-full flex-col gap-1 rounded-md p-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500', 'hover:bg-accent-100' => $clickable, 'cursor-default' => ! $clickable])
@@ -83,6 +94,14 @@
                                     @endif
                                 </button>
                             @endif
+                            {{-- Horas Coordinador (solo personal): actividad, club evaluado y teacher. --}}
+                            @foreach ($coordinationHere as $item)
+                                <span @class(['mt-1 flex items-center justify-between gap-1 rounded px-2 py-1 text-left text-[13px] font-bold leading-tight', $coordinationChip($item)])
+                                      title="{{ __('agenda.coordination.title') }} · {{ $item['activity'] }}{{ $item['code'] ? ' '.$item['code'] : '' }} · {{ $item['teacher'] }}">
+                                    <span class="truncate">{{ $item['activity'] }}@if ($item['code']) {{ $item['code'] }}@endif</span>
+                                    <span class="whitespace-nowrap text-[11px] uppercase">{{ $item['teacher'] }}</span>
+                                </span>
+                            @endforeach
                         </td>
                     @endforeach
                 </tr>

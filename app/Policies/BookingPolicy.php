@@ -30,6 +30,13 @@ class BookingPolicy
         return $this->viewAny($actor) && in_array($actor->loadMissing('role')->role?->slug, [Role::SCHOOL_ADMIN, Role::RECEPTION], true);
     }
 
+    /** Lo programado en Horas Coordinador dentro de la agenda: Administrador, Recepción, Teacher y Coordinador (nunca el alumno). */
+    public function viewCoordination(User $actor): bool
+    {
+        return $this->viewAny($actor) && in_array($actor->loadMissing('role')->role?->slug,
+            [Role::SCHOOL_ADMIN, Role::RECEPTION, Role::TEACHER, Role::ACADEMIC_COORDINATOR], true);
+    }
+
     /** "Mi agenda": el alumno ligado a su usuario. */
     public function bookOwn(User $actor): bool
     {

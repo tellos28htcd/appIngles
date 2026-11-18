@@ -50,6 +50,11 @@ return [
     'room' => 'Aula :name',
     'hybrid_room' => 'Aula :name (híbrida, en línea)',
     'hybrid_mode' => 'híbrida, :modality',
+    'coordination' => [
+        'title' => 'Horas Coordinador',
+        'hint' => 'lo programado este día (los alumnos no lo ven)',
+    ],
+
     'weights' => [
         'weight' => 'Peso',
         'hint' => 'Peso newton de la actividad en la lección del alumno',

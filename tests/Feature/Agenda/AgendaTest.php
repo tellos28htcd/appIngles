@@ -955,4 +955,34 @@ class AgendaTest extends TestCase
         // En la columna "Peso" la cancelada muestra "—".
         $page->assertSeeHtml('>—</td>');
     }
+
+    public function test_coordinator_hours_show_in_the_agenda_for_staff_but_not_for_students(): void
+    {
+        $alfonso = Teacher::where('short_name', 'DULCE')->sole();
+        $evaluation = CoordinatorActivity::create(['school_id' => $this->school->id, 'name' => 'Evaluación de Club', 'authorized_hours' => 2,
+            'per_teacher' => true, 'requires_teacher' => true, 'sort_order' => 1, 'is_active' => true]);
+        $planning = CoordinatorActivity::create(['school_id' => $this->school->id, 'name' => 'Programación de Clubs', 'authorized_hours' => 1, 'sort_order' => 2, 'is_active' => true]);
+        $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 1, 'is_active' => true, 'codes' => [['code' => 'C12', 'levels' => [1], 'color' => 2, 'is_active' => true]]]);
+        ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => $alfonso->id, 'classroom_id' => $this->rooms[1]->id,
+            'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id, 'modality' => 'in_person']);
+        CoordinatorSession::create(['school_id' => $this->school->id, 'coordinator_activity_id' => $evaluation->id, 'teacher_id' => $alfonso->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id]);
+        CoordinatorSession::create(['school_id' => $this->school->id, 'coordinator_activity_id' => $planning->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[9]->id]);
+
+        // Recepción, teacher, coordinador y administrador lo ven en el calendario y en el listado del día.
+        foreach ([Role::RECEPTION, Role::TEACHER, Role::ACADEMIC_COORDINATOR, Role::SCHOOL_ADMIN] as $role) {
+            $this->actingAs($this->user($role));
+            $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
+                ->assertSee(__('agenda.coordination.title'))->assertSee('Evaluación de Club C12')->assertSee('Programación de Clubs')->assertSeeHtml('bg-room-2/30')
+                ->assertDontSee('coordinationChip');
+            $this->assertCount(1, $page->viewData('coordination')[self::MONDAY.'|'.$this->slots[10]->id]);
+        }
+
+        // El alumno no lo ve en Mi agenda.
+        $user = $this->user(Role::STUDENT);
+        $this->student($user);
+        $this->actingAs($user);
+        Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->assertOk()
+            ->assertDontSee('Evaluación de Club')->assertDontSee('Programación de Clubs')->assertDontSee(__('agenda.coordination.title'))
+            ->assertDontSee('coordinationChip');
+    }
 }

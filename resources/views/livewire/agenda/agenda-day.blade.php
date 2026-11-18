@@ -1,4 +1,12 @@
 <div class="flex flex-col gap-6">
+@php
+    // Color de lo de Horas Coordinador: Evaluación de Club en el pastel de su club; si ocupa la hora del teacher, oscuro.
+    $coordinationChip = fn (array $item) => match (true) {
+        $item['color'] !== null => \App\Support\RoomColors::pastel($item['color']).' text-ink-900',
+        $item['uses_teacher_hour'] => 'bg-ink-900 text-white',
+        default => 'bg-primary-100 text-primary-700',
+    };
+@endphp
     @if ($canManage && $isReady)
         {{-- Arriba a la derecha (junto al título) y fijo al bajar: no tapa los botones de los renglones de abajo. --}}
         <div class="sticky top-3 z-40 -mb-6 flex h-0 justify-end">
@@ -60,6 +68,23 @@
                             <span class="font-semibold tabular-nums">{{ substr((string) $proposal->slot?->starts_at, 0, 5) }}</span>
                             <span>{{ $proposal->student?->fullName() }}</span>
                             <x-ui.button size="sm" variant="secondary" wire:click="promote({{ $proposal->id }})">{{ __('agenda.actions.promote') }}</x-ui.button>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Horas Coordinador del día (solo personal: administrador, recepción, teacher y coordinador). --}}
+        @php($dayCoordination = collect($coordination)->filter(fn ($items, $key) => str_starts_with($key, $day->toDateString().'|'))->flatten(1)->sortBy('slot')->values())
+        @if ($dayCoordination->isNotEmpty())
+            <div class="flex flex-col gap-2 border-b border-line bg-surface p-4">
+                <p class="text-sm font-bold text-primary-700">{{ __('agenda.coordination.title') }} · <span class="font-normal text-ink-700">{{ __('agenda.coordination.hint') }}</span></p>
+                <ul class="flex flex-wrap gap-2">
+                    @foreach ($dayCoordination as $item)
+                        <li @class(['flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold', $coordinationChip($item)])>
+                            <span class="font-bold tabular-nums">{{ $item['slot'] }}</span>
+                            <span>{{ $item['activity'] }}@if ($item['code']) {{ $item['code'] }}@endif</span>
+                            <span class="text-xs uppercase">· {{ $item['teacher'] }}</span>
                         </li>
                     @endforeach
                 </ul>
