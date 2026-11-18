@@ -27,6 +27,8 @@ return [
         'tipos' => 'Tipos de alumno',
         'puestos' => 'Puestos de asesor',
         'cancelaciones' => 'Motivos de cancelación',
+        'calificaciones' => 'Calificaciones (Kardex)',
+        'motivos' => 'Motivos del Kardex',
         'encuesta' => 'Encuesta',
     ],
 
@@ -81,6 +83,7 @@ return [
         'add' => 'Nueva actividad',
         'edit' => 'Editar actividad',
         'minutes_value' => ':minutes min',
+        'grade_type_hint' => 'Cómo se califica en el Kardex: firma (F) o A, B, C.',
     ],
 
     'weights' => [
@@ -175,6 +178,7 @@ return [
         'code' => 'Código',
         'description' => 'Descripción',
         'minutes' => 'Minutos',
+        'grade_type' => 'Calificación en Kardex',
         'hours' => 'Horas',
         'actions' => 'Acciones',
     ],
@@ -234,6 +238,8 @@ return [
             'student_types' => 'Tipos de alumno',
             'advisor_positions' => 'Puestos de asesor',
             'cancellation_reasons' => 'Motivos de cancelación',
+            'grades' => 'Calificaciones (Kardex)',
+            'ungraded_reasons' => 'Motivos del Kardex',
             'survey_questions' => 'Preguntas de la encuesta',
         ],
     ],
@@ -247,6 +253,7 @@ return [
             'short_name' => 'Nombre corto',
             'rank' => 'Jerarquía',
             'attendance' => 'Para la asistencia',
+            'type' => 'Se usa en',
             'sort_order' => 'Orden',
         ],
         'hints' => [
@@ -254,6 +261,13 @@ return [
             'origenes' => ['channel' => 'Agrupa el origen: Enlace Digital, Administrativa, Información ganada, Personal…'],
             'tipos' => ['code' => 'Clave corta en mayúsculas (p. ej. ALUMN, TRASP).'],
             'puestos' => ['rank' => '1 = el puesto más alto.'],
+            'calificaciones' => [
+                'code' => 'Letra de la calificación (A, B, C, F).',
+                'type' => 'La firma (F) es para las actividades 1–3 y los clubs; A, B y C para las actividades 4–7 (se ajusta en Catálogos académicos → Actividades).',
+            ],
+            'motivos' => [
+                'name' => 'Se elige al dejar una reservación sin calificación o al calificar días después.',
+            ],
             'cancelaciones' => [
                 'attendance' => 'Para el límite de horas por día (asistencia de los últimos 7 días). Cuando el alumno cancela él mismo se usa el primer motivo que "No cuenta".',
                 'sort_order' => 'Orden en la lista.',
@@ -263,6 +277,8 @@ return [
         'origenes' => ['title' => 'Origen de la información', 'description' => 'Cómo se enteró el alumno de la escuela.', 'add' => 'Nuevo origen', 'edit' => 'Editar origen'],
         'tipos' => ['title' => 'Tipos de alumno', 'description' => 'Alumno nuevo, traspaso, colaborador, reasignado…', 'add' => 'Nuevo tipo', 'edit' => 'Editar tipo'],
         'cancelaciones' => ['title' => 'Motivos de cancelación', 'description' => 'Motivos al cancelar una reservación de la agenda y cómo cuentan para la asistencia del alumno.', 'add' => 'Nuevo motivo', 'edit' => 'Editar motivo'],
+        'calificaciones' => ['title' => 'Calificaciones del Kardex', 'description' => 'Letras con que se califican las prácticas y los clubs en Kardex → Calificaciones.', 'add' => 'Nueva calificación', 'edit' => 'Editar calificación'],
+        'motivos' => ['title' => 'Motivos del Kardex', 'description' => 'Motivos para dejar una reservación sin calificación o para calificarla días después (siempre con comentario).', 'add' => 'Nuevo motivo', 'edit' => 'Editar motivo'],
         'puestos' => ['title' => 'Puestos de asesor', 'description' => 'Puestos de los asesores de ventas y su orden de jerarquía.', 'add' => 'Nuevo puesto', 'edit' => 'Editar puesto'],
         'advisors' => [
             'title' => 'Asesores de ventas',

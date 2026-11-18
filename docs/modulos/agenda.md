@@ -73,7 +73,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 - Significado de los valores AxU = 0 del catálogo de avance.
 - Factor de proyección para la 2.ª hora.
 - Límite de tiempo para cancelar.
-- Calificaciones A–D y avance automático del Kardex (fase 2).
+- Calificaciones y avance del Kardex: ver docs/modulos/kardex.md.
 - Mover las reservaciones al teacher que cubre (RN-28).
 
 ## Ajustes (nov-2026)
@@ -99,7 +99,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 ## Balanceo por pesos (nov-2026)
 
 - **Pesos newton:** Catálogos académicos → pestaña "Pesos newton". **Tabla general** (como el Excel del instituto): renglón por lección (Lesson 1–7, Check Point C1 (15), Verb in context 1 (16), Lesson 8–14, Check Point C2 (17), Verb in context 2 (18)) × actividades 1–7 (BA, 1P, M, WS, 2P, WP, SP), con T Min (suma de los pesos) y T Hrs (÷ 60). Lo que se cambia aplica a esa lección en los 3 libros. Oscuro = la actividad no se hace en esa lección (según el catálogo de Prácticas). Se guarda en `lessons.activity_weights`. Valores (nov-2026): Lesson BA 4, 1P 7, M 10, WS 9, 2P 15, WP 11, SP 18; Check Point BA 6, M 11, WP 180, SP 50; Verb in context M 7, WP 6, SP 9.
-- **Ruta de avance = catálogo de Prácticas** (Excel `Cat_Practicas.xlsx`, tabla `practices`): 336 prácticas (3 libros) con libro, lección, actividad, **orden**, puntos acumulados y nombre propio (A6 del Check Point: DIRECT P. / CON. EXP.). La práctica que sigue se asigna por el **orden**: el Check Point se abre (A1 BA, A3 M), sigue todo el Verb in context (A3 M, A6 WP, A7 SP) y se cierra (A6 DIRECT P./CON. EXP., A7 SP). Sin avance, el alumno empieza en el orden 1 (o en el punto de inicio de su ficha, si lo tiene); la 2.ª práctica del día toma el orden siguiente. Mientras no exista el Kardex, el avance es la última práctica reservada (no cancelada); con el Kardex será la última calificada. Nombre de la práctica: `L1-L1-A2-1P`, `L1-CP1-A6-DIRECT P.`, `L1-VIC1-A3-M` (en el listado del día sin la palabra "Práctica"). Se consulta en Catálogos académicos → Prácticas.
+- **Ruta de avance = catálogo de Prácticas** (Excel `Cat_Practicas.xlsx`, tabla `practices`): 336 prácticas (3 libros) con libro, lección, actividad, **orden**, puntos acumulados y nombre propio (A6 del Check Point: DIRECT P. / CON. EXP.). La práctica que sigue se asigna por el **orden**: el Check Point se abre (A1 BA, A3 M), sigue todo el Verb in context (A3 M, A6 WP, A7 SP) y se cierra (A6 DIRECT P./CON. EXP., A7 SP). Sin avance, el alumno empieza en el orden 1 (o en el punto de inicio de su ficha, si lo tiene); la 2.ª práctica del día toma el orden siguiente. El avance es lo más adelantado entre lo calificado en el Kardex y la última práctica reservada (no cancelada ni sin calificación). Nombre de la práctica: `L1-L1-A2-1P`, `L1-CP1-A6-DIRECT P.`, `L1-VIC1-A3-M` (en el listado del día sin la palabra "Práctica"). Se consulta en Catálogos académicos → Prácticas.
 - **Carga de un teacher** = suma de los pesos de las actividades de sus alumnos a esa hora, cada una con el peso de **la lección del alumno** (sin pesos, cuenta 1 por alumno). Se busca que las cargas queden parejas (alrededor del promedio).
 - **Aulas:**
   - El aula audiovisual (marcada para clubs) nunca recibe prácticas mientras tenga esa marca.

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Actions\Catalogs\CopyBaseCatalogs;
 use App\Enums\ChargeConceptType;
+use App\Enums\GradeType;
 use App\Enums\LessonType;
 use App\Models\Activity;
 use App\Models\AuditLog;
@@ -213,6 +214,7 @@ class CatalogBaseSeeder extends Seeder
             Activity::ofCatalog(null)->firstOrCreate(['school_id' => null, 'code' => $code], [
                 'number' => $number,
                 'description' => $description,
+                'grade_type' => GradeType::forActivityNumber($number),
                 'is_active' => true,
             ]);
         }

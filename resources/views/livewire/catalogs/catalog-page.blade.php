@@ -68,6 +68,8 @@
             @case('tipos')
             @case('puestos')
             @case('cancelaciones')
+            @case('calificaciones')
+            @case('motivos')
                 <livewire:catalogs.student-catalog-tab :school-id="$schoolId" :catalog="$tab" wire:key="student-{{ $tab }}-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
             @case('encuesta')
@@ -94,7 +96,7 @@
                                 @case('activities') <span class="font-mono font-bold">{{ $item->code }}</span> · {{ $item->description }} @break
                                 @case('practices') {{ __('catalogs.practices.order') }} {{ $item->sort_order }} <span class="text-xs text-ink-500">({{ __('catalogs.fields.activity_number') }} {{ $item->activity_number }}{{ $item->name ? ' · '.$item->name : '' }})</span> @break
                                 @case('survey_questions') {{ $item->question }} @break
-                                @case('student_plans') @case('student_types') <span class="font-mono font-bold">{{ $item->code }}</span> · {{ $item->name }} @break
+                                @case('student_plans') @case('student_types') @case('grades') <span class="font-mono font-bold">{{ $item->code }}</span> · {{ $item->name }} @break
                                 @default {{ $item->name }}
                             @endswitch
                         </span>

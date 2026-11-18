@@ -1,0 +1,79 @@
+<?php
+
+return [
+    'title' => 'Kardex',
+    'grades_title' => 'Calificaciones',
+    'grades_subtitle' => 'Los alumnos reservados de cada hora. Clic en el alumno para calificar sus prácticas en orden (hasta :days días después, con motivo).',
+    'my_title' => 'Mi avance',
+    'my_subtitle' => 'Tu Kardex: la práctica que sigue, tus puntos y tus calificaciones.',
+
+    'grade_types' => [
+        'signature' => 'Firma (actividades 1–3 y clubs)',
+        'score' => 'Calificación (actividades 4–7)',
+    ],
+
+    'reserved' => 'Reservada',
+    'graded' => 'Kardex',
+    'pending' => 'Sin calificar',
+    'ungraded_short' => 'Sin calificación: :reason',
+    'empty' => 'No hay alumnos reservados este día.',
+    'late_day' => 'Día anterior: se pide motivo y comentario',
+    'open' => 'Calificar',
+
+    'modal_title' => 'Calificar',
+    'already_graded' => 'Calificado en esta reservación',
+    'tab_grade' => 'Calificar',
+    'tab_ungraded' => 'Sin calificación',
+    'in_order_hint' => 'Califica en orden: la primera es la que indica el Kardex; las siguientes solo si el alumno avanzó en la asesoría. Las que dejes sin calificación no se guardan.',
+    'kardex_says' => 'La que indica el Kardex',
+    'if_advanced' => 'Si avanzó más',
+    'grade' => 'Calificación',
+    'grade_for' => 'Calificación de :practice',
+    'no_grade' => 'Sin calificar',
+    'late' => 'calificada después',
+    'late_hint' => 'Se califica después del día de la práctica: elige el motivo y escribe un comentario.',
+    'ungraded_hint' => 'La reservación queda sin calificación y el Kardex no avanza: la práctica sigue pendiente.',
+    'reason' => 'Motivo',
+    'choose_reason' => 'Elige un motivo',
+    'comment' => 'Comentario',
+    'too_old' => 'Solo se califica hasta :days días después de la práctica.',
+    'nothing_to_grade' => 'No hay más prácticas por calificar.',
+    'confirm_remove' => '¿Quitar esta calificación del Kardex?',
+
+    'next' => 'Práctica que sigue',
+    'points' => 'Puntos acumulados',
+    'progress' => 'Prácticas calificadas',
+    'progress_value' => ':graded de :total',
+    'my_grades' => 'Mis calificaciones',
+    'my_empty' => 'Aún no tienes calificaciones.',
+
+    'actions' => [
+        'save' => 'Guardar calificaciones',
+        'save_ungraded' => 'Guardar sin calificación',
+        'correct' => 'Corregir',
+        'remove' => 'Quitar',
+    ],
+
+    'messages' => [
+        'graded' => '{1} Se guardó 1 calificación.|[2,*] Se guardaron :count calificaciones.',
+        'ungraded' => 'La reservación quedó sin calificación.',
+        'corrected' => 'Calificación corregida.',
+        'removed' => 'Calificación quitada del Kardex.',
+    ],
+
+    'validation' => [
+        'not_gradable' => 'Esta reservación no se puede calificar (cancelada o en lista de espera).',
+        'future' => 'Solo se califican prácticas de hoy o de días anteriores.',
+        'too_old' => 'Solo se califica hasta :days días después de la práctica.',
+        'none' => 'Elige la calificación de al menos la primera práctica.',
+        'in_order' => 'Califica en orden, sin saltarte ninguna práctica.',
+        'grade_type' => 'Elige una calificación válida para :practice.',
+        'late_reason' => 'Elige el motivo de calificar después.',
+        'late_comment' => 'Escribe un comentario.',
+        'comment_max' => 'El comentario no debe pasar de 255 caracteres.',
+        'ungraded_reason' => 'Elige el motivo.',
+        'club_done' => 'Este club ya está calificado.',
+        'club_grade' => 'Elige la firma del club.',
+        'remove_last' => 'Solo se puede quitar la última práctica calificada del alumno.',
+    ],
+];

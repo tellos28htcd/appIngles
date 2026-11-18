@@ -11,6 +11,7 @@
                         <th scope="col" class="w-20 px-3 py-2.5 font-bold">{{ __('catalogs.fields.code') }}</th>
                         <th scope="col" class="px-3 py-2.5 font-bold">{{ __('catalogs.fields.description') }}</th>
                         <th scope="col" class="hidden w-24 px-3 py-2.5 text-right font-bold sm:table-cell">{{ __('catalogs.fields.minutes') }}</th>
+                        <th scope="col" class="hidden px-3 py-2.5 font-bold md:table-cell">{{ __('catalogs.fields.grade_type') }}</th>
                         <th scope="col" class="px-4 py-2.5 md:px-5"><span class="sr-only">{{ __('catalogs.fields.actions') }}</span></th>
                     </tr>
                 </thead>
@@ -28,6 +29,7 @@
                                 @endif
                             </td>
                             <td class="hidden px-3 py-2 text-right text-sm tabular-nums text-ink-700 sm:table-cell">{{ $activity->minutes ?? '—' }}</td>
+                            <td class="hidden px-3 py-2 text-sm text-ink-700 md:table-cell">{{ ($activity->grade_type ?? \App\Enums\GradeType::forActivityNumber($activity->number))->label() }}</td>
                             <td class="px-4 py-2 md:px-5">
                                 <x-catalog.row-actions :active="$activity->is_active" :name="$activity->code"
                                                        edit="edit({{ $activity->id }})" toggle="toggle({{ $activity->id }})" delete="confirmDeletion({{ $activity->id }})" />
@@ -46,6 +48,7 @@
             <x-ui.input name="minutes" type="number" :label="__('catalogs.fields.minutes')" wire:model="minutes" min="1" class="tabular-nums" />
         </div>
         <x-ui.input name="description" :label="__('catalogs.fields.description')" wire:model="description" maxlength="150" required />
+        <x-ui.select name="gradeType" :label="__('catalogs.fields.grade_type')" :options="$gradeTypes" wire:model="gradeType" :hint="__('catalogs.activities.grade_type_hint')" required />
         <x-slot:footer>
             <x-ui.button variant="ghost" x-on:click="open = null">{{ __('catalogs.actions.cancel') }}</x-ui.button>
             <x-ui.button wire:click="save">{{ __('catalogs.actions.save') }}</x-ui.button>

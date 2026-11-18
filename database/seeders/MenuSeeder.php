@@ -22,6 +22,9 @@ class MenuSeeder extends Seeder
     private const TREE = [
         'dashboard' => ['Inicio', 'home', 'dashboard', MenuItemStatus::Active],
         'agenda' => ['Agenda', 'calendar', 'agenda.index', MenuItemStatus::Active],
+        'kardex' => ['Kardex', 'book', null, MenuItemStatus::Active, [
+            'kardex-grades' => ['Calificaciones', null, 'kardex.grades', MenuItemStatus::Active],
+        ]],
         'teachers' => ['Teachers', 'users', null, MenuItemStatus::Active, [
             'teachers-list' => ['Teachers', null, 'teachers.index', MenuItemStatus::Active],
             'teachers-availability' => ['Disponibilidad de horarios', null, 'availability.index', MenuItemStatus::Active],
@@ -49,7 +52,7 @@ class MenuSeeder extends Seeder
             'my-students-account' => ['Estado de cuenta', null, null, MenuItemStatus::ComingSoon],
         ]],
         'student-portal' => ['Mi aprendizaje', 'book', null, MenuItemStatus::Active, [
-            'student-portal-progress' => ['Mi avance', null, null, MenuItemStatus::ComingSoon],
+            'student-portal-progress' => ['Mi avance', null, 'my-kardex.index', MenuItemStatus::Active],
             'student-portal-book-class' => ['Agendar', null, 'my-agenda.index', MenuItemStatus::Active],
             'student-portal-book-club' => ['Agendar club', null, 'my-agenda.clubs', MenuItemStatus::Active],
             'student-portal-account' => ['Mi estado de cuenta', null, null, MenuItemStatus::ComingSoon],
@@ -91,17 +94,17 @@ class MenuSeeder extends Seeder
             'billing-statements', 'billing-payments', 'billing-actions', 'reports',
         ],
         Role::ACADEMIC_COORDINATOR => [
-            'dashboard', 'agenda', 'teachers-list', 'teachers-availability', 'teachers-incidents', 'teachers-clubs', 'teachers-coordinator', 'students-records', 'students-guardians',
+            'dashboard', 'agenda', 'kardex-grades', 'teachers-list', 'teachers-availability', 'teachers-incidents', 'teachers-clubs', 'teachers-coordinator', 'students-records', 'students-guardians',
             'tracking-attendance', 'tracking-evaluations', 'tracking-risk', 'reports',
         ],
-        Role::TEACHER => ['dashboard', 'agenda', 'tracking-attendance', 'tracking-evaluations'],
+        Role::TEACHER => ['dashboard', 'agenda', 'kardex-grades', 'tracking-attendance', 'tracking-evaluations'],
         Role::MENTOR => [
             'dashboard', 'agenda', 'students-records', 'students-guardians',
             'tracking-attendance', 'tracking-evaluations', 'tracking-risk',
             'billing-statements', 'billing-payments', 'billing-overdue', 'billing-actions', 'reports',
         ],
         Role::RECEPTION => [
-            'dashboard', 'agenda', 'teachers-clubs', 'students-records', 'students-guardians',
+            'dashboard', 'agenda', 'kardex-grades', 'teachers-clubs', 'students-records', 'students-guardians',
             'billing-statements', 'billing-payments',
         ],
         Role::GUARDIAN => ['dashboard', 'my-students-progress', 'my-students-account'],

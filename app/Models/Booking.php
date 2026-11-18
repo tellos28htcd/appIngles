@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'school_id', 'student_id', 'date', 'schedule_slot_id', 'kind', 'modality', 'teacher_availability_id', 'club_session_id',
-    'teacher_id', 'classroom_id', 'virtual_room', 'is_waitlist', 'status', 'cancellation_reason_id', 'cancelled_at',
+    'teacher_id', 'classroom_id', 'virtual_room', 'is_waitlist', 'status', 'cancellation_reason_id', 'cancelled_at', 'ungraded_reason_id', 'ungraded_comment',
     'book_id', 'lesson_id', 'activity_number', 'booked_by_reception', 'user_id',
 ])]
 class Booking extends Model
@@ -99,6 +99,18 @@ class Booking extends Model
     public function cancellationReason(): BelongsTo
     {
         return $this->belongsTo(CancellationReason::class);
+    }
+
+    /** @return BelongsTo<UngradedReason, $this> */
+    public function ungradedReason(): BelongsTo
+    {
+        return $this->belongsTo(UngradedReason::class);
+    }
+
+    /** Lo calificado en el Kardex desde esta reservación. @return HasMany<KardexEntry, $this> */
+    public function kardexEntries(): HasMany
+    {
+        return $this->hasMany(KardexEntry::class)->orderBy('sort_order')->orderBy('id');
     }
 
     /** @return HasMany<BookingEvent, $this> */

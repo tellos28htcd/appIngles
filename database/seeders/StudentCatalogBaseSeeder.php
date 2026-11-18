@@ -8,11 +8,13 @@ use App\Enums\SurveyQuestionType;
 use App\Models\AdvisorPosition;
 use App\Models\AuditLog;
 use App\Models\CancellationReason;
+use App\Models\Grade;
 use App\Models\InformationSource;
 use App\Models\School;
 use App\Models\StudentPlan;
 use App\Models\StudentType;
 use App\Models\SurveyQuestion;
+use App\Models\UngradedReason;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -141,6 +143,17 @@ class StudentCatalogBaseSeeder extends Seeder
                 ]);
             }
 
+            foreach (array_keys(Grade::DEFAULTS) as $index => $code) {
+                [$name, $type] = Grade::DEFAULTS[$code];
+                Grade::ofCatalog(null)->firstOrCreate(['school_id' => null, 'code' => $code], [
+                    'name' => $name, 'type' => $type, 'sort_order' => ($index + 1) * 10, 'is_active' => true,
+                ]);
+            }
+
+            foreach (UngradedReason::DEFAULTS as $index => $name) {
+                UngradedReason::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], ['sort_order' => ($index + 1) * 10, 'is_active' => true]);
+            }
+
             foreach (self::POSITIONS as $name => $rank) {
                 AdvisorPosition::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], ['rank' => $rank, 'is_active' => true]);
             }
@@ -164,7 +177,7 @@ class StudentCatalogBaseSeeder extends Seeder
     {
         $copy = app(CopyBaseCatalogs::class);
         $catalogs = array_intersect_key(CopyBaseCatalogs::CATALOGS, array_flip([
-            'student_plans', 'information_sources', 'student_types', 'advisor_positions', 'cancellation_reasons', 'survey_questions',
+            'student_plans', 'information_sources', 'student_types', 'advisor_positions', 'cancellation_reasons', 'grades', 'ungraded_reasons', 'survey_questions',
         ]));
 
         School::query()->each(function (School $school) use ($copy, $catalogs): void {

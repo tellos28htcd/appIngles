@@ -3,12 +3,15 @@
 namespace App\Livewire\Catalogs;
 
 use App\Enums\AttendanceEffect;
+use App\Enums\GradeType;
 use App\Livewire\Catalogs\Concerns\ManagesCatalog;
 use App\Models\AdvisorPosition;
 use App\Models\CancellationReason;
+use App\Models\Grade;
 use App\Models\InformationSource;
 use App\Models\StudentPlan;
 use App\Models\StudentType;
+use App\Models\UngradedReason;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +24,7 @@ use Livewire\Component;
 /**
  * Pestañas sencillas del catálogo de alumnos (base o copia de una escuela):
  * planes, origen de la información, tipos de alumno, puestos de asesor y motivos de
- * cancelación de la agenda. Cada una se describe en CATALOGS: modelo, tabla, orden y
+ * cancelación de la agenda, calificaciones y motivos del Kardex. Cada una se describe en CATALOGS: modelo, tabla, orden y
  * campos; un campo "select" lleva en la 2.ª posición el enum de sus opciones.
  */
 class StudentCatalogTab extends Component
@@ -48,6 +51,12 @@ class StudentCatalogTab extends Component
         ]],
         'cancelaciones' => ['model' => CancellationReason::class, 'table' => 'cancellation_reasons', 'order' => 'sort_order', 'fields' => [
             'name' => ['text', 80, true], 'attendance' => ['select', AttendanceEffect::class], 'sort_order' => ['number', 255],
+        ]],
+        'calificaciones' => ['model' => Grade::class, 'table' => 'grades', 'order' => 'sort_order', 'fields' => [
+            'code' => ['code', 2, true], 'name' => ['text', 40], 'type' => ['select', GradeType::class], 'sort_order' => ['number', 255],
+        ]],
+        'motivos' => ['model' => UngradedReason::class, 'table' => 'ungraded_reasons', 'order' => 'sort_order', 'fields' => [
+            'name' => ['text', 80, true], 'sort_order' => ['number', 255],
         ]],
     ];
 

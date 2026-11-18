@@ -12,6 +12,7 @@ use App\Models\ChargeConcept;
 use App\Models\Classroom;
 use App\Models\Club;
 use App\Models\CoordinatorActivity;
+use App\Models\Grade;
 use App\Models\Holiday;
 use App\Models\InformationSource;
 use App\Models\Lesson;
@@ -23,6 +24,7 @@ use App\Models\Shift;
 use App\Models\StudentPlan;
 use App\Models\StudentType;
 use App\Models\SurveyQuestion;
+use App\Models\UngradedReason;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -53,6 +55,8 @@ final class CopyBaseCatalogs
         'information_sources' => InformationSource::class,
         'student_types' => StudentType::class,
         'cancellation_reasons' => CancellationReason::class,
+        'grades' => Grade::class,
+        'ungraded_reasons' => UngradedReason::class,
         'advisor_positions' => AdvisorPosition::class,
         'survey_questions' => SurveyQuestion::class,
     ];
@@ -67,6 +71,8 @@ final class CopyBaseCatalogs
         InformationSource::class => 'name',
         StudentType::class => 'code',
         CancellationReason::class => 'name',
+        Grade::class => 'code',
+        UngradedReason::class => 'name',
         AdvisorPosition::class => 'name',
         SurveyQuestion::class => 'question',
     ];

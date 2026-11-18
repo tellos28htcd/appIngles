@@ -17,6 +17,8 @@ use App\Livewire\Catalogs\SchoolCatalogs;
 use App\Livewire\Catalogs\StudentCatalogs;
 use App\Livewire\Dashboard;
 use App\Livewire\Guardians\GuardianIndex;
+use App\Livewire\Kardex\GradesDay;
+use App\Livewire\Kardex\MyKardex;
 use App\Livewire\Menu\MenuManager;
 use App\Livewire\Roles\RoleEditor;
 use App\Livewire\Roles\RoleIndex;
@@ -60,6 +62,9 @@ Route::middleware(['auth', 'auth.session', 'active', 'menu.access'])->group(func
     Route::livewire('/agenda', AgendaDay::class)->name('agenda.index');
     Route::livewire('/mi-agenda', MyAgenda::class)->name('my-agenda.index');
     Route::livewire('/mi-agenda/clubs', MyAgenda::class)->name('my-agenda.clubs');
+
+    Route::livewire('/kardex/calificaciones', GradesDay::class)->name('kardex.grades');
+    Route::livewire('/mi-kardex', MyKardex::class)->name('my-kardex.index');
 
     Route::livewire('/escuelas', SchoolIndex::class)->name('schools.index');
     Route::livewire('/escuelas/nueva', SchoolEditor::class)->name('schools.create');

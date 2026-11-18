@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Gate;
 /**
  * Configuración → Catálogos de alumnos: asesores de ventas (propios de la
  * escuela) y la copia de la escuela de planes, origen de la información,
- * tipos de alumno, puestos, motivos de cancelación de la agenda y encuesta.
+ * tipos de alumno, puestos, motivos de cancelación de la agenda, calificaciones y motivos del Kardex y encuesta.
  */
 class StudentCatalogs extends CatalogPage
 {
-    public const STUDENT_TABS = ['asesores', 'planes', 'origenes', 'tipos', 'puestos', 'cancelaciones', 'encuesta'];
+    public const STUDENT_TABS = ['asesores', 'planes', 'origenes', 'tipos', 'puestos', 'cancelaciones', 'calificaciones', 'motivos', 'encuesta'];
 
-    public const STUDENT_CATALOGS = ['student_plans', 'information_sources', 'student_types', 'advisor_positions', 'cancellation_reasons', 'survey_questions'];
+    public const STUDENT_CATALOGS = ['student_plans', 'information_sources', 'student_types', 'advisor_positions', 'cancellation_reasons', 'grades', 'ungraded_reasons', 'survey_questions'];
 
     public function mount(): void
     {

@@ -2,11 +2,13 @@
 
 namespace App\Livewire\Catalogs;
 
+use App\Enums\GradeType;
 use App\Livewire\Catalogs\Concerns\ManagesCatalog;
 use App\Models\Activity;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -27,6 +29,9 @@ class ActivitiesTab extends Component
 
     public ?int $minutes = null;
 
+    /** Calificación del Kardex: firma (F) o A/B/C. */
+    public string $gradeType = 'score';
+
     public function mount(?int $schoolId): void
     {
         $this->schoolId = $schoolId;
@@ -44,6 +49,7 @@ class ActivitiesTab extends Component
         $this->code = (string) $activity?->code;
         $this->description = (string) $activity?->description;
         $this->minutes = $activity?->minutes;
+        $this->gradeType = ($activity?->grade_type ?? GradeType::forActivityNumber($this->number))->value;
         $this->editing = true;
     }
 
@@ -57,6 +63,7 @@ class ActivitiesTab extends Component
             'code' => ['required', 'string', 'max:10', 'regex:/^[A-Z0-9]+$/', $this->uniqueInCatalog('activities', 'code', $this->activityId)],
             'description' => ['required', 'string', 'max:150'],
             'minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
+            'gradeType' => ['required', Rule::enum(GradeType::class)],
         ], [
             'code.regex' => __('catalogs.validation.code'),
         ], [
@@ -64,6 +71,7 @@ class ActivitiesTab extends Component
             'code' => Str::lower(__('catalogs.fields.code')),
             'description' => Str::lower(__('catalogs.fields.description')),
             'minutes' => Str::lower(__('catalogs.fields.minutes')),
+            'gradeType' => Str::lower(__('catalogs.fields.grade_type')),
         ]);
 
         $activity = $this->activityId ? $this->findInCatalog(Activity::class, $this->activityId) : new Activity([
@@ -71,7 +79,7 @@ class ActivitiesTab extends Component
             'is_active' => true,
         ]);
         $activity->fill([
-            'number' => $data['number'], 'code' => $data['code'], 'description' => trim($data['description']), 'minutes' => $data['minutes'],
+            'number' => $data['number'], 'code' => $data['code'], 'description' => trim($data['description']), 'minutes' => $data['minutes'], 'grade_type' => $data['gradeType'],
         ])->save();
 
         $this->editing = null;
@@ -102,6 +110,8 @@ class ActivitiesTab extends Component
 
     public function render(): View
     {
-        return view('livewire.catalogs.activities-tab');
+        return view('livewire.catalogs.activities-tab', [
+            'gradeTypes' => collect(GradeType::cases())->mapWithKeys(fn (GradeType $type) => [$type->value => $type->label()])->all(),
+        ]);
     }
 }

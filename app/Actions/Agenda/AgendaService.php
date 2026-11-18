@@ -16,6 +16,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomClosure;
 use App\Models\ClubSession;
 use App\Models\CoordinatorSession;
+use App\Models\KardexEntry;
 use App\Models\Lesson;
 use App\Models\Role;
 use App\Models\ScheduleSlot;
@@ -75,27 +76,38 @@ final class AgendaService
     // ── Avance (LLA) ──────────────────────────────────────────────
 
     /**
-     * Siguiente actividad del alumno: la que sigue a la última práctica reservada (no cancelada) o,
-     * sin reservaciones, el punto de inicio de su ficha de inscripción.
+     * Siguiente actividad del alumno: la que sigue a la última calificada en el Kardex o a la última práctica
+     * reservada (no cancelada ni marcada sin calificación), la que vaya más adelante; si no hay ninguna,
+     * el punto de inicio de su ficha de inscripción.
      *
      * @return array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string}|null
      */
     public function nextActivity(Student $student, ?ProgressPath $path = null, int $offset = 0): ?array
     {
         $path ??= new ProgressPath($student->school);
-        $last = Booking::withoutGlobalScope('school')->where('student_id', $student->id)->active()
+        // Lo último calificado en el Kardex o lo último reservado (sin contar las que quedaron sin calificación), lo que vaya más adelante.
+        $graded = KardexEntry::withoutGlobalScope('school')->where('student_id', $student->id)->where('kind', BookingKind::Session)
+            ->whereNotNull('lesson_id')->get(['lesson_id', 'activity_number'])
+            ->map(fn (KardexEntry $entry) => $path->nearestIndex($entry->lesson_id, $entry->activity_number, before: true));
+        $reserved = Booking::withoutGlobalScope('school')->where('student_id', $student->id)->active()->whereNull('ungraded_reason_id')
             ->where('kind', BookingKind::Session)->whereNotNull('lesson_id')->get(['lesson_id', 'activity_number'])
-            ->map(fn (Booking $booking) => $path->nearestIndex($booking->lesson_id, $booking->activity_number, before: true))->filter(fn ($index) => $index !== null)->max();
+            ->map(fn (Booking $booking) => $path->nearestIndex($booking->lesson_id, $booking->activity_number, before: true));
+        $last = $graded->toBase()->merge($reserved->toBase())->filter(fn ($index) => $index !== null)->max();
 
         if ($last !== null) {
             return $path->at($last + 1 + $offset);
         }
 
-        $enrollment = $student->enrollments()->withoutGlobalScope('school')->with('startActivity')->latest('registered_on')->latest('id')->first();
-        $start = $path->nearestIndex($enrollment?->start_lesson_id, $enrollment?->startActivity?->number, before: false)
-            ?? $path->firstOfLesson($enrollment?->start_lesson_id) ?? 0;
+        return $path->at($this->startIndex($student, $path) + $offset);
+    }
 
-        return $path->at($start + $offset);
+    /** Posición en la ruta del punto de inicio de la ficha de inscripción (sin él, la práctica de orden 1). */
+    public function startIndex(Student $student, ProgressPath $path): int
+    {
+        $enrollment = $student->enrollments()->withoutGlobalScope('school')->with('startActivity')->latest('registered_on')->latest('id')->first();
+
+        return $path->nearestIndex($enrollment?->start_lesson_id, $enrollment?->startActivity?->number, before: false)
+            ?? $path->firstOfLesson($enrollment?->start_lesson_id) ?? 0;
     }
 
     // ── Límites del alumno ────────────────────────────────────────
