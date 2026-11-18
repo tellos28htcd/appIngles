@@ -8,9 +8,9 @@ use PHPUnit\Framework\TestCase;
 class RoomBalancerTest extends TestCase
 {
     /** @return array<string, mixed> */
-    private function item(string $room, int $weight, bool $online = false, bool $oneToOne = false, bool $movable = true, array $excluded = []): array
+    private function item(string $room, int $weight, bool $online = false, bool $movable = true, array $excluded = []): array
     {
-        return ['room' => $room, 'weight' => $weight, 'online' => $online, 'one_to_one' => $oneToOne, 'movable' => $movable, 'excluded' => $excluded];
+        return ['room' => $room, 'weight' => $weight, 'online' => $online, 'movable' => $movable, 'excluded' => $excluded];
     }
 
     /** @return array{group: string, capacity: int, teacher_id: ?int} */
@@ -53,14 +53,13 @@ class RoomBalancerTest extends TestCase
         $this->assertFalse(RoomBalancer::fits($room, array_fill(0, 6, $this->item('a', 5))));
     }
 
-    public function test_one_to_one_and_excluded_teachers(): void
+    public function test_a_room_does_not_take_a_student_who_excluded_its_teacher(): void
     {
         $room = $this->room(7);
 
-        $this->assertTrue(RoomBalancer::fits($room, [$this->item('a', 240, oneToOne: true)]));
-        $this->assertFalse(RoomBalancer::fits($room, [$this->item('a', 240, oneToOne: true), $this->item('a', 5)]));
         $this->assertFalse(RoomBalancer::fits($room, [$this->item('a', 5, excluded: [7])]));
-        $this->assertNull(RoomBalancer::bestRoom(['a' => $room], [$this->item('a', 5)], $this->item('', 240, oneToOne: true)));
+        $this->assertNull(RoomBalancer::bestRoom(['a' => $room], [], $this->item('', 5, excluded: [7])));
+        $this->assertSame('a', RoomBalancer::bestRoom(['a' => $room], [], $this->item('', 5, excluded: [3])));
     }
 
     public function test_only_movable_students_move_and_only_within_their_group(): void

@@ -9,7 +9,7 @@ Fuente: `Información general.xlsx` (pestaña *Catálogos*) y decisiones del 5-o
 
 Pestañas: Turnos y horarios · Libros y lecciones · Actividades · Pesos newton · Clubes.
 
-**Pesos newton** (pestaña propia): por libro, todas sus lecciones × actividades con el peso de cada actividad en esa lección (vacío = no se hace); se edita en la tabla y "Guardar pesos". En Actividades queda la marca "uno a uno" (PR). Los usa la agenda para balancear aulas y la ruta de avance para saltar actividades (ver docs/modulos/agenda.md).
+**Prácticas** (pestaña, consulta): la ruta de avance del Excel `Cat_Practicas.xlsx` en su orden (orden, práctica, libro, puntos acumulados); base en Plataforma y copia por escuela (tabla `practices`). **Pesos newton** (pestaña): tabla general lecciones × actividades 1–7 con T Min y T Hrs; lo que se cambia aplica a la lección en los 3 libros. Ver docs/modulos/agenda.md.
 
 ## Datos
 `school_id` nulo = catálogo base; con escuela = su copia. `base_id` = registro base del que viene la copia.
@@ -20,7 +20,8 @@ Pestañas: Turnos y horarios · Libros y lecciones · Actividades · Pesos newto
 | `schedule_slots` | número, desde, hasta, turno, activo (base: bloques de 1 h de 07:00 a 21:00) |
 | `books` | nivel, nombre (Beginners, Intermediate, Advanced), activo |
 | `lessons` | libro, número de actividad, nombre, tipo (lección / check point / verb in context), orden, activo. Cada libro: Lesson 1–7, Check Point C1 (15), Verb in context 1 (16), Lesson 8–14, Check Point C2 (17), Verb in context 2 (18) |
-| `activities` | número de actividad, código (BA, 1P, M, WS, 2P, WP, SP, PR), descripción, minutos, activo |
+| `activities` | número de actividad, código (BA, 1P, M, WS, 2P, WP, SP), descripción, minutos, activo |
+| `practices` | catálogo de prácticas (ruta de avance): libro, lección, número de actividad, nombre propio, orden, puntos acumulados, activo (único lección+actividad) |
 | `clubs` + `book_club` | nombre, descripción, activo + horas por nivel |
 | `schools.club_min_lesson_number` | "¿A partir de cuál lección el alumno puede participar en clubes?" |
 

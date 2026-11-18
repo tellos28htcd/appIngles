@@ -26,6 +26,7 @@ use App\Models\ClubSession;
 use App\Models\CoordinatorActivity;
 use App\Models\CoordinatorSession;
 use App\Models\Lesson;
+use App\Models\Practice;
 use App\Models\Role;
 use App\Models\ScheduleSlot;
 use App\Models\School;
@@ -689,14 +690,21 @@ class AgendaTest extends TestCase
 
     // ── Balanceo por pesos ────────────────────────────────────────
 
-    /** Actividades (PR uno a uno) y pesos newton de cada lección de la escuela (los del Excel). */
+    /** Pesos de prueba por tipo de lección (fijos para que las cuentas de los tests no dependan del Excel). */
+    private const TEST_WEIGHTS = [
+        'lesson' => [1 => 5, 2 => 10, 3 => 40, 4 => 40, 5 => 15, 6 => 40, 7 => 20],
+        'checkpoint' => [1 => 5, 3 => 40, 6 => 40, 7 => 20],
+        'verb_in_context' => [3 => 40, 6 => 40, 7 => 20],
+    ];
+
+    /** Actividades y pesos newton de cada lección de la escuela. */
     private function weights(): void
     {
-        foreach ([1 => 'BA', 2 => '1P', 3 => 'M', 4 => 'WS', 5 => '2P', 6 => 'WP', 7 => 'SP', 8 => 'PR'] as $number => $code) {
-            Activity::create(['school_id' => $this->school->id, 'number' => $number, 'code' => $code, 'description' => $code, 'is_active' => true, 'is_one_to_one' => $code === 'PR']);
+        foreach ([1 => 'BA', 2 => '1P', 3 => 'M', 4 => 'WS', 5 => '2P', 6 => 'WP', 7 => 'SP'] as $number => $code) {
+            Activity::create(['school_id' => $this->school->id, 'number' => $number, 'code' => $code, 'description' => $code, 'is_active' => true]);
         }
 
-        Lesson::where('school_id', $this->school->id)->get()->each(fn (Lesson $lesson) => $lesson->update(['activity_weights' => Lesson::DEFAULT_WEIGHTS[$lesson->type->value]]));
+        Lesson::where('school_id', $this->school->id)->get()->each(fn (Lesson $lesson) => $lesson->update(['activity_weights' => self::TEST_WEIGHTS[$lesson->type->value]]));
     }
 
     /** Reservación ya hecha en el aula de un teacher (a las 9, 1.ª lección). */
@@ -804,58 +812,60 @@ class AgendaTest extends TestCase
         $this->assertSame(2, app(AgendaService::class)->weekAvailability($this->school, $days)[self::MONDAY.'|'.$this->slots[9]->id]['session']['capacity']);
     }
 
-    public function test_activities_not_done_in_a_lesson_are_skipped_and_the_presentation_is_one_to_one(): void
+    public function test_the_practices_catalog_sets_the_order_and_the_name_of_each_practice(): void
     {
         $this->weights();
         $book = $this->firstLesson->book_id;
-        $checkpoint = Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 3, 'name' => 'Check Point C1', 'type' => LessonType::CheckPoint, 'sort_order' => 3, 'is_active' => true,
-            'activity_weights' => Lesson::DEFAULT_WEIGHTS['checkpoint']]);
-        Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 4, 'name' => 'Verb in context 1', 'type' => LessonType::VerbInContext, 'sort_order' => 4, 'is_active' => true,
-            'activity_weights' => Lesson::DEFAULT_WEIGHTS['verb_in_context']]);
+        $second = Lesson::where('number', 2)->sole();
+        $checkpoint = Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 15, 'name' => 'Check Point C1', 'type' => LessonType::CheckPoint, 'sort_order' => 3, 'is_active' => true]);
+        $verb = Lesson::create(['school_id' => $this->school->id, 'book_id' => $book, 'number' => 16, 'name' => 'Verb in context 1', 'type' => LessonType::VerbInContext, 'sort_order' => 4, 'is_active' => true]);
 
-        $labels = (new ProgressPath($this->school))->steps()->pluck('label')->filter(fn (string $label) => str_starts_with($label, 'L1-L3') || str_starts_with($label, 'L1-L4'))->values()->all();
-        $this->assertSame(['L1-L3-A1-BA', 'L1-L3-A3-M', 'L1-L3-A6-WP', 'L1-L3-A8-PR', 'L1-L4-A6-WP', 'L1-L4-A7-SP'], $labels);
-
-        // Le toca la presentación (PR): necesita un aula para él solo. A las 9 las dos tienen alumnos: lista de espera.
-        $presenter = $this->student();
-        Booking::create(['school_id' => $this->school->id, 'student_id' => $presenter->id, 'date' => '2026-07-20', 'schedule_slot_id' => $this->slots[9]->id,
-            'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Attended, 'book_id' => $book, 'lesson_id' => $checkpoint->id, 'activity_number' => 6]);
-        $this->seat($this->student(), Teacher::where('short_name', 'MELISSA')->sole(), 1);
-        $this->seat($this->student(), Teacher::where('short_name', 'DULCE')->sole(), 1);
-        $this->actingAs($this->user(Role::RECEPTION));
-
-        $this->receptionBooks($presenter, 9)->assertDispatched('toast', type: 'warning');
-        $waiting = Booking::where('student_id', $presenter->id)->latest('id')->first();
-        $this->assertTrue($waiting->is_waitlist);
-        $this->assertSame(8, $waiting->activity_number);
-        $waiting->delete();
-
-        // A las 10 está vacía: toma un aula y nadie más entra con ese teacher.
-        $this->receptionBooks($presenter, 10)->assertDispatched('toast', type: 'success');
-        $pr = Booking::where('student_id', $presenter->id)->where('schedule_slot_id', $this->slots[10]->id)->sole();
-        $this->assertSame('L1-L3-A8-PR', $pr->activityLabel());
-        foreach (range(1, 2) as $i) {
-            $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'success');
+        // Como el Excel: el Check Point se abre (BA, M), sigue el Verb in context y se cierra (A6 DIRECT P., SP).
+        $route = [[$this->firstLesson, 1], [$second, 7], [$checkpoint, 1], [$checkpoint, 3], [$verb, 3], [$verb, 6], [$verb, 7], [$checkpoint, 6, 'DIRECT P.'], [$checkpoint, 7]];
+        foreach ($route as $order => [$lesson, $activity]) {
+            Practice::create(['school_id' => $this->school->id, 'book_id' => $book, 'lesson_id' => $lesson->id, 'activity_number' => $activity,
+                'name' => $route[$order][2] ?? null, 'sort_order' => $order + 1, 'points' => $order + 1, 'is_active' => true]);
         }
-        $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
-        $this->assertSame(1, Booking::where('schedule_slot_id', $this->slots[10]->id)->where('teacher_id', $pr->teacher_id)->count());
+
+        $this->assertSame(['L1-L1-A1-BA', 'L1-L2-A7-SP', 'L1-CP1-A1-BA', 'L1-CP1-A3-M', 'L1-VIC1-A3-M', 'L1-VIC1-A6-WP', 'L1-VIC1-A7-SP', 'L1-CP1-A6-DIRECT P.', 'L1-CP1-A7-SP'],
+            (new ProgressPath($this->school))->steps()->pluck('label')->all());
+
+        // Sin avance empieza en el orden 1; después, la que sigue en el orden (CP1 A3 → VIC1 A3).
+        $this->actingAs($this->user(Role::RECEPTION));
+        $student = $this->student();
+        $this->receptionBooks($student, 9)->assertDispatched('toast', type: 'success');
+        $this->assertSame('L1-L1-A1-BA', Booking::where('student_id', $student->id)->sole()->activityLabel());
+
+        $other = $this->student();
+        Booking::create(['school_id' => $this->school->id, 'student_id' => $other->id, 'date' => '2026-07-20', 'schedule_slot_id' => $this->slots[9]->id,
+            'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Attended, 'book_id' => $book, 'lesson_id' => $checkpoint->id, 'activity_number' => 3]);
+        $this->receptionBooks($other, 9)->assertDispatched('toast', type: 'success');
+        $this->assertSame('L1-VIC1-A3-M', Booking::where('student_id', $other->id)->whereDate('date', self::MONDAY)->sole()->activityLabel());
+
+        // En el listado se ve solo la práctica (sin la palabra "Práctica").
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertSee('L1-VIC1-A3-M')
+            ->assertDontSeeHtml('uppercase text-ink-700">'.BookingKind::Session->label().'</span>');
     }
 
-    public function test_each_lesson_has_its_own_weights_and_the_balance_uses_the_students_lesson(): void
+    public function test_the_newton_weights_table_is_general_and_applies_to_the_lesson_in_every_book(): void
     {
         $this->weights();
-        $secondLesson = Lesson::where('number', 2)->sole();
+        $intermediate = Book::create(['school_id' => $this->school->id, 'level' => 2, 'name' => 'Book 2', 'is_active' => true]);
+        $otherSecond = Lesson::create(['school_id' => $this->school->id, 'book_id' => $intermediate->id, 'number' => 2, 'name' => 'Lesson 2', 'type' => LessonType::Lesson,
+            'sort_order' => 2, 'is_active' => true, 'activity_weights' => self::TEST_WEIGHTS['lesson']]);
+        $secondLesson = Lesson::where('book_id', $this->firstLesson->book_id)->where('number', 2)->sole();
         $this->actingAs($this->user(Role::SCHOOL_ADMIN));
 
-        // Pesos newton: todas las lecciones del libro; en la Lesson 2, WS pesa 80 y 2P no se hace.
+        // Una sola tabla (sin elegir libro): renglón por lección con su total en minutos (T Min) y horas.
         $tab = Livewire::test(WeightsTab::class, ['schoolId' => $this->school->id])->assertSee('Lesson 1')->assertSee('Lesson 2')
-            ->assertSet("weights.{$secondLesson->id}.4", '40');
-        $tab->set("weights.{$secondLesson->id}.4", '80')->set("weights.{$secondLesson->id}.5", '')->call('save')->assertHasNoErrors();
-        $tab->set("weights.{$secondLesson->id}.1", '-3')->call('save')->assertHasErrors("weights.{$secondLesson->id}.1");
+            ->assertSee(__('catalogs.weights.minutes'))->assertSee('170')->assertDontSee('Book 2')->assertSet('weights.2.4', '40');
+        $tab->set('weights.2.4', '80')->set('weights.2.5', '')->call('save')->assertHasNoErrors();
+        $tab->set('weights.2.1', '-3')->call('save')->assertHasErrors('weights.2.1');
 
+        // Se aplica a la Lesson 2 de los dos libros; la Lesson 1 no cambia.
         $this->assertSame([1 => 5, 2 => 10, 3 => 40, 4 => 80, 6 => 40, 7 => 20], $secondLesson->refresh()->weights());
-        $this->assertSame(Lesson::DEFAULT_WEIGHTS['lesson'], $this->firstLesson->refresh()->weights());
-        $this->assertNotContains('L1-L2-A5-2P', (new ProgressPath($this->school))->steps()->pluck('label')->all());
+        $this->assertSame([1 => 5, 2 => 10, 3 => 40, 4 => 80, 6 => 40, 7 => 20], $otherSecond->refresh()->weights());
+        $this->assertSame(self::TEST_WEIGHTS['lesson'], $this->firstLesson->refresh()->weights());
     }
 
     public function test_the_weights_catalog_is_only_for_the_own_school(): void

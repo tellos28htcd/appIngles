@@ -153,7 +153,10 @@
                                             <span class="text-sm text-ink-700 tabular-nums">· {{ $booking->student?->enrollment_number }}@if ($booking->booked_by_reception) · {{ __('agenda.by_reception') }}@endif</span>
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-1">
-                                            <span class="text-sm font-bold uppercase text-ink-700">{{ $booking->kind->label() }}</span>
+                                            {{-- Práctica: solo su nombre (p. ej. L1-L1-A2-1P); el club lleva "Club". --}}
+                                            @if ($booking->kind === \App\Enums\BookingKind::Club)
+                                                <span class="text-sm font-bold uppercase text-ink-700">{{ $booking->kind->label() }}</span>
+                                            @endif
                                             <span class="font-bold tabular-nums">{{ $booking->activityLabel() }}</span>
                                         </td>
                                         @if ($canSeeWeights)

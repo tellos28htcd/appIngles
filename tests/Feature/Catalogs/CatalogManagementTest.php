@@ -20,6 +20,7 @@ use App\Models\Club;
 use App\Models\Lesson;
 use App\Models\Municipality;
 use App\Models\PaymentMethod;
+use App\Models\Practice;
 use App\Models\Role;
 use App\Models\ScheduleSlot;
 use App\Models\School;
@@ -80,7 +81,12 @@ class CatalogManagementTest extends TestCase
         $this->assertSame(14, $this->catalogCount(ScheduleSlot::class, null));
         $this->assertSame(['Beginners', 'Intermediate', 'Advanced'], Book::ofCatalog(null)->orderBy('level')->pluck('name')->all());
         $this->assertSame(54, $this->catalogCount(Lesson::class, null));
-        $this->assertSame(['BA', '1P', 'M', 'WS', '2P', 'WP', 'SP', 'PR'], Activity::ofCatalog(null)->orderBy('number')->pluck('code')->all());
+        $this->assertSame(['BA', '1P', 'M', 'WS', '2P', 'WP', 'SP'], Activity::ofCatalog(null)->orderBy('number')->pluck('code')->all());
+
+        // Catálogo de prácticas del Excel: 336 en orden 1–336; el Check Point se intercala con el Verb in context.
+        $this->assertSame(336, $this->catalogCount(Practice::class, null));
+        $this->assertSame([1, 336], [(int) Practice::ofCatalog(null)->min('sort_order'), (int) Practice::ofCatalog(null)->max('sort_order')]);
+        $this->assertSame(['DIRECT P.', 'CON. EXP.'], Practice::ofCatalog(null)->whereNotNull('name')->orderBy('sort_order')->limit(2)->pluck('name')->all());
 
         $conversation = Club::ofCatalog(null)->where('name', 'Conversation Club')->first();
         $this->assertEquals([1 => 10.0, 2 => 12.0, 3 => 15.0], $conversation->books->mapWithKeys(fn ($book) => [$book->level => (float) $book->pivot->hours])->sortKeys()->all());
@@ -121,7 +127,10 @@ class CatalogManagementTest extends TestCase
         $this->assertSame(7, $school->club_min_lesson_number);
         $this->assertSame(14, $this->catalogCount(ScheduleSlot::class, $school->id));
         $this->assertSame(54, $this->catalogCount(Lesson::class, $school->id));
-        $this->assertSame(8, $this->catalogCount(Activity::class, $school->id));
+        $this->assertSame(7, $this->catalogCount(Activity::class, $school->id));
+        // Las prácticas se copian apuntando a las lecciones de la escuela.
+        $this->assertSame(336, $this->catalogCount(Practice::class, $school->id));
+        $this->assertSame($school->id, Practice::withoutGlobalScope('school')->ofCatalog($school->id)->with('lesson')->first()->lesson->school_id);
 
         // Las dependencias apuntan a la copia de la escuela, no a la base.
         $slot = ScheduleSlot::withoutGlobalScope('school')->ofCatalog($school->id)->first();
@@ -156,7 +165,7 @@ class CatalogManagementTest extends TestCase
         $this->get(route('catalogs.index'))->assertOk()->assertSee('Catálogos académicos');
 
         // El global scope limita cualquier consulta a su escuela.
-        $this->assertSame(8, Activity::count());
+        $this->assertSame(7, Activity::count());
         $this->assertTrue(Activity::all()->every(fn ($activity) => $activity->school_id === $this->schoolA->id));
 
         // No puede montar la pestaña de otra escuela ni tocar un registro ajeno por ID.
@@ -213,8 +222,8 @@ class CatalogManagementTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertSame(9, Activity::count());
-        $this->assertSame(8, $this->catalogCount(Activity::class, $this->schoolB->id));
+        $this->assertSame(8, Activity::count());
+        $this->assertSame(7, $this->catalogCount(Activity::class, $this->schoolB->id));
     }
 
     public function test_schedule_slot_end_must_be_after_start(): void

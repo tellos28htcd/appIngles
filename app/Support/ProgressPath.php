@@ -2,50 +2,91 @@
 
 namespace App\Support;
 
-use App\Enums\LessonType;
 use App\Models\Activity;
 use App\Models\Book;
 use App\Models\Lesson;
+use App\Models\Practice;
 use App\Models\School;
 use Illuminate\Support\Collection;
 
 /**
- * Ruta de avance del alumno (como la tabla del Excel): Libro (por nivel) → Lección (en su
- * orden: 1–7, Check Point C1, Verb in context 1, 8–14, …) → Actividad (1–7; los Check
- * Points llevan 8). Cada hora de asesoría corresponde a una actividad de esta ruta (LLA).
+ * Ruta de avance del alumno: el catálogo de Prácticas (Excel Cat_Practicas.xlsx) en su orden, el consecutivo en
+ * que se asignan en la agenda y se califican en el Kardex (p. ej. CP1 A1, CP1 A3, VIC1 A3…A7, CP1 A6, CP1 A7).
+ * Cada hora de práctica corresponde a un paso de esta ruta (LLA).
+ *
+ * Si la escuela no tiene catálogo de prácticas, la ruta se arma lección por lección (en su orden) con sus
+ * actividades 1–7 (o las que tengan peso newton).
  */
 final class ProgressPath
 {
-    /** Actividades por lección; los Check Points tienen una más (PR, presentación). */
+    /** Actividades por lección cuando no hay catálogo de prácticas. */
     public const ACTIVITIES_PER_LESSON = 7;
 
-    /** @var Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string}> */
+    /** @var Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int}> */
     private Collection $steps;
 
     public function __construct(School $school)
     {
-        $books = Book::withoutGlobalScope('school')->where('school_id', $school->id)->where('is_active', true)->orderBy('level')->get();
-        $lessons = Lesson::withoutGlobalScope('school')->whereIn('book_id', $books->modelKeys())->where('is_active', true)
-            ->orderBy('sort_order')->orderBy('number')->get()->groupBy('book_id');
-
+        $books = Book::withoutGlobalScope('school')->where('school_id', $school->id)->where('is_active', true)->orderBy('level')->get()->keyBy('id');
+        $lessons = Lesson::withoutGlobalScope('school')->whereIn('book_id', $books->keys())->where('is_active', true)
+            ->orderBy('sort_order')->orderBy('number')->get();
         $codes = Activity::codesFor($school->id);
+
+        $this->steps = Practice::existsFor($school->id)
+            ? $this->fromCatalog($school, $books, $lessons->keyBy('id'), $codes)
+            : $this->byLesson($school, $books, $lessons, $codes);
+    }
+
+    /**
+     * @param  Collection<int, Book>  $books
+     * @param  Collection<int, Lesson>  $lessons
+     * @param  array<int, string>  $codes
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function fromCatalog(School $school, Collection $books, Collection $lessons, array $codes): Collection
+    {
+        return Practice::withoutGlobalScope('school')->where('school_id', $school->id)->where('is_active', true)
+            ->whereIn('lesson_id', $lessons->keys())->orderBy('sort_order')->orderBy('id')->get()
+            ->map(function (Practice $practice) use ($books, $lessons, $codes): array {
+                $book = $books[$practice->book_id];
+                $lesson = $lessons[$practice->lesson_id];
+
+                return [
+                    'book_id' => $book->id, 'level' => (int) $book->level, 'lesson_id' => $lesson->id, 'lesson_number' => (int) $lesson->number,
+                    'activity_number' => $practice->activity_number, 'order' => $practice->sort_order, 'points' => $practice->points,
+                    'label' => Practice::labelFor((int) $book->level, $lesson, $practice->activity_number, $practice->name, $codes),
+                ];
+            })->values();
+    }
+
+    /**
+     * @param  Collection<int, Book>  $books
+     * @param  Collection<int, Lesson>  $lessons
+     * @param  array<int, string>  $codes
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function byLesson(School $school, Collection $books, Collection $lessons, array $codes): Collection
+    {
         $weights = Lesson::weightsFor($school->id);
+        $order = 0;
 
-        $this->steps = $books->flatMap(fn (Book $book) => $lessons->get($book->id, collect())->flatMap(function (Lesson $lesson) use ($book, $codes, $weights) {
-            // Con pesos newton, solo las actividades que se hacen en esa lección (las demás se saltan).
+        return $books->values()->flatMap(fn (Book $book) => $lessons->where('book_id', $book->id)->flatMap(function (Lesson $lesson) use ($book, $codes, $weights, &$order) {
             $lessonWeights = $weights['configured'] ? ($weights['lessons'][$lesson->id] ?? null) : null;
-            $numbers = $lessonWeights !== null
-                ? array_keys($lessonWeights)
-                : range(1, $lesson->type === LessonType::CheckPoint ? self::ACTIVITIES_PER_LESSON + 1 : self::ACTIVITIES_PER_LESSON);
+            $numbers = $lessonWeights !== null ? array_keys($lessonWeights) : range(1, self::ACTIVITIES_PER_LESSON);
 
-            return collect($numbers)->map(fn (int $activity) => [
-                'book_id' => $book->id, 'level' => (int) $book->level, 'lesson_id' => $lesson->id, 'lesson_number' => (int) $lesson->number,
-                'activity_number' => $activity, 'label' => "L{$book->level}-L{$lesson->number}-A{$activity}".(isset($codes[$activity]) ? '-'.$codes[$activity] : ''),
-            ]);
+            return collect($numbers)->map(function (int $activity) use ($book, $lesson, $codes, &$order): array {
+                $order++;
+
+                return [
+                    'book_id' => $book->id, 'level' => (int) $book->level, 'lesson_id' => $lesson->id, 'lesson_number' => (int) $lesson->number,
+                    'activity_number' => $activity, 'order' => $order, 'points' => $order,
+                    'label' => Practice::labelFor((int) $book->level, $lesson, $activity, null, $codes),
+                ];
+            });
         }))->values();
     }
 
-    /** @return Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string}> */
+    /** @return Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int}> */
     public function steps(): Collection
     {
         return $this->steps;
@@ -82,7 +123,7 @@ final class ProgressPath
         return $index ?? ($before ? null : $this->firstOfLesson($lessonId));
     }
 
-    /** @return array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string}|null */
+    /** @return array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int}|null */
     public function at(int $index): ?array
     {
         return $this->steps->get($index);

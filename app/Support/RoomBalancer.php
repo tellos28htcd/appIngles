@@ -8,11 +8,10 @@ namespace App\Support;
  *
  * Trabaja con arreglos simples (no consulta la base):
  * - Aula: ['group' => 'physical'|'virtual', 'capacity' => int, 'teacher_id' => ?int].
- * - Alumno (reservación): ['room' => ?string, 'weight' => int, 'online' => bool, 'one_to_one' => bool,
+ * - Alumno (reservación): ['room' => ?string, 'weight' => int, 'online' => bool,
  *   'movable' => bool, 'excluded' => list<int>].
  *
  * Reglas de un aula:
- * - Con una actividad uno a uno (PR, presentación) el alumno va solo.
  * - Física híbrida (con alumnos en línea): máximo HYBRID_CAPACITY (sin pasar su cupo) y a lo más HYBRID_MAX_ONLINE en línea.
  * - Física solo presencial y aula virtual: su cupo.
  * - Nunca con un teacher que el alumno excluyó en su expediente.
@@ -38,10 +37,6 @@ final class RoomBalancer
 
         if ($count === 0) {
             return true;
-        }
-
-        if ($count > 1 && collect($items)->contains('one_to_one', true)) {
-            return false;
         }
 
         foreach ($items as $item) {

@@ -16,6 +16,7 @@ use App\Models\Holiday;
 use App\Models\InformationSource;
 use App\Models\Lesson;
 use App\Models\PaymentMethod;
+use App\Models\Practice;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Shift;
@@ -41,6 +42,7 @@ final class CopyBaseCatalogs
         'books' => Book::class,
         'lessons' => Lesson::class,
         'activities' => Activity::class,
+        'practices' => Practice::class,
         'clubs' => Club::class,
         'coordinator_activities' => CoordinatorActivity::class,
         'classrooms' => Classroom::class,
@@ -142,12 +144,16 @@ final class CopyBaseCatalogs
             $attributes['shift_id'] = $this->schoolCopyId($school, Shift::class, $base->shift_id);
         }
 
-        if ($base instanceof Lesson) {
+        if ($base instanceof Lesson || $base instanceof Practice) {
             $attributes['book_id'] = $this->schoolCopyId($school, Book::class, $base->book_id);
         }
 
+        if ($base instanceof Practice) {
+            $attributes['lesson_id'] = $this->schoolCopyId($school, Lesson::class, $base->lesson_id);
+        }
+
         // Si la escuela no tiene el turno o libro del que depende, no se puede copiar todavía.
-        foreach (['shift_id', 'book_id'] as $dependency) {
+        foreach (['shift_id', 'book_id', 'lesson_id'] as $dependency) {
             if (array_key_exists($dependency, $attributes) && $attributes[$dependency] === null) {
                 return null;
             }

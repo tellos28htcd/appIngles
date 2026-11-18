@@ -27,9 +27,6 @@ class ActivitiesTab extends Component
 
     public ?int $minutes = null;
 
-    /** Asesoría uno a uno (PR, presentación): el teacher no recibe a nadie más a esa hora. */
-    public bool $isOneToOne = false;
-
     public function mount(?int $schoolId): void
     {
         $this->schoolId = $schoolId;
@@ -47,7 +44,6 @@ class ActivitiesTab extends Component
         $this->code = (string) $activity?->code;
         $this->description = (string) $activity?->description;
         $this->minutes = $activity?->minutes;
-        $this->isOneToOne = (bool) $activity?->is_one_to_one;
         $this->editing = true;
     }
 
@@ -61,7 +57,6 @@ class ActivitiesTab extends Component
             'code' => ['required', 'string', 'max:10', 'regex:/^[A-Z0-9]+$/', $this->uniqueInCatalog('activities', 'code', $this->activityId)],
             'description' => ['required', 'string', 'max:150'],
             'minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
-            'isOneToOne' => ['boolean'],
         ], [
             'code.regex' => __('catalogs.validation.code'),
         ], [
@@ -77,7 +72,6 @@ class ActivitiesTab extends Component
         ]);
         $activity->fill([
             'number' => $data['number'], 'code' => $data['code'], 'description' => trim($data['description']), 'minutes' => $data['minutes'],
-            'is_one_to_one' => $data['isOneToOne'],
         ])->save();
 
         $this->editing = null;

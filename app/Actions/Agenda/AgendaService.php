@@ -9,7 +9,6 @@ use App\Enums\BookingKind;
 use App\Enums\BookingStatus;
 use App\Enums\ClubModality;
 use App\Enums\SelfBooking;
-use App\Models\Activity;
 use App\Models\Booking;
 use App\Models\BookingEvent;
 use App\Models\CancellationReason;
@@ -46,7 +45,7 @@ use Illuminate\Validation\ValidationException;
  * - Balanceo por pesos newton (RoomBalancer): cada actividad pesa según la lección del alumno (catálogo
  *   "Pesos newton"); el alumno va al aula de menor carga y, al agendar, cancelar o pasar de la lista de espera,
  *   se reacomodan los alumnos de esa hora (solo aula y teacher) hasta 3 minutos antes, con aviso al alumno.
- *   Las físicas e híbridas se balancean juntas; las virtuales entre ellas. La presentación (PR) es uno a uno.
+ *   Las físicas e híbridas se balancean juntas; las virtuales entre ellas.
  * - Tolerancia: recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo);
  *   el alumno solo antes de que empiece.
  * - Club: los clubs programados; cupo "por club" (presencial) o "por aula virtual" (en línea);
@@ -216,7 +215,7 @@ final class AgendaService
     public function freeSessionCells(School $school, CarbonInterface $date, ScheduleSlot $slot, array $excludedTeacherIds = []): Collection
     {
         $state = $this->hourState($school, $date, $slot);
-        $probe = ['room' => null, 'weight' => 0, 'online' => false, 'one_to_one' => false, 'movable' => true, 'excluded' => $excludedTeacherIds];
+        $probe = ['room' => null, 'weight' => 0, 'online' => false, 'movable' => true, 'excluded' => $excludedTeacherIds];
         $cells = $this->sessionCells($school, $date, $slot)->keyBy('id');
 
         return collect($state['rooms'])->filter(fn (array $room, string $key) => $room['group'] === 'physical'
@@ -321,10 +320,10 @@ final class AgendaService
 
     /**
      * Datos de una reservación para el balanceo: peso de su actividad en su lección (sin pesos
-     * capturados cuenta 1 por alumno), si va en línea, si es uno a uno (PR) y si se puede mover.
+     * capturados cuenta 1 por alumno), si va en línea y si se puede mover.
      *
      * @param  list<int>  $excluded
-     * @return array{room: ?string, weight: int, online: bool, one_to_one: bool, movable: bool, excluded: list<int>}
+     * @return array{room: ?string, weight: int, online: bool, movable: bool, excluded: list<int>}
      */
     private function itemFor(School $school, Booking $booking, array $excluded): array
     {
@@ -335,7 +334,6 @@ final class AgendaService
             'room' => null,
             'weight' => $catalog['configured'] ? (int) $weight : 1,
             'online' => $booking->modality === ClubModality::Online,
-            'one_to_one' => $weight !== null && in_array((int) $booking->activity_number, Activity::oneToOneFor($school->id), true),
             'movable' => $booking->status === BookingStatus::Booked,
             'excluded' => $excluded,
         ];
@@ -361,8 +359,7 @@ final class AgendaService
 
     /**
      * Acomoda una práctica en el aula de menor carga que la acepta: primero las físicas (en línea = híbrida);
-     * en línea, si están llenas, un aula virtual. Sin lugar, a la lista de espera si se permite (la presentación
-     * uno a uno, que necesita un aula para ella sola, siempre espera).
+     * en línea, si están llenas, un aula virtual. Sin lugar, a la lista de espera si se permite.
      */
     private function placeSession(School $school, Booking $booking, CarbonInterface $date, ScheduleSlot $slot, bool $allowWaitlist = true): bool
     {
@@ -381,7 +378,7 @@ final class AgendaService
         }
 
         $cells = $this->sessionCells($school, $date, $slot);
-        $waits = $item['one_to_one'] || ($booking->modality === ClubModality::InPerson && $this->waitlistAllowed($school, $cells));
+        $waits = $booking->modality === ClubModality::InPerson && $this->waitlistAllowed($school, $cells);
 
         if (! $allowWaitlist || ! $waits) {
             return false;
@@ -585,12 +582,12 @@ final class AgendaService
 
             $options = [];
             $cells = $this->sessionCells($school, $date, $slot);
-            [$freeSeats, $onlineSeats, $oneToOne] = $step ? $this->seatsFor($school, $student, $step, $date, $slot, $excluded) : [0, 0, false];
+            [$freeSeats, $onlineSeats] = $step ? $this->seatsFor($school, $student, $step, $date, $slot, $excluded) : [0, 0];
 
             if ($freeSeats > 0) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => $freeSeats, 'waitlist' => false];
-            } elseif ($step && ($oneToOne || $this->waitlistAllowed($school, $cells)) && $this->physicalCells($cells)->isNotEmpty()) {
+            } elseif ($step && $this->waitlistAllowed($school, $cells) && $this->physicalCells($cells)->isNotEmpty()) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => 0, 'waitlist' => true];
             }
@@ -620,11 +617,11 @@ final class AgendaService
 
     /**
      * Lugares para el alumno a esa hora con su siguiente actividad: presenciales (aulas físicas) y en línea
-     * (híbrida o aula virtual), según las reglas de aulas, y si su actividad es uno a uno (PR).
+     * (híbrida o aula virtual), según las reglas de aulas.
      *
      * @param  array{book_id: int, lesson_id: int, activity_number: int}  $step
      * @param  list<int>  $excluded
-     * @return array{0: int, 1: int, 2: bool}
+     * @return array{0: int, 1: int}
      */
     private function seatsFor(School $school, Student $student, array $step, CarbonInterface $date, ScheduleSlot $slot, array $excluded): array
     {
@@ -636,7 +633,7 @@ final class AgendaService
         $seats = fn (array $item, array $groups) => collect($state['rooms'])->filter(fn (array $room) => in_array($room['group'], $groups, true))
             ->sum(fn (array $room, string $key) => RoomBalancer::seatsFor($room, RoomBalancer::itemsIn($state['items'], $key), $item));
 
-        return [$seats($inPerson, ['physical']), $seats($online, ['physical', 'virtual']), $inPerson['one_to_one']];
+        return [$seats($inPerson, ['physical']), $seats($online, ['physical', 'virtual'])];
     }
 
     /**

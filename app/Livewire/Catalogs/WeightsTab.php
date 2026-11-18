@@ -6,40 +6,37 @@ use App\Livewire\Catalogs\Concerns\ManagesCatalog;
 use App\Models\Activity;
 use App\Models\Book;
 use App\Models\Lesson;
+use App\Models\Practice;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as BaseCollection;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 /**
- * Pestaña "Pesos newton": el peso de cada actividad en cada lección (como la tabla del Excel: lecciones × BA, 1P, M,
- * WS, 2P, WP, SP, PR). La agenda balancea las aulas con estos pesos y la ruta de avance salta las actividades vacías.
+ * Pestaña "Pesos newton" (tabla general, como el Excel del instituto): minutos que tarda el teacher en revisar cada
+ * actividad de cada lección (Lesson 1–7, Check Point C1, Verb in context 1, Lesson 8–14, …), con su total en minutos
+ * y horas. Lo que se cambia aplica a esa lección en todos los libros. Las casillas oscuras son actividades que no
+ * están en el catálogo de Prácticas. La agenda balancea las aulas con estos pesos.
  */
 class WeightsTab extends Component
 {
     use ManagesCatalog;
 
-    public ?int $bookId = null;
-
-    /** Pesos capturados: [id de la lección][número de actividad] => peso ('' = no se hace). @var array<int, array<int, string>> */
+    /** Pesos capturados: [número de lección][número de actividad] => peso. @var array<int, array<int, string>> */
     public array $weights = [];
 
     public function mount(?int $schoolId): void
     {
         $this->schoolId = $schoolId;
         $this->authorizeCatalog();
-        $this->selectBook($this->books->first()?->id);
+        $this->fillWeights();
     }
 
-    public function selectBook(?int $id): void
+    private function fillWeights(): void
     {
-        $this->authorizeCatalog();
-        $this->bookId = $id === null ? null : $this->findInCatalog(Book::class, $id)->id;
-        unset($this->lessons);
-        $this->resetValidation();
-        $this->weights = $this->lessons->mapWithKeys(fn (Lesson $lesson) => [$lesson->id => $this->activities->mapWithKeys(fn (Activity $activity) => [
-            $activity->number => (string) ($lesson->weights()[$activity->number] ?? ''),
-        ])->all()])->all();
+        $this->weights = $this->lessons->mapWithKeys(fn (Lesson $lesson) => [$lesson->number => collect($this->doneActivities[$lesson->number] ?? [])
+            ->mapWithKeys(fn (int $number) => [$number => (string) ($lesson->weights()[$number] ?? '')])->all()])->all();
     }
 
     public function save(): void
@@ -47,10 +44,13 @@ class WeightsTab extends Component
         $this->authorizeCatalog();
         $this->validate(['weights.*.*' => ['nullable', 'integer', 'min:0', 'max:999']], [], ['weights.*.*' => __('catalogs.weights.weight')]);
 
-        foreach ($this->lessons as $lesson) {
-            $row = collect($this->weights[$lesson->id] ?? [])->filter(fn ($weight) => $weight !== '' && $weight !== null)
+        // Cada lección (por número) en todos los libros del catálogo; solo las actividades que se hacen en ella.
+        foreach ($this->catalog(Lesson::class)->whereIn('book_id', $this->books->modelKeys())->get() as $lesson) {
+            $row = collect($this->weights[$lesson->number] ?? [])
+                ->only($this->doneActivities[$lesson->number] ?? [])
+                ->filter(fn ($weight) => $weight !== '' && $weight !== null)
                 ->mapWithKeys(fn ($weight, $number) => [(string) $number => (int) $weight])->all();
-            $lesson->update(['activity_weights' => $row]);
+            $lesson->update(['activity_weights' => (object) $row]);
         }
 
         $this->dispatch('toast', type: 'success', message: __('catalogs.weights.saved'));
@@ -63,11 +63,25 @@ class WeightsTab extends Component
         return $this->catalog(Book::class)->orderBy('level')->get();
     }
 
-    /** @return Collection<int, Lesson> */
+    /** Lecciones de la tabla general: las del primer libro, en su orden. @return Collection<int, Lesson> */
     #[Computed]
     public function lessons(): Collection
     {
-        return $this->bookId === null ? new Collection : $this->catalog(Lesson::class)->where('book_id', $this->bookId)->orderBy('sort_order')->orderBy('number')->get();
+        $book = $this->books->first();
+
+        return $book === null ? new Collection : $this->catalog(Lesson::class)->where('book_id', $book->id)->orderBy('sort_order')->orderBy('number')->get();
+    }
+
+    /** Actividades que se hacen en cada lección (catálogo de Prácticas; sin él, las que tienen peso). @return array<int, list<int>> */
+    #[Computed]
+    public function doneActivities(): array
+    {
+        $practices = $this->catalog(Practice::class)->whereIn('lesson_id', $this->lessons->modelKeys())->where('is_active', true)->get(['lesson_id', 'activity_number']);
+        $byLesson = $practices->groupBy('lesson_id');
+
+        return $this->lessons->mapWithKeys(fn (Lesson $lesson) => [$lesson->number => $practices->isNotEmpty()
+            ? $byLesson->get($lesson->id, collect())->pluck('activity_number')->map(fn ($number) => (int) $number)->sort()->values()->all()
+            : $this->activities->pluck('number')->map(fn ($number) => (int) $number)->all()])->all();
     }
 
     /** @return Collection<int, Activity> */
@@ -77,8 +91,14 @@ class WeightsTab extends Component
         return $this->catalog(Activity::class)->where('is_active', true)->orderBy('number')->get();
     }
 
+    /** Total de minutos de cada lección (suma de sus pesos). @return BaseCollection<int, int> */
+    public function totals(): BaseCollection
+    {
+        return collect($this->weights)->map(fn (array $row) => (int) collect($row)->sum(fn ($weight) => is_numeric($weight) ? (int) $weight : 0));
+    }
+
     public function render(): View
     {
-        return view('livewire.catalogs.weights-tab');
+        return view('livewire.catalogs.weights-tab', ['totals' => $this->totals()]);
     }
 }

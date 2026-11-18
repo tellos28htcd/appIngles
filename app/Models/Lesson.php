@@ -27,9 +27,9 @@ class Lesson extends Model
 
     /** Pesos newton iniciales por tipo de lección (número de actividad => peso; sin la actividad = no se hace). */
     public const DEFAULT_WEIGHTS = [
-        'lesson' => [1 => 5, 2 => 10, 3 => 40, 4 => 40, 5 => 15, 6 => 40, 7 => 20],
-        'checkpoint' => [1 => 5, 3 => 40, 6 => 40, 8 => 240],
-        'verb_in_context' => [6 => 40, 7 => 20],
+        'lesson' => [1 => 4, 2 => 7, 3 => 10, 4 => 9, 5 => 15, 6 => 11, 7 => 18],
+        'checkpoint' => [1 => 6, 3 => 11, 6 => 180, 7 => 50],
+        'verb_in_context' => [3 => 7, 6 => 6, 7 => 9],
     ];
 
     /**
@@ -72,6 +72,39 @@ class Lesson extends Model
                 'configured' => $templates->isNotEmpty(),
                 'lessons' => $lessons->mapWithKeys(fn (Lesson $lesson) => [$lesson->id => $lesson->weights() ?? $templates->get($lesson->type->value)])->all(),
             ];
+        });
+    }
+
+    /** Código corto de la lección en el nombre de la práctica: L1…L14, CP1/CP2 (Check Points) y VIC1/VIC2 (Verb in context). */
+    public function shortCode(): string
+    {
+        return self::shortCodesFor($this->book_id)[$this->id] ?? "L{$this->number}";
+    }
+
+    /**
+     * Códigos cortos de las lecciones de un libro (los Check Points y Verb in context se numeran en el orden del libro).
+     *
+     * @return array<int, string>
+     */
+    public static function shortCodesFor(int $bookId): array
+    {
+        return once(function () use ($bookId): array {
+            $counters = [];
+
+            return self::withoutGlobalScope('school')->where('book_id', $bookId)->orderBy('sort_order')->orderBy('number')->get(['id', 'number', 'type'])
+                ->mapWithKeys(function (Lesson $lesson) use (&$counters): array {
+                    $prefix = match ($lesson->type) {
+                        LessonType::CheckPoint => 'CP', LessonType::VerbInContext => 'VIC', default => null
+                    };
+
+                    if ($prefix === null) {
+                        return [$lesson->id => "L{$lesson->number}"];
+                    }
+
+                    $counters[$prefix] = ($counters[$prefix] ?? 0) + 1;
+
+                    return [$lesson->id => $prefix.$counters[$prefix]];
+                })->all();
         });
     }
 

@@ -36,6 +36,9 @@
             @case('actividades')
                 <livewire:catalogs.activities-tab :school-id="$schoolId" wire:key="activities-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
+            @case('practicas')
+                <livewire:catalogs.practices-tab :school-id="$schoolId" wire:key="practices-{{ $schoolId ?? 'base' }}-{{ $version }}" />
+                @break
             @case('pesos')
                 <livewire:catalogs.weights-tab :school-id="$schoolId" wire:key="weights-{{ $schoolId ?? 'base' }}-{{ $version }}" />
                 @break
@@ -89,6 +92,7 @@
                                 @case('schedule_slots') {{ $item->number }} · {{ $item->range() }} @break
                                 @case('lessons') {{ $item->name }} <span class="text-xs text-ink-500">({{ __('catalogs.fields.activity_number') }} {{ $item->number }})</span> @break
                                 @case('activities') <span class="font-mono font-bold">{{ $item->code }}</span> · {{ $item->description }} @break
+                                @case('practices') {{ __('catalogs.practices.order') }} {{ $item->sort_order }} <span class="text-xs text-ink-500">({{ __('catalogs.fields.activity_number') }} {{ $item->activity_number }}{{ $item->name ? ' · '.$item->name : '' }})</span> @break
                                 @case('survey_questions') {{ $item->question }} @break
                                 @case('student_plans') @case('student_types') <span class="font-mono font-bold">{{ $item->code }}</span> · {{ $item->name }} @break
                                 @default {{ $item->name }}

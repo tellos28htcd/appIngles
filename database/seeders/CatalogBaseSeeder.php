@@ -14,6 +14,7 @@ use App\Models\Club;
 use App\Models\CoordinatorActivity;
 use App\Models\Lesson;
 use App\Models\PaymentMethod;
+use App\Models\Practice;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Shift;
@@ -50,16 +51,15 @@ class CatalogBaseSeeder extends Seeder
         [17, 'Check Point C2', LessonType::CheckPoint], [18, 'Verb in context 2', LessonType::VerbInContext],
     ];
 
-    /** Número, código, descripción y si la asesoría es uno a uno (PR). Los pesos newton van en cada lección. */
+    /** Número, código y descripción. Los pesos newton van en cada lección; la ruta, en el catálogo de Prácticas. */
     private const ACTIVITIES = [
-        [1, 'BA', 'Book Answered', false],
-        [2, '1P', 'Primera Pronunciation', false],
-        [3, 'M', 'Mentoría', false],
-        [4, 'WS', 'Worksheet', false],
-        [5, '2P', 'Segunda Pronunciation', false],
-        [6, 'WP', 'Written performance', false],
-        [7, 'SP', 'Spoken demonstration', false],
-        [8, 'PR', 'Presentación', true],
+        [1, 'BA', 'Book Answered'],
+        [2, '1P', 'Primera Pronunciation'],
+        [3, 'M', 'Mentoría'],
+        [4, 'WS', 'Worksheet'],
+        [5, '2P', 'Segunda Pronunciation'],
+        [6, 'WP', 'Written performance'],
+        [7, 'SP', 'Spoken demonstration'],
     ];
 
     /** Club => horas por nivel 1, 2, 3 (null = no se ofrece en ese nivel). */
@@ -106,6 +106,7 @@ class CatalogBaseSeeder extends Seeder
             $this->seedShiftsAndSlots();
             $books = $this->seedBooksAndLessons();
             $this->seedActivities();
+            $this->seedPractices($books);
             $this->seedClubs($books);
             $this->seedSchoolSettings();
         }));
@@ -208,13 +209,32 @@ class CatalogBaseSeeder extends Seeder
 
     private function seedActivities(): void
     {
-        foreach (self::ACTIVITIES as [$number, $code, $description, $oneToOne]) {
+        foreach (self::ACTIVITIES as [$number, $code, $description]) {
             Activity::ofCatalog(null)->firstOrCreate(['school_id' => null, 'code' => $code], [
                 'number' => $number,
                 'description' => $description,
-                'is_one_to_one' => $oneToOne,
                 'is_active' => true,
             ]);
+        }
+    }
+
+    /**
+     * Catálogo de prácticas de la base (Excel Cat_Practicas.xlsx): libro + lección + actividad con su orden y puntos.
+     *
+     * @param  array<int, Book>  $books  nivel => libro
+     */
+    private function seedPractices(array $books): void
+    {
+        $lessons = Lesson::ofCatalog(null)->whereIn('book_id', collect($books)->pluck('id'))->get()->keyBy(fn (Lesson $lesson) => $lesson->book_id.'|'.$lesson->number);
+
+        foreach (PracticeRouteData::ROWS as [$level, $lessonNumber, $activity, $order, $points, $name]) {
+            $lesson = isset($books[$level]) ? $lessons->get($books[$level]->id.'|'.$lessonNumber) : null;
+
+            if ($lesson !== null) {
+                Practice::ofCatalog(null)->firstOrCreate(['lesson_id' => $lesson->id, 'activity_number' => $activity], [
+                    'school_id' => null, 'book_id' => $lesson->book_id, 'name' => $name, 'sort_order' => $order, 'points' => $points, 'is_active' => true,
+                ]);
+            }
         }
     }
 

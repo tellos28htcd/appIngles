@@ -13,6 +13,7 @@ return [
         'horarios' => 'Turnos y horarios',
         'libros' => 'Libros y lecciones',
         'actividades' => 'Actividades',
+        'practicas' => 'Prácticas',
         'pesos' => 'Pesos newton',
         'clubes' => 'Clubes',
         'coordinacion' => 'Actividades de coordinación',
@@ -75,26 +76,37 @@ return [
     ],
 
     'activities' => [
-        'one_to_one' => 'Asesoría uno a uno',
-        'one_to_one_hint' => 'Como la presentación (PR): el teacher no recibe a ningún otro alumno a esa hora. Los pesos de cada lección están en la pestaña "Pesos newton".',
-    ],
-
-    'weights' => [
-        'title' => 'Pesos newton',
-        'description' => 'Peso de cada actividad en cada lección. La carga de un teacher es la suma de los pesos de las actividades de sus alumnos; la agenda los acomoda para que las cargas queden parejas. Vacío = la actividad no se hace en esa lección (la ruta de avance la salta).',
-        'lesson' => 'Lección',
-        'weight' => 'peso',
-        'weight_of' => 'Peso de :activity en :lesson',
-        'not_done' => 'No se hace',
-        'save' => 'Guardar pesos',
-        'saved' => 'Pesos guardados.',
-        'select_book' => 'Elige un libro para ver sus lecciones.',
-        'one_to_one' => 'Uno a uno',
         'title' => 'Actividades',
         'description' => 'Códigos con los que el teacher evalúa cada clase.',
         'add' => 'Nueva actividad',
         'edit' => 'Editar actividad',
         'minutes_value' => ':minutes min',
+    ],
+
+    'weights' => [
+        'title' => 'Pesos newton',
+        'description' => 'Minutos que tarda el teacher en revisar cada actividad de cada lección (aplica a esa lección en los 3 libros). La carga de un teacher es la suma de los pesos de las actividades de sus alumnos; la agenda los acomoda para que las cargas queden parejas. Oscuro = la actividad no se hace en esa lección (catálogo de Prácticas).',
+        'lesson' => 'Lección',
+        'number' => 'Núm.',
+        'minutes' => 'T Min',
+        'minutes_hint' => 'Total de minutos de la lección (suma de sus pesos)',
+        'hours' => 'T Hrs',
+        'hours_hint' => 'Total en horas (minutos ÷ 60)',
+        'weight' => 'peso',
+        'weight_of' => 'Peso de :activity en :lesson',
+        'not_done' => 'No se hace',
+        'save' => 'Guardar pesos',
+        'saved' => 'Pesos guardados.',
+    ],
+
+    'practices' => [
+        'title' => 'Prácticas',
+        'description' => 'Ruta de avance: el orden en que se asignan las prácticas al agendar y se califican en el Kardex. El alumno sin avance empieza en el orden 1.',
+        'order' => 'Orden',
+        'practice' => 'Práctica',
+        'points' => 'Puntos acumulados',
+        'book' => 'Libro',
+        'empty' => 'Sin prácticas en el catálogo.',
     ],
 
     'coordination' => [
@@ -210,6 +222,7 @@ return [
             'books' => 'Libros',
             'lessons' => 'Lecciones',
             'activities' => 'Actividades',
+            'practices' => 'Prácticas',
             'clubs' => 'Clubes',
             'coordinator_activities' => 'Actividades de coordinación',
             'classrooms' => 'Aulas',

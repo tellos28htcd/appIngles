@@ -107,7 +107,7 @@ class Booking extends Model
         return $this->hasMany(BookingEvent::class)->orderBy('id');
     }
 
-    /** Actividad que le toca, p. ej. "L1-L3-A2-1P" (o la abreviatura del club). */
+    /** Práctica que le toca, como en el catálogo de Prácticas: p. ej. "L1-L3-A2-1P" o "L1-CP1-A6-DIRECT P." (o la abreviatura del club). */
     public function activityLabel(): string
     {
         if ($this->kind === BookingKind::Club) {
@@ -115,7 +115,8 @@ class Booking extends Model
         }
 
         return $this->book && $this->lesson && $this->activity_number
-            ? "L{$this->book->level}-L{$this->lesson->number}-A{$this->activity_number}".(isset(Activity::codesFor($this->school_id)[$this->activity_number]) ? '-'.Activity::codesFor($this->school_id)[$this->activity_number] : '')
+            ? Practice::labelFor((int) $this->book->level, $this->lesson, $this->activity_number,
+                Practice::namesFor($this->school_id)[$this->lesson_id.'|'.$this->activity_number] ?? null, Activity::codesFor($this->school_id))
             : '—';
     }
 

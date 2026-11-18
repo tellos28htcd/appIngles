@@ -20,7 +20,6 @@
                             <td class="px-4 py-2 text-right font-mono text-sm tabular-nums md:px-5">{{ $activity->number }}</td>
                             <td class="px-3 py-2">
                                 <span class="inline-flex h-7 min-w-10 items-center justify-center rounded-md bg-primary-50 px-2 font-mono text-sm font-bold text-primary-700">{{ $activity->code }}</span>
-                                @if ($activity->is_one_to_one)<span class="ml-1 text-xs font-bold text-primary-700" title="{{ __('catalogs.activities.one_to_one') }}">1:1</span>@endif
                             </td>
                             <td class="px-3 py-2 font-semibold">
                                 {{ $activity->description }}
@@ -47,7 +46,6 @@
             <x-ui.input name="minutes" type="number" :label="__('catalogs.fields.minutes')" wire:model="minutes" min="1" class="tabular-nums" />
         </div>
         <x-ui.input name="description" :label="__('catalogs.fields.description')" wire:model="description" maxlength="150" required />
-        <x-ui.toggle name="isOneToOne" :label="__('catalogs.activities.one_to_one')" :description="__('catalogs.activities.one_to_one_hint')" wire:model="isOneToOne" />
         <x-slot:footer>
             <x-ui.button variant="ghost" x-on:click="open = null">{{ __('catalogs.actions.cancel') }}</x-ui.button>
             <x-ui.button wire:click="save">{{ __('catalogs.actions.save') }}</x-ui.button>
