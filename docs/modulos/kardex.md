@@ -2,7 +2,7 @@
 
 Decisiones del 18-nov-2026. Primer submódulo: **Calificaciones**.
 
-## Catálogos (Configuración → Catálogos de alumnos; base en Plataforma y copia por escuela)
+## Catálogos (Configuración → Catálogos académicos; base en Plataforma y copia por escuela)
 - **Calificaciones del Kardex** (`grades`): **A** Excelente, **B** Bien, **C** Suficiente (actividades 4–7) y
   **F** Firma (actividades 1–3 y clubs). La D no existe. Cada letra dice si es firma o calificación (`type`).
 - **Motivos del Kardex** (`ungraded_reasons`): Revisar, Pendiente, Otro. Se eligen al dejar una reservación

@@ -194,7 +194,6 @@ class CatalogManagementTest extends TestCase
         Livewire::test(ActivitiesTab::class, ['schoolId' => $this->schoolA->id])
             ->call('edit', $mentoria->id)
             ->set('description', 'Mentoría personalizada')
-            ->set('minutes', 20)
             ->call('save')
             ->assertHasNoErrors();
 
@@ -218,7 +217,6 @@ class CatalogManagementTest extends TestCase
             ->call('edit')
             ->set('code', 'RL')
             ->set('description', 'Reading log')
-            ->set('minutes', 15)
             ->call('save')
             ->assertHasNoErrors();
 

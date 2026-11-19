@@ -62,7 +62,7 @@ class MenuSeeder extends Seeder
             'settings-school' => ['Mi Instituto', null, 'my-school.edit', MenuItemStatus::Active],
             'settings-users' => ['Usuarios', null, 'users.index', MenuItemStatus::Active],
             'settings-catalogs' => ['Catálogos académicos', null, 'catalogs.index', MenuItemStatus::Active],
-            'settings-student-catalogs' => ['Catálogos de alumnos', null, 'student-catalogs.index', MenuItemStatus::Active],
+            'settings-student-catalogs' => ['Parámetros comerciales', null, 'student-catalogs.index', MenuItemStatus::Active],
             'settings-classrooms' => ['Aulas', null, 'classrooms.index', MenuItemStatus::Active],
             'settings-payment-methods' => ['Métodos de pago', null, 'payment-methods.index', MenuItemStatus::Active],
             'settings-bank-accounts' => ['Cuentas bancarias', null, 'bank-accounts.index', MenuItemStatus::Active],

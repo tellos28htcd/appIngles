@@ -10,7 +10,6 @@
                         <th scope="col" class="w-16 px-4 py-2.5 text-right font-bold md:px-5" title="{{ __('catalogs.fields.activity_number') }}">{{ __('catalogs.fields.number_short') }}</th>
                         <th scope="col" class="w-20 px-3 py-2.5 font-bold">{{ __('catalogs.fields.code') }}</th>
                         <th scope="col" class="px-3 py-2.5 font-bold">{{ __('catalogs.fields.description') }}</th>
-                        <th scope="col" class="hidden w-24 px-3 py-2.5 text-right font-bold sm:table-cell">{{ __('catalogs.fields.minutes') }}</th>
                         <th scope="col" class="hidden px-3 py-2.5 font-bold md:table-cell">{{ __('catalogs.fields.grade_type') }}</th>
                         <th scope="col" class="px-4 py-2.5 md:px-5"><span class="sr-only">{{ __('catalogs.fields.actions') }}</span></th>
                     </tr>
@@ -24,11 +23,7 @@
                             </td>
                             <td class="px-3 py-2 font-semibold">
                                 {{ $activity->description }}
-                                @if ($activity->minutes)
-                                    <span class="block text-xs font-normal text-ink-500 sm:hidden">{{ __('catalogs.activities.minutes_value', ['minutes' => $activity->minutes]) }}</span>
-                                @endif
                             </td>
-                            <td class="hidden px-3 py-2 text-right text-sm tabular-nums text-ink-700 sm:table-cell">{{ $activity->minutes ?? '—' }}</td>
                             <td class="hidden px-3 py-2 text-sm text-ink-700 md:table-cell">{{ ($activity->grade_type ?? \App\Enums\GradeType::forActivityNumber($activity->number))->label() }}</td>
                             <td class="px-4 py-2 md:px-5">
                                 <x-catalog.row-actions :active="$activity->is_active" :name="$activity->code"
@@ -42,10 +37,9 @@
     </x-catalog.section>
 
     <x-ui.modal wire:model="editing" :title="__($activityId ? 'catalogs.activities.edit' : 'catalogs.activities.add')">
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2">
             <x-ui.input name="number" type="number" :label="__('catalogs.fields.activity_number')" wire:model="number" min="1" class="tabular-nums" required />
             <x-ui.input name="code" :label="__('catalogs.fields.code')" wire:model="code" maxlength="10" class="font-mono uppercase" required />
-            <x-ui.input name="minutes" type="number" :label="__('catalogs.fields.minutes')" wire:model="minutes" min="1" class="tabular-nums" />
         </div>
         <x-ui.input name="description" :label="__('catalogs.fields.description')" wire:model="description" maxlength="150" required />
         <x-ui.select name="gradeType" :label="__('catalogs.fields.grade_type')" :options="$gradeTypes" wire:model="gradeType" :hint="__('catalogs.activities.grade_type_hint')" required />

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 /** Actividad / código de evaluación (BA, 1P, M, WS, 2P, WP, SP). */
-#[Fillable(['school_id', 'base_id', 'number', 'code', 'description', 'minutes', 'grade_type', 'is_active'])]
+#[Fillable(['school_id', 'base_id', 'number', 'code', 'description', 'grade_type', 'is_active'])]
 class Activity extends Model
 {
     use Auditable, BelongsToSchool;
@@ -18,7 +18,6 @@ class Activity extends Model
     {
         return [
             'number' => 'integer',
-            'minutes' => 'integer',
             'grade_type' => GradeType::class,
             'is_active' => 'boolean',
         ];

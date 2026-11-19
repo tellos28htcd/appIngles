@@ -27,8 +27,6 @@ class ActivitiesTab extends Component
 
     public string $description = '';
 
-    public ?int $minutes = null;
-
     /** Calificación del Kardex: firma (F) o A/B/C. */
     public string $gradeType = 'score';
 
@@ -48,7 +46,6 @@ class ActivitiesTab extends Component
         $this->number = $activity?->number ?? (int) $this->catalog(Activity::class)->max('number') + 1;
         $this->code = (string) $activity?->code;
         $this->description = (string) $activity?->description;
-        $this->minutes = $activity?->minutes;
         $this->gradeType = ($activity?->grade_type ?? GradeType::forActivityNumber($this->number))->value;
         $this->editing = true;
     }
@@ -62,7 +59,6 @@ class ActivitiesTab extends Component
             'number' => ['required', 'integer', 'min:1', 'max:999', $this->uniqueInCatalog('activities', 'number', $this->activityId)],
             'code' => ['required', 'string', 'max:10', 'regex:/^[A-Z0-9]+$/', $this->uniqueInCatalog('activities', 'code', $this->activityId)],
             'description' => ['required', 'string', 'max:150'],
-            'minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
             'gradeType' => ['required', Rule::enum(GradeType::class)],
         ], [
             'code.regex' => __('catalogs.validation.code'),
@@ -70,7 +66,6 @@ class ActivitiesTab extends Component
             'number' => Str::lower(__('catalogs.fields.activity_number')),
             'code' => Str::lower(__('catalogs.fields.code')),
             'description' => Str::lower(__('catalogs.fields.description')),
-            'minutes' => Str::lower(__('catalogs.fields.minutes')),
             'gradeType' => Str::lower(__('catalogs.fields.grade_type')),
         ]);
 
@@ -79,7 +74,7 @@ class ActivitiesTab extends Component
             'is_active' => true,
         ]);
         $activity->fill([
-            'number' => $data['number'], 'code' => $data['code'], 'description' => trim($data['description']), 'minutes' => $data['minutes'], 'grade_type' => $data['gradeType'],
+            'number' => $data['number'], 'code' => $data['code'], 'description' => trim($data['description']), 'grade_type' => $data['gradeType'],
         ])->save();
 
         $this->editing = null;

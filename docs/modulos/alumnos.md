@@ -69,7 +69,7 @@ INTERCAMBIO; TARJETA DORADA se descartó como asesor).
 ## Permisos
 - Alta, edición, cambio de estatus, tutores, importación y envío de acceso: Administrador de escuela y Servicios escolares.
 - Consulta: los roles con la opción "Expedientes" (Coordinador académico, Mentor, Recepción).
-- Catálogos de alumnos: Administrador de escuela (Configuración) y Super Admin (Catálogos base).
+- Parámetros comerciales (antes "Catálogos de alumnos"): Administrador de escuela (Configuración) y Super Admin (Catálogos base).
 
 ## Importación
 1. Alumnos → Importar → *Descargar plantilla* (.xlsx con listas de los catálogos de la escuela, hoja Asesores,
