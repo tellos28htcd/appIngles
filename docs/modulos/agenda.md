@@ -24,9 +24,11 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 | Campo | Uso |
 |---|---|
 | Cupo de alumnos por sesión | Cupo de cada aula en práctica. Si el aula tiene menos cupo, se usa el del aula. |
-| Cupo de alumnos por club | Clubs presenciales. Vacío = el cupo del aula. |
-| Alumnos por aula virtual | Prácticas y clubs en línea. |
-| Aulas virtuales por horario | Aulas para práctica en línea a cada hora; 0 = sin práctica en línea. |
+
+El cupo de clubs (presenciales y en línea) y de aulas virtuales es la **capacidad de cada aula** en Configuración →
+Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales con teacher programado a esa hora.
+(Los campos "Cupo de alumnos por club", "Alumnos por aula virtual" y "Aulas virtuales por horario" se quitaron el
+18-nov-2026.)
 
 ## Reglas
 
@@ -41,7 +43,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
   - Se ofrecen los clubs programados.
   - El nivel del alumno debe estar en la abreviatura del club.
   - En el primer libro, el alumno debe ir en la lección mínima para clubs o más adelante.
-  - Cupo: por club (presencial) o por aula virtual (en línea).
+  - Cupo: la capacidad del aula del club (física o virtual).
 - **Quién reserva:** recepción siempre puede. El alumno depende de "Reservaciones del alumno":
   - No permitir: no reserva.
   - Día anterior: reserva a partir del día siguiente.
@@ -79,7 +81,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 ## Ajustes (nov-2026)
 
 - **Práctica** (antes "Asesoría"): al elegir la hora se escoge **Presencial** o **En línea**; las opciones son botones (Tab para recorrer, Enter para elegir).
-- **En línea / híbrida (reemplazado por "Balanceo por pesos": ahora primero híbrida y luego virtual):** primero un aula virtual del catálogo de Aulas (las marcadas "Virtual" sin club en línea ni reserva a esa hora; "Aulas virtuales por horario" limita cuántas, 0 = todas), cada una con "Alumnos por aula virtual" lugares (o su capacidad). Llenas (o si la escuela tiene 0 aulas virtuales), el alumno entra en línea a la clase de un teacher presencial con lugar ("Aula X (híbrida, en línea)") y ocupa un lugar del cupo por sesión de esa aula. El calendario muestra cuántos van presencial y cuántos en línea.
+- **En línea / híbrida (reemplazado por "Balanceo por pesos": ahora primero híbrida y luego virtual):** primero un aula virtual del catálogo de Aulas (las marcadas "Virtual" sin club en línea ni reserva a esa hora), cada una con su capacidad de lugares. Llenas (o si la escuela tiene 0 aulas virtuales), el alumno entra en línea a la clase de un teacher presencial con lugar ("Aula X (híbrida, en línea)") y ocupa un lugar del cupo por sesión de esa aula. El calendario muestra cuántos van presencial y cuántos en línea.
 - **Tolerancia:** recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo, p. ej. por una cancelación); el alumno solo antes de que empiece.
 - **Portal del alumno:** una sola opción "Agendar" (prácticas y clubs). "Agendar club" queda desactivada en el menú (su código se conserva).
 - **Ventanas:** todas las ventanas de captura se mueven arrastrando su título.

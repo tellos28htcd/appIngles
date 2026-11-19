@@ -166,10 +166,9 @@ class AgendaTest extends TestCase
 
     public function test_the_week_calendar_shows_free_places_by_day_and_hour(): void
     {
-        $this->school->update(['virtual_rooms_per_slot' => 2, 'virtual_room_capacity' => 3]);
         // Las dos aulas virtuales tienen teacher programado a las 9 (a las 10 no: no hay lugares en línea).
         foreach (['10' => 'ROSA', '11' => 'JUAN'] as $name => $short) {
-            $room = Classroom::create(['school_id' => $this->school->id, 'name' => $name, 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+            $room = Classroom::create(['school_id' => $this->school->id, 'name' => $name, 'capacity' => 3, 'is_virtual' => true, 'is_active' => true]);
             TeacherAvailability::create(['school_id' => $this->school->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[9]->id, 'classroom_id' => $room->id, 'is_absent' => false,
                 'teacher_id' => Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => $short, 'panel_number' => (int) $name])->id]);
         }
@@ -289,9 +288,9 @@ class AgendaTest extends TestCase
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.day_before'));
     }
 
-    public function test_clubs_use_the_club_capacity_and_the_code_level(): void
+    public function test_clubs_use_the_room_capacity_and_the_code_level(): void
     {
-        $this->school->update(['club_capacity' => 1]);
+        $this->rooms[0]->update(['capacity' => 1]);
         $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 10, 'is_active' => true,
             'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true], ['code' => 'C34', 'levels' => [3, 4], 'color' => 2, 'is_active' => true]]]);
         $teacher = Teacher::where('short_name', 'MELISSA')->sole();
@@ -314,8 +313,8 @@ class AgendaTest extends TestCase
 
     public function test_online_practice_fills_hybrid_rooms_first_and_then_the_virtual_room(): void
     {
-        $this->school->update(['virtual_rooms_per_slot' => 0, 'virtual_room_capacity' => 1, 'session_capacity' => 5]);
-        $ten = Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
+        $this->school->update(['session_capacity' => 5]);
+        $ten = Classroom::create(['school_id' => $this->school->id, 'name' => '10', 'capacity' => 1, 'is_virtual' => true, 'is_active' => true]);
         // El aula virtual 11 no tiene teacher programado en la disponibilidad: no se ofrece.
         Classroom::create(['school_id' => $this->school->id, 'name' => '11', 'capacity' => 8, 'is_virtual' => true, 'is_active' => true]);
         $rosa = Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => 'ROSA', 'panel_number' => 3]);
@@ -495,7 +494,7 @@ class AgendaTest extends TestCase
 
     public function test_reception_changes_the_activity_of_a_booking_when_there_is_room(): void
     {
-        $this->school->update(['club_capacity' => 1]);
+        $this->rooms[0]->update(['capacity' => 1]);
         $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 10, 'is_active' => true,
             'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true]]]);
         $session = ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),

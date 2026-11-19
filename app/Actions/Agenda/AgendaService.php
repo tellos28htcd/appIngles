@@ -42,14 +42,14 @@ use Illuminate\Validation\ValidationException;
  *   ni el aula audiovisual); cupo por aula = "cupo por sesión" de Mi Instituto. Llenas, el alumno entra a la
  *   lista de espera (si hay columna "Lista de espera" o Mi Instituto lo permite).
  * - Práctica en línea: primero híbrida en un aula física (máximo 3 alumnos, a lo más 2 en línea); llenas,
- *   un aula virtual del catálogo con teacher programado en ella en la disponibilidad ("alumnos por aula virtual").
+ *   un aula virtual del catálogo con teacher programado en ella en la disponibilidad (cupo = capacidad del aula).
  * - Balanceo por pesos newton (RoomBalancer): cada actividad pesa según la lección del alumno (catálogo
  *   "Pesos newton"); el alumno va al aula de menor carga y, al agendar, cancelar o pasar de la lista de espera,
  *   se reacomodan los alumnos de esa hora (solo aula y teacher) hasta 3 minutos antes, con aviso al alumno.
  *   Las físicas e híbridas se balancean juntas; las virtuales entre ellas.
  * - Tolerancia: recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo);
  *   el alumno solo antes de que empiece.
- * - Club: los clubs programados; cupo "por club" (presencial) o "por aula virtual" (en línea);
+ * - Club: los clubs programados; cupo = capacidad del aula del club (Configuración → Aulas);
  *   nivel de la abreviatura, lección mínima para clubs y máximo de clubs por día.
  * - Por día: máximo de prácticas (Mi Instituto) y de horas según la asistencia de los últimos
  *   7 días (≥ 0.8 o sin historial: 2 horas; menos: 1).
@@ -242,17 +242,16 @@ final class AgendaService
             ->pluck('teacher_id')->map(fn ($id) => (int) $id)->all();
     }
 
-    /** Lugares de una aula virtual: "Alumnos por aula virtual" de Mi Instituto (o la capacidad del aula). */
+    /** Lugares de una aula virtual: su capacidad en Configuración → Aulas (o el cupo por sesión). */
     private function virtualCapacity(School $school, Classroom $room): int
     {
-        return max(1, (int) ($school->virtual_room_capacity ?: $room->capacity ?: $school->session_capacity ?: 1));
+        return max(1, (int) ($room->capacity ?: $school->session_capacity ?: 1));
     }
 
     /**
      * Aulas virtuales que se usan para práctica a esa hora: las virtuales activas del catálogo que no tienen un
      * club en línea ni están reservadas y que tienen un teacher programado en esa aula en la disponibilidad de
-     * horario (él la atiende; sin teacher programado el aula no se ofrece). Si Mi Instituto pone "Aulas
-     * virtuales por horario", solo esa cantidad.
+     * horario (él la atiende; sin teacher programado el aula no se ofrece).
      *
      * @param  Collection<int, TeacherAvailability>  $cells  horas del panel a esa fecha y hora
      * @return Collection<int, Classroom>
@@ -263,7 +262,7 @@ final class AgendaService
             ->filter(fn (Classroom $room) => $cells->contains(fn (TeacherAvailability $cell) => $cell->classroom_id === $room->id && ! $cell->teacher?->is_waitlist))
             ->values();
 
-        return (int) $school->virtual_rooms_per_slot > 0 ? $rooms->take((int) $school->virtual_rooms_per_slot)->values() : $rooms;
+        return $rooms;
     }
 
     /**
@@ -462,9 +461,7 @@ final class AgendaService
 
     private function clubCapacity(School $school, ClubSession $club): int
     {
-        return max(1, (int) ($club->modality === ClubModality::Online
-            ? ($school->virtual_room_capacity ?: $school->session_capacity ?: 1)
-            : ($school->club_capacity ?: $club->classroom?->capacity ?: $school->session_capacity ?: 1)));
+        return max(1, (int) ($club->classroom?->capacity ?: $school->session_capacity ?: 1));
     }
 
     /** Lugares libres en un club. */
