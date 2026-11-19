@@ -107,15 +107,26 @@ final class KardexService
         }
     }
 
+    /** Motivo activo de la escuela de la reservación que ese usuario puede elegir (teacher o personal). */
+    private function reasonFor(Booking $booking, int|string|null $reasonId, ?User $actor): ?UngradedReason
+    {
+        if ($reasonId === null || $reasonId === '') {
+            return null;
+        }
+
+        return UngradedReason::withoutGlobalScope('school')->where('school_id', $booking->school_id)->where('is_active', true)
+            ->when($actor !== null, fn ($query) => $query->usableBy($actor))->find((int) $reasonId);
+    }
+
     /** @return array{0: ?int, 1: ?string} */
-    private function lateReason(Booking $booking, CarbonInterface $today, ?int $reasonId, ?string $comment): array
+    private function lateReason(Booking $booking, CarbonInterface $today, ?int $reasonId, ?string $comment, ?User $actor = null): array
     {
         if (! $this->isLate($booking, $today)) {
             return [null, null];
         }
 
         $comment = trim((string) $comment);
-        $reason = $reasonId ? UngradedReason::withoutGlobalScope('school')->where('school_id', $booking->school_id)->where('is_active', true)->find($reasonId) : null;
+        $reason = $this->reasonFor($booking, $reasonId, $actor);
 
         $errors = array_filter([
             'lateReasonId' => $reason === null ? __('kardex.validation.late_reason') : null,
@@ -132,12 +143,14 @@ final class KardexService
 
     /**
      * Guarda las prácticas calificadas de una reservación (en orden, sin huecos). $gradeIds sigue el orden de
-     * pendingSteps(); las vacías al final no se guardan.
+     * pendingSteps(); las vacías al final no se guardan. $observationIds: la observación (motivo del Kardex,
+     * opcional) de cada práctica, en el mismo orden.
      *
      * @param  list<int|string|null>  $gradeIds
+     * @param  list<int|string|null>  $observationIds
      * @return int prácticas guardadas
      */
-    public function gradeSession(Booking $booking, array $gradeIds, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null): int
+    public function gradeSession(Booking $booking, array $gradeIds, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null, array $observationIds = []): int
     {
         $this->ensureGradable($booking, $today);
         $steps = $this->pendingSteps($booking);
@@ -158,18 +171,24 @@ final class KardexService
             if ($grade === null) {
                 throw ValidationException::withMessages(["grades.$position" => __('kardex.validation.grade_type', ['practice' => $step['label']])]);
             }
-            $chosen[] = [$step, $grade];
+            $observationId = $observationIds[$position] ?? null;
+            $observation = $this->reasonFor($booking, $observationId, $actor);
+            if ($observationId !== null && $observationId !== '' && $observation === null) {
+                throw ValidationException::withMessages(["observations.$position" => __('kardex.validation.observation', ['practice' => $step['label']])]);
+            }
+            $chosen[] = [$step, $grade, $observation];
         }
 
-        [$reasonId, $comment] = $this->lateReason($booking, $today, $lateReasonId, $lateComment);
+        [$reasonId, $comment] = $this->lateReason($booking, $today, $lateReasonId, $lateComment, $actor);
 
         DB::transaction(function () use ($booking, $chosen, $actor, $reasonId, $comment): void {
-            foreach ($chosen as [$step, $grade]) {
+            foreach ($chosen as [$step, $grade, $observation]) {
                 KardexEntry::withoutGlobalScope('school')->create([
                     'school_id' => $booking->school_id, 'student_id' => $booking->student_id, 'booking_id' => $booking->id, 'kind' => BookingKind::Session,
                     'book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number'],
                     'sort_order' => $step['order'], 'points' => $step['points'], 'grade_id' => $grade->id, 'teacher_id' => $booking->teacher_id,
                     'user_id' => $actor->id, 'session_date' => $booking->date->toDateString(), 'late_reason_id' => $reasonId, 'late_comment' => $comment,
+                    'observation_reason_id' => $observation?->id,
                 ]);
             }
 
@@ -181,7 +200,7 @@ final class KardexService
     }
 
     /** Firma (F) del club de la reservación; un club se califica una sola vez. */
-    public function gradeClub(Booking $booking, ?int $gradeId, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null): void
+    public function gradeClub(Booking $booking, ?int $gradeId, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null, int|string|null $observationId = null): void
     {
         $this->ensureGradable($booking, $today);
 
@@ -194,25 +213,31 @@ final class KardexService
             throw ValidationException::withMessages(['grades.0' => __('kardex.validation.club_grade')]);
         }
 
-        [$reasonId, $comment] = $this->lateReason($booking, $today, $lateReasonId, $lateComment);
+        $observation = $this->reasonFor($booking, $observationId, $actor);
+        if ($observationId !== null && $observationId !== '' && $observation === null) {
+            throw ValidationException::withMessages(['observations.0' => __('kardex.validation.observation', ['practice' => $booking->activityLabel()])]);
+        }
+
+        [$reasonId, $comment] = $this->lateReason($booking, $today, $lateReasonId, $lateComment, $actor);
         $club = $booking->clubSession()->withoutGlobalScope('school')->first();
 
-        DB::transaction(function () use ($booking, $grade, $actor, $reasonId, $comment, $club): void {
+        DB::transaction(function () use ($booking, $grade, $actor, $reasonId, $comment, $club, $observation): void {
             KardexEntry::withoutGlobalScope('school')->create([
                 'school_id' => $booking->school_id, 'student_id' => $booking->student_id, 'booking_id' => $booking->id, 'kind' => BookingKind::Club,
                 'club_session_id' => $booking->club_session_id, 'club_code' => $club?->code, 'grade_id' => $grade->id, 'teacher_id' => $booking->teacher_id ?? $club?->teacher_id,
                 'user_id' => $actor->id, 'session_date' => $booking->date->toDateString(), 'late_reason_id' => $reasonId, 'late_comment' => $comment,
+                'observation_reason_id' => $observation?->id,
             ]);
             $booking->update(['ungraded_reason_id' => null, 'ungraded_comment' => null]);
         });
     }
 
     /** "Sin calificación": motivo del catálogo y comentario; el Kardex no avanza. */
-    public function markUngraded(Booking $booking, ?int $reasonId, ?string $comment, CarbonInterface $today): void
+    public function markUngraded(Booking $booking, ?int $reasonId, ?string $comment, CarbonInterface $today, ?User $actor = null): void
     {
         $this->ensureGradable($booking, $today);
 
-        $reason = $reasonId ? UngradedReason::withoutGlobalScope('school')->where('school_id', $booking->school_id)->where('is_active', true)->find($reasonId) : null;
+        $reason = $this->reasonFor($booking, $reasonId, $actor);
         $comment = trim((string) $comment);
 
         $errors = array_filter([
@@ -310,7 +335,7 @@ final class KardexService
         $entries = KardexEntry::withoutGlobalScope('school')->where('student_id', $student->id)
             ->with(['grade' => fn ($q) => $q->withoutGlobalScope('school'), 'teacher' => fn ($q) => $q->withoutGlobalScope('school'),
                 'book' => fn ($q) => $q->withoutGlobalScope('school'), 'lesson' => fn ($q) => $q->withoutGlobalScope('school'),
-                'lateReason' => fn ($q) => $q->withoutGlobalScope('school')])
+                'lateReason' => fn ($q) => $q->withoutGlobalScope('school'), 'observationReason' => fn ($q) => $q->withoutGlobalScope('school')])
             ->orderByDesc('session_date')->orderByDesc('sort_order')->orderByDesc('id')->get();
 
         return [

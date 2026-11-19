@@ -4,6 +4,7 @@ namespace App\Livewire\Catalogs;
 
 use App\Enums\AttendanceEffect;
 use App\Enums\GradeType;
+use App\Enums\ReasonAudience;
 use App\Livewire\Catalogs\Concerns\ManagesCatalog;
 use App\Models\AdvisorPosition;
 use App\Models\CancellationReason;
@@ -56,7 +57,7 @@ class StudentCatalogTab extends Component
             'code' => ['code', 2, true], 'name' => ['text', 40], 'type' => ['select', GradeType::class], 'sort_order' => ['number', 255],
         ]],
         'motivos' => ['model' => UngradedReason::class, 'table' => 'ungraded_reasons', 'order' => 'sort_order', 'fields' => [
-            'name' => ['text', 80, true], 'sort_order' => ['number', 255],
+            'name' => ['text', 80, true], 'audience' => ['select', ReasonAudience::class], 'sort_order' => ['number', 255],
         ]],
     ];
 

@@ -150,8 +150,10 @@ class StudentCatalogBaseSeeder extends Seeder
                 ]);
             }
 
-            foreach (UngradedReason::DEFAULTS as $index => $name) {
-                UngradedReason::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], ['sort_order' => ($index + 1) * 10, 'is_active' => true]);
+            foreach (array_keys(UngradedReason::DEFAULTS) as $index => $name) {
+                UngradedReason::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
+                    'audience' => UngradedReason::DEFAULTS[$name], 'sort_order' => ($index + 1) * 10, 'is_active' => true,
+                ]);
             }
 
             foreach (self::POSITIONS as $name => $rank) {

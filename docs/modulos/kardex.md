@@ -5,8 +5,14 @@ Decisiones del 18-nov-2026. Primer submódulo: **Calificaciones**.
 ## Catálogos (Configuración → Catálogos académicos; base en Plataforma y copia por escuela)
 - **Calificaciones del Kardex** (`grades`): **A** Excelente, **B** Bien, **C** Suficiente (actividades 4–7) y
   **F** Firma (actividades 1–3 y clubs). La D no existe. Cada letra dice si es firma o calificación (`type`).
-- **Motivos del Kardex** (`ungraded_reasons`): Revisar, Pendiente, Otro. Se eligen al dejar una reservación
-  "Sin calificación" o al calificar días después, siempre con comentario.
+- **Motivos del Kardex** (`ungraded_reasons`, 19-nov-2026; reemplazan a Revisar, Pendiente y Otro). Cada motivo
+  dice **quién lo usa** (`audience`): el **teacher** (Pendiente de completar, Pendiente de revisar, Repetir,
+  Sección A completada, Revisar correcciones, Completar correcciones), el **personal** — Recepción, Administración
+  y Coordinación académica — (Planeación de club, Planeación de field trip, Field trip externo, Field trip interno,
+  Reporte de Alumno, Junta academica, Capacitacion, Contestar libro, Convivencia, Solicitud de permisos para field
+  trip, Compra de material para Field trip) o **ambos** (Material extra). Se eligen como **observación de cada
+  práctica al calificar** (opcional, `kardex_entries.observation_reason_id`; para el reporte de seguimiento del
+  alumno), al dejar una reservación "Sin calificación" o al calificar días después. Cada quien solo ve los suyos.
 - **Actividades** (Catálogos académicos) tiene la columna "Calificación en Kardex" (`activities.grade_type`):
   1–3 firma, 4–7 A/B/C; se puede cambiar por actividad.
 

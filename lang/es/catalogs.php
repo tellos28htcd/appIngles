@@ -252,6 +252,7 @@ return [
             'rank' => 'Jerarquía',
             'attendance' => 'Para la asistencia',
             'type' => 'Se usa en',
+            'audience' => 'Lo usa',
             'sort_order' => 'Orden',
         ],
         'hints' => [
@@ -264,7 +265,8 @@ return [
                 'type' => 'La firma (F) es para las actividades 1–3 y los clubs; A, B y C para las actividades 4–7 (se ajusta en Catálogos académicos → Actividades).',
             ],
             'motivos' => [
-                'name' => 'Se elige al dejar una reservación sin calificación o al calificar días después.',
+                'name' => 'Observación de cada práctica al calificar; también al dejar una reservación sin calificación o al calificar días después.',
+                'audience' => 'El teacher solo ve los suyos; Recepción, Administración y Coordinación académica, los del personal. "Ambos" lo ven todos.',
             ],
             'cancelaciones' => [
                 'attendance' => 'Para el límite de horas por día (asistencia de los últimos 7 días). Cuando el alumno cancela él mismo se usa el primer motivo que "No cuenta".',
@@ -276,7 +278,7 @@ return [
         'tipos' => ['title' => 'Tipos de alumno', 'description' => 'Alumno nuevo, traspaso, colaborador, reasignado…', 'add' => 'Nuevo tipo', 'edit' => 'Editar tipo'],
         'cancelaciones' => ['title' => 'Motivos de cancelación', 'description' => 'Motivos al cancelar una reservación de la agenda y cómo cuentan para la asistencia del alumno.', 'add' => 'Nuevo motivo', 'edit' => 'Editar motivo'],
         'calificaciones' => ['title' => 'Calificaciones del Kardex', 'description' => 'Letras con que se califican las prácticas y los clubs en Kardex → Calificaciones.', 'add' => 'Nueva calificación', 'edit' => 'Editar calificación'],
-        'motivos' => ['title' => 'Motivos del Kardex', 'description' => 'Motivos para dejar una reservación sin calificación o para calificarla días después (siempre con comentario).', 'add' => 'Nuevo motivo', 'edit' => 'Editar motivo'],
+        'motivos' => ['title' => 'Motivos del Kardex', 'description' => 'Observaciones al calificar cada práctica (se ven en el seguimiento del alumno), motivos para dejar una reservación sin calificación o para calificarla días después.', 'add' => 'Nuevo motivo', 'edit' => 'Editar motivo'],
         'puestos' => ['title' => 'Puestos de asesor', 'description' => 'Puestos de los asesores de ventas y su orden de jerarquía.', 'add' => 'Nuevo puesto', 'edit' => 'Editar puesto'],
         'advisors' => [
             'title' => 'Asesores de ventas',

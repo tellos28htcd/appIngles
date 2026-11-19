@@ -125,6 +125,9 @@
                             @else
                                 <span class="rounded-full bg-success-50 px-2.5 py-0.5 font-bold text-success-700">{{ $entry->grade?->code }} · {{ $entry->grade?->name }}</span>
                             @endif
+                            @if ($entry->observationReason)
+                                <span class="rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-semibold text-primary-700">{{ $entry->observationReason->name }}</span>
+                            @endif
                             <span class="text-ink-500">{{ $entry->user?->name }}@if ($entry->late_reason_id) · {{ __('kardex.late') }}@endif</span>
                         </div>
                     @endforeach
@@ -149,7 +152,7 @@
                     <p class="text-sm text-ink-700">{{ __('kardex.in_order_hint') }}</p>
                     <ol class="flex flex-col gap-3">
                         @foreach ($grading['steps'] as $position => $step)
-                            <li wire:key="step-{{ $gradingId }}-{{ $position }}" class="grid items-center gap-2 rounded-lg border border-line p-3 sm:grid-cols-[1fr_14rem]">
+                            <li wire:key="step-{{ $gradingId }}-{{ $position }}" class="grid items-center gap-2 rounded-lg border border-line p-3 sm:grid-cols-[1fr_12rem_14rem]">
                                 <span>
                                     <span class="block font-bold tabular-nums">{{ $step['label'] }}</span>
                                     <span class="text-xs text-ink-500">
@@ -160,6 +163,8 @@
                                 </span>
                                 <x-ui.select name="grades.{{ $position }}" :label="__('kardex.grade_for', ['practice' => $step['label']])" :sr-only-label="true"
                                              :options="$grading['options'][$position]" :placeholder="__('kardex.no_grade')" wire:model="grades.{{ $position }}" />
+                                <x-ui.select name="observations.{{ $position }}" :label="__('kardex.observation_for', ['practice' => $step['label']])" :sr-only-label="true"
+                                             :options="$reasonOptions" :placeholder="__('kardex.no_observation')" wire:model="observations.{{ $position }}" />
                             </li>
                         @endforeach
                     </ol>

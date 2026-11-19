@@ -8,6 +8,7 @@ use App\Enums\BookingStatus;
 use App\Enums\ClubModality;
 use App\Enums\GradeType;
 use App\Enums\LessonType;
+use App\Enums\ReasonAudience;
 use App\Livewire\Catalogs\ActivitiesTab;
 use App\Livewire\Catalogs\StudentCatalogTab;
 use App\Livewire\Kardex\GradesDay;
@@ -76,8 +77,8 @@ class KardexGradesTest extends TestCase
         foreach (Grade::DEFAULTS as $code => [$name, $type]) {
             $this->grades[$code] = Grade::create(['school_id' => $this->school->id, 'code' => $code, 'name' => $name, 'type' => $type, 'sort_order' => count($this->grades) + 1, 'is_active' => true]);
         }
-        foreach (UngradedReason::DEFAULTS as $index => $name) {
-            $this->reasons[$name] = UngradedReason::create(['school_id' => $this->school->id, 'name' => $name, 'sort_order' => $index + 1, 'is_active' => true]);
+        foreach (UngradedReason::DEFAULTS as $name => $audience) {
+            $this->reasons[$name] = UngradedReason::create(['school_id' => $this->school->id, 'name' => $name, 'audience' => $audience, 'sort_order' => count($this->reasons) + 1, 'is_active' => true]);
         }
 
         $this->melissa = Teacher::factory()->create(['school_id' => $this->school->id, 'short_name' => 'MELISSA', 'panel_number' => 1]);
@@ -210,13 +211,39 @@ class KardexGradesTest extends TestCase
         $page = Livewire::test(GradesDay::class)->set('date', '2026-07-26')->assertSee($student->fullName())->assertSee(__('kardex.late_day'))
             ->call('open', $yesterday->id)->set('grades', [(string) $this->grades['F']->id, '', ''])->call('save')
             ->assertHasErrors(['lateReasonId', 'lateComment']);
-        $page->set('lateReasonId', $this->reasons['Pendiente']->id)->set('lateComment', 'El teacher no alcanzó a capturar')->call('save')->assertHasNoErrors();
+        $page->set('lateReasonId', $this->reasons['Junta academica']->id)->set('lateComment', 'El teacher no alcanzó a capturar')->call('save')->assertHasNoErrors();
         $entry = KardexEntry::sole();
-        $this->assertSame([$this->reasons['Pendiente']->id, 'El teacher no alcanzó a capturar', '2026-07-26'], [$entry->late_reason_id, $entry->late_comment, $entry->session_date->toDateString()]);
+        $this->assertSame([$this->reasons['Junta academica']->id, 'El teacher no alcanzó a capturar', '2026-07-26'], [$entry->late_reason_id, $entry->late_comment, $entry->session_date->toDateString()]);
 
         // Más de 4 días atrás o en el futuro no se puede elegir (recepción).
         Livewire::test(GradesDay::class)->set('date', '2026-07-22')->assertSet('date', self::TODAY)
             ->set('date', '2026-07-28')->assertSet('date', self::TODAY);
+    }
+
+    public function test_each_graded_practice_can_take_an_observation_from_the_reasons_of_the_teacher_or_the_staff(): void
+    {
+        $student = Student::factory()->create(['school_id' => $this->school->id]);
+        $booking = $this->booking($student, $this->melissa, 1);
+        $this->actingAs($this->teacherUser($this->melissa));
+
+        // El teacher ve sus motivos y los de ambos, no los del personal.
+        $page = Livewire::test(GradesDay::class)->call('open', $booking->id)
+            ->assertSee('Repetir')->assertSee('Material extra')->assertDontSee('Convivencia');
+
+        // Un motivo del personal no se acepta para el teacher.
+        $page->set('grades', [(string) $this->grades['F']->id, (string) $this->grades['F']->id, ''])
+            ->set('observations', [(string) $this->reasons['Convivencia']->id, '', ''])->call('save')->assertHasErrors('observations.0');
+        $this->assertSame(0, KardexEntry::count());
+
+        // Observación opcional por práctica: la primera con "Repetir", la segunda sin observación.
+        $page->set('observations', [(string) $this->reasons['Repetir']->id, '', ''])->call('save')->assertHasNoErrors();
+        $this->assertSame([$this->reasons['Repetir']->id, null], KardexEntry::orderBy('sort_order')->pluck('observation_reason_id')->all());
+        Livewire::test(GradesDay::class)->call('open', $booking->id)->assertSee('Repetir');
+
+        // Recepción ve los del personal y los de ambos.
+        $this->actingAs($this->user(Role::RECEPTION));
+        Livewire::test(GradesDay::class)->call('open', $this->booking(Student::factory()->create(['school_id' => $this->school->id]), $this->melissa, 1)->id)
+            ->assertSee('Convivencia')->assertSee('Material extra')->assertDontSee('Pendiente de completar');
     }
 
     public function test_a_booking_can_stay_ungraded_with_a_reason_and_the_kardex_does_not_advance(): void
@@ -226,10 +253,10 @@ class KardexGradesTest extends TestCase
         $this->actingAs($this->teacherUser($this->melissa));
 
         Livewire::test(GradesDay::class)->call('open', $booking->id)->set('ungraded', true)->call('saveUngraded')->assertHasErrors('ungradedReasonId')
-            ->set('ungradedReasonId', $this->reasons['Revisar']->id)->set('ungradedComment', 'No terminó el libro')->call('saveUngraded')->assertHasNoErrors()
-            ->assertSee(__('kardex.ungraded_short', ['reason' => 'Revisar']))->assertSee('No terminó el libro');
+            ->set('ungradedReasonId', $this->reasons['Pendiente de revisar']->id)->set('ungradedComment', 'No terminó el libro')->call('saveUngraded')->assertHasNoErrors()
+            ->assertSee(__('kardex.ungraded_short', ['reason' => 'Pendiente de revisar']))->assertSee('No terminó el libro');
 
-        $this->assertSame([$this->reasons['Revisar']->id, 'No terminó el libro'], [$booking->fresh()->ungraded_reason_id, $booking->fresh()->ungraded_comment]);
+        $this->assertSame([$this->reasons['Pendiente de revisar']->id, 'No terminó el libro'], [$booking->fresh()->ungraded_reason_id, $booking->fresh()->ungraded_comment]);
         $this->assertSame([], $this->kardex($student));
         // La práctica sigue pendiente: se le vuelve a asignar.
         $this->assertSame('L1-L1-A1-BA', app(AgendaService::class)->nextActivity($student->fresh())['label']);
@@ -320,7 +347,9 @@ class KardexGradesTest extends TestCase
         $this->assertSame(GradeType::Score, Grade::where('code', 'E')->sole()->type);
 
         Livewire::test(StudentCatalogTab::class, ['schoolId' => $this->school->id, 'catalog' => 'motivos'])
-            ->assertSee('Revisar')->assertSee('Pendiente')->assertSee('Otro');
+            ->assertSee('Repetir')->assertSee('Convivencia')->assertSee(__('kardex.reason_audiences.staff'))
+            ->call('edit')->set('values.name', 'Dictado')->set('values.audience', ReasonAudience::Teacher->value)->call('save')->assertHasNoErrors();
+        $this->assertSame(ReasonAudience::Teacher, UngradedReason::where('name', 'Dictado')->sole()->audience);
 
         $activity = Activity::where('number', 3)->sole();
         $this->assertSame(GradeType::Signature, $activity->grade_type);

@@ -24,7 +24,8 @@ use Livewire\Component;
 /**
  * Kardex → Calificaciones: el listado del día como en la Agenda (todos los reservados a cada hora; el teacher solo
  * los suyos). Clic en el alumno: ventana con la práctica que indica el Kardex y las 2 siguientes para calificar en
- * orden, o "Sin calificación" con motivo. Se califica hasta 4 días después (con motivo y comentario); el
+ * orden (cada una con su observación opcional del catálogo Motivos del Kardex: el teacher ve los suyos y el personal
+ * los del personal), o "Sin calificación" con motivo. Se califica hasta 4 días después (con motivo y comentario); el
  * Coordinador académico y el Administrador corrigen o quitan calificaciones.
  */
 #[Layout('layouts.app')]
@@ -44,6 +45,9 @@ class GradesDay extends Component
 
     /** Calificación elegida para cada práctica mostrada (en orden). @var list<string> */
     public array $grades = ['', '', ''];
+
+    /** Observación (motivo del Kardex, opcional) de cada práctica mostrada. @var list<string> */
+    public array $observations = ['', '', ''];
 
     public ?int $lateReasonId = null;
 
@@ -105,7 +109,7 @@ class GradesDay extends Component
         $this->authorize('gradeBooking', [KardexEntry::class, $booking]);
 
         $this->resetValidation();
-        $this->reset('grades', 'lateReasonId', 'lateComment', 'ungraded', 'ungradedReasonId', 'ungradedComment');
+        $this->reset('grades', 'observations', 'lateReasonId', 'lateComment', 'ungraded', 'ungradedReasonId', 'ungradedComment');
         $this->ungradedReasonId = $booking->ungraded_reason_id;
         $this->ungradedComment = (string) $booking->ungraded_comment;
         $this->corrections = $booking->kardexEntries()->withoutGlobalScope('school')->pluck('grade_id', 'id')->map(fn ($id) => (string) $id)->all();
@@ -119,10 +123,10 @@ class GradesDay extends Component
         $this->resetValidation();
 
         if ($booking->kind === BookingKind::Club) {
-            $kardex->gradeClub($booking, $this->grades[0] !== '' ? (int) $this->grades[0] : null, auth()->user(), $this->today(), $this->lateReasonId, $this->lateComment);
+            $kardex->gradeClub($booking, $this->grades[0] !== '' ? (int) $this->grades[0] : null, auth()->user(), $this->today(), $this->lateReasonId, $this->lateComment, $this->observations[0] ?? null);
             $saved = 1;
         } else {
-            $saved = $kardex->gradeSession($booking, $this->grades, auth()->user(), $this->today(), $this->lateReasonId, $this->lateComment);
+            $saved = $kardex->gradeSession($booking, $this->grades, auth()->user(), $this->today(), $this->lateReasonId, $this->lateComment, $this->observations);
         }
 
         $this->gradingId = null;
@@ -136,7 +140,7 @@ class GradesDay extends Component
         $this->authorize('gradeBooking', [KardexEntry::class, $booking]);
         $this->resetValidation();
 
-        $kardex->markUngraded($booking, $this->ungradedReasonId, $this->ungradedComment, $this->today());
+        $kardex->markUngraded($booking, $this->ungradedReasonId, $this->ungradedComment, $this->today(), auth()->user());
 
         $this->gradingId = null;
         unset($this->bookings);
@@ -207,7 +211,7 @@ class GradesDay extends Component
      */
     private function gradingData(KardexService $kardex): array
     {
-        $booking = $this->gradingId ? Booking::query()->with(['student', 'slot', 'teacher', 'clubSession', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson', 'kardexEntries.user'])->find($this->gradingId) : null;
+        $booking = $this->gradingId ? Booking::query()->with(['student', 'slot', 'teacher', 'clubSession', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson', 'kardexEntries.user', 'kardexEntries.observationReason'])->find($this->gradingId) : null;
 
         if ($booking === null) {
             return ['booking' => null, 'steps' => [], 'options' => [], 'byType' => [], 'late' => false, 'gradable' => false];
@@ -237,7 +241,7 @@ class GradesDay extends Component
         return view('livewire.kardex.grades-day', [
             'day' => CarbonImmutable::parse($this->date),
             'grading' => $this->gradingData($kardex),
-            'reasonOptions' => UngradedReason::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name', 'id')->all(),
+            'reasonOptions' => UngradedReason::query()->usableBy(auth()->user())->orderBy('sort_order')->orderBy('name')->pluck('name', 'id')->all(),
             'filterSlots' => $day->pluck('slot')->filter()->unique('id')->sortBy('starts_at')->mapWithKeys(fn (ScheduleSlot $slot) => [$slot->id => $slot->range()])->all(),
             'filterTeachers' => $this->isTeacher() ? [] : $day->pluck('teacher')->filter()->unique('id')->sortBy(fn (Teacher $teacher) => $teacher->panelName())
                 ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all(),

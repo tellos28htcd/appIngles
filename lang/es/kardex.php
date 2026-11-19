@@ -12,6 +12,12 @@ return [
         'score' => 'Calificación (actividades 4–7)',
     ],
 
+    'reason_audiences' => [
+        'all' => 'Ambos',
+        'teacher' => 'Teacher',
+        'staff' => 'Recepción, Administración y Coordinación',
+    ],
+
     'reserved' => 'Reservada',
     'graded' => 'Kardex',
     'pending' => 'Sin calificar',
@@ -36,6 +42,9 @@ return [
     'reason' => 'Motivo',
     'choose_reason' => 'Elige un motivo',
     'comment' => 'Comentario',
+    'observation' => 'Observación',
+    'observation_for' => 'Observación de :practice',
+    'no_observation' => 'Sin observación',
     'too_old' => 'Solo se califica hasta :days días después de la práctica.',
     'nothing_to_grade' => 'No hay más prácticas por calificar.',
     'confirm_remove' => '¿Quitar esta calificación del Kardex?',
@@ -72,6 +81,7 @@ return [
         'late_comment' => 'Escribe un comentario.',
         'comment_max' => 'El comentario no debe pasar de 255 caracteres.',
         'ungraded_reason' => 'Elige el motivo.',
+        'observation' => 'Elige una observación válida para :practice.',
         'club_done' => 'Este club ya está calificado.',
         'club_grade' => 'Elige la firma del club.',
         'remove_last' => 'Solo se puede quitar la última práctica calificada del alumno.',
