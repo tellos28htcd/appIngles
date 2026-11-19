@@ -127,7 +127,33 @@ class AgendaTest extends TestCase
     {
         return Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->call('create')->call('pickStudent', $student->id)
-            ->set('option', $this->slots[$hour]->id."|$kind|$modality|".$clubId)->call('book');
+            ->set('choices', [$this->slots[$hour]->id."|$kind|$modality|".$clubId])->call('book');
+    }
+
+    public function test_reception_and_the_student_book_two_different_hours_at_once(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $ana = $this->student();
+        $nine = $this->slots[9]->id.'|session|in_person|';
+        $nineOnline = $this->slots[9]->id.'|session|online|';
+        $ten = $this->slots[10]->id.'|session|in_person|';
+
+        // Otra opción de la misma hora reemplaza a la anterior; hasta 2 horas distintas.
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $ana->id)
+            ->call('toggleChoice', $nineOnline)->call('toggleChoice', $nine)->assertSet('choices', [$nine])
+            ->call('toggleChoice', $ten)->assertSet('choices', [$nine, $ten])
+            ->call('toggleChoice', $ten)->assertSet('choices', [$nine])
+            ->call('toggleChoice', $ten);
+        $page->call('book')->assertDispatched('toast', type: 'success');
+
+        $this->assertSame([$this->slots[9]->id, $this->slots[10]->id], Booking::where('student_id', $ana->id)->orderBy('schedule_slot_id')->pluck('schedule_slot_id')->all());
+
+        // Si una de las dos no se puede (esa hora ya la tiene), no se reserva ninguna.
+        $luis = $this->student();
+        $this->receptionBooks($luis, 9)->assertDispatched('toast', type: 'success');
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $luis->id)
+            ->set('choices', [$ten, $nine])->call('book')->assertDispatched('toast', type: 'error');
+        $this->assertSame(1, Booking::where('student_id', $luis->id)->count());
     }
 
     public function test_reception_books_in_a_random_room_with_space_and_then_the_waitlist(): void
@@ -259,12 +285,12 @@ class AgendaTest extends TestCase
         $option = $this->slots[9]->id.'|session|in_person|';
 
         $this->school->update(['self_booking' => SelfBooking::Disabled]);
-        Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $option)->call('book')
+        Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('choices', [$option])->call('book')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.self_disabled'));
 
         // "Día anterior": hoy (domingo) puede reservar el lunes.
         $this->school->update(['self_booking' => SelfBooking::DayBefore]);
-        Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $option)->call('book')
+        Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('choices', [$option])->call('book')
             ->assertDispatched('toast', type: 'success');
         $mine = Booking::with('classroom')->sole();
         $this->assertFalse($mine->booked_by_reception);
@@ -285,7 +311,7 @@ class AgendaTest extends TestCase
         $this->student($user);
         $this->actingAs($user);
 
-        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $this->slots[9]->id.'|session|in_person|')->call('book')
+        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('choices', [$this->slots[9]->id.'|session|in_person|'])->call('book')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.day_before'));
     }
 
@@ -392,7 +418,7 @@ class AgendaTest extends TestCase
         $student = $this->student($user);
 
         $this->actingAs($user);
-        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('option', $this->slots[9]->id.'|session|in_person|')->call('book')
+        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('choices', [$this->slots[9]->id.'|session|in_person|'])->call('book')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.past'));
 
         $this->actingAs($this->user(Role::RECEPTION));

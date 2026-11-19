@@ -52,12 +52,12 @@
 
         <x-ui.modal wire:model="choosing" size="md" :title="__('agenda.form.choose_title')">
             <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">
-                {{ $date ? \Carbon\CarbonImmutable::parse($date)->translatedFormat('l j \d\e F') : '' }}@if ($slotLabel) · {{ $slotLabel }}@endif
+                {{ $date ? \Carbon\CarbonImmutable::parse($date)->translatedFormat('l j \d\e F') : '' }}
             </p>
-            @include('livewire.agenda.partials.options', ['options' => $this->options])
+            @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this::MAX_CHOICES])
             <x-slot:footer>
-                <x-ui.button variant="ghost" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
-                <x-ui.button wire:click="book" :disabled="$option === ''" wire:loading.attr="disabled">{{ __('agenda.actions.book') }}</x-ui.button>
+                <x-ui.button variant="muted" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
+                <x-ui.button variant="outline" wire:click="book" :disabled="$choices === []" wire:loading.attr="disabled">{{ __('agenda.actions.book') }}</x-ui.button>
             </x-slot:footer>
         </x-ui.modal>
     @endif

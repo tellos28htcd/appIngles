@@ -5,7 +5,7 @@ namespace App\Livewire\Agenda;
 use App\Actions\Agenda\AgendaService;
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\BookingKind;
-use App\Enums\ClubModality;
+use App\Livewire\Agenda\Concerns\ChoosesBookingOptions;
 use App\Models\Booking;
 use App\Models\ScheduleSlot;
 use App\Models\School;
@@ -13,7 +13,6 @@ use App\Models\Student;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -27,6 +26,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class MyAgenda extends Component
 {
+    use ChoosesBookingOptions;
+
     /** Semanas hacia adelante que puede consultar. */
     public const WEEKS_AHEAD = 2;
 
@@ -41,8 +42,6 @@ class MyAgenda extends Component
     public ?int $slotId = null;
 
     public ?bool $choosing = null;
-
-    public string $option = '';
 
     public function mount(): void
     {
@@ -70,7 +69,7 @@ class MyAgenda extends Component
 
         $this->date = $day->toDateString();
         $this->slotId = ScheduleSlot::query()->findOrFail($slotId)->id;
-        $this->option = '';
+        $this->choices = [];
         $this->choosing = true;
         unset($this->options);
     }
@@ -79,32 +78,22 @@ class MyAgenda extends Component
     {
         $this->authorize('bookOwn', Booking::class);
         $student = $this->student ?? abort(403);
-        [$slotId, $kind, $modality, $clubId] = array_pad(explode('|', $this->option), 4, '');
-        $slot = ScheduleSlot::query()->find((int) $slotId);
-        $kind = BookingKind::tryFrom($kind);
-        $modality = ClubModality::tryFrom($modality);
-
-        if (! $slot || ! $kind || ! $modality || $this->date === '' || ($this->clubsOnly && $kind !== BookingKind::Club)) {
+        if ($this->date === '') {
             $this->dispatch('toast', type: 'error', message: __('agenda.validation.option'));
 
             return;
         }
 
-        try {
-            $booking = $agenda->book($this->school(), $student, CarbonImmutable::parse($this->date), $slot, $kind, $modality,
-                $clubId === '' ? null : (int) $clubId, auth()->user(), byReception: false);
-        } catch (ValidationException $exception) {
-            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+        $booked = $this->bookChoices($agenda, $this->school(), $student, CarbonImmutable::parse($this->date), byReception: false, clubsOnly: $this->clubsOnly);
 
+        if ($booked === null) {
             return;
         }
 
         $this->choosing = null;
-        $this->option = '';
+        $this->choices = [];
         unset($this->options, $this->bookings);
-        $this->dispatch('toast', type: $booking->is_waitlist ? 'warning' : 'success', message: $booking->is_waitlist
-            ? __('agenda.messages.waitlisted')
-            : __('agenda.messages.booked', ['place' => $booking->placeLabel()]));
+        $this->bookedToast($booked);
     }
 
     /** El alumno cancela con el motivo del catálogo que no cuenta para la asistencia ("Aviso para cancelar"). */
@@ -134,7 +123,6 @@ class MyAgenda extends Component
         }
 
         return collect(app(AgendaService::class)->options($this->school(), $this->student, CarbonImmutable::parse($this->date)))
-            ->filter(fn (array $hour) => $hour['slot']->id === $this->slotId)
             ->map(fn (array $hour) => [...$hour, 'options' => array_values(array_filter($hour['options'],
                 fn (array $item) => ! $this->clubsOnly || $item['kind'] === BookingKind::Club->value))])
             ->filter(fn (array $hour) => $hour['options'] !== [])->values()->all();
@@ -177,7 +165,6 @@ class MyAgenda extends Component
             'isReady' => $isReady,
             'canGoBack' => $days[0]->gt($current),
             'canGoForward' => $days[0]->lt($current->addWeeks(self::WEEKS_AHEAD)),
-            'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'nextActivity' => $this->student ? $agenda->nextActivity($this->student) : null,
             'dailyLimit' => $this->student ? $agenda->dailyLimit($this->student, $this->today()) : null,
         ])->title(__($this->clubsOnly ? 'agenda.my_clubs_title' : 'agenda.my_title'));

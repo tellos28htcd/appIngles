@@ -230,7 +230,7 @@
     @if ($canManage)
         {{-- Nueva reservación: se elige al alumno y una opción; el aula la asigna el sistema. --}}
         <x-ui.modal wire:model="creating" size="md" :title="__('agenda.form.title')">
-            <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}@if ($slotLabel) · {{ $slotLabel }}@endif</p>
+            <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}</p>
 
             @if ($this->selectedStudent)
                 <div class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">
@@ -245,7 +245,7 @@
                     <x-ui.button size="sm" variant="ghost" wire:click="clearStudent">{{ __('agenda.actions.change_student') }}</x-ui.button>
                 </div>
 
-                @include('livewire.agenda.partials.options', ['options' => $this->options])
+                @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this::MAX_CHOICES])
             @else
                 <x-ui.input name="search" :label="__('agenda.form.search')" :placeholder="__('agenda.form.search_placeholder')" wire:model.live.debounce.300ms="search" autocomplete="off" />
                 @if (mb_strlen(trim($search)) >= 2)
@@ -266,9 +266,9 @@
             @endif
 
             <x-slot:footer>
-                <x-ui.button variant="ghost" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
+                <x-ui.button variant="muted" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
                 @if ($this->selectedStudent)
-                    <x-ui.button wire:click="book" :disabled="$option === ''" wire:loading.attr="disabled">{{ __('agenda.actions.book') }}</x-ui.button>
+                    <x-ui.button variant="outline" wire:click="book" :disabled="$choices === []" wire:loading.attr="disabled">{{ __('agenda.actions.book') }}</x-ui.button>
                 @endif
             </x-slot:footer>
         </x-ui.modal>

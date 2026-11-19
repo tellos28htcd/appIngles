@@ -8,6 +8,7 @@ use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
 use App\Enums\ClubModality;
 use App\Enums\StudentStatus;
+use App\Livewire\Agenda\Concerns\ChoosesBookingOptions;
 use App\Models\Booking;
 use App\Models\CancellationReason;
 use App\Models\Classroom;
@@ -36,6 +37,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class AgendaDay extends Component
 {
+    use ChoosesBookingOptions;
+
     #[Session]
     public string $date = '';
 
@@ -51,9 +54,6 @@ class AgendaDay extends Component
     public string $search = '';
 
     public ?int $studentId = null;
-
-    /** Opción elegida: "slot|kind|modality|club_session_id". */
-    public string $option = '';
 
     public ?int $cancellingId = null;
 
@@ -162,7 +162,7 @@ class AgendaDay extends Component
     public function create(): void
     {
         $this->authorize('manage', Booking::class);
-        $this->reset('search', 'studentId', 'option', 'slotId');
+        $this->reset('search', 'studentId', 'choices', 'slotId');
         $this->resetValidation();
         $this->creating = true;
     }
@@ -171,13 +171,13 @@ class AgendaDay extends Component
     {
         $this->authorize('manage', Booking::class);
         $this->studentId = Student::query()->findOrFail($studentId)->id;
-        $this->option = '';
+        $this->choices = [];
         unset($this->options);
     }
 
     public function clearStudent(): void
     {
-        $this->reset('studentId', 'option');
+        $this->reset('studentId', 'choices');
         unset($this->options);
     }
 
@@ -185,22 +185,16 @@ class AgendaDay extends Component
     {
         $this->authorize('manage', Booking::class);
         $student = Student::query()->findOrFail($this->studentId);
-        $choice = $this->parseOption($this->option);
+        $booked = $this->bookChoices($agenda, $this->school(), $student, $this->day(), byReception: true);
 
-        try {
-            $booking = $agenda->book($this->school(), $student, $this->day(), $choice['slot'], $choice['kind'], $choice['modality'],
-                $choice['club_session_id'], auth()->user(), byReception: true);
-        } catch (ValidationException $exception) {
-            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
-
+        if ($booked === null) {
             return;
         }
 
         $this->creating = null;
+        $this->choices = [];
         unset($this->bookings, $this->options);
-        $this->dispatch('toast', type: $booking->is_waitlist ? 'warning' : 'success', message: $booking->is_waitlist
-            ? __('agenda.messages.waitlisted')
-            : __('agenda.messages.booked', ['place' => $booking->placeLabel()]));
+        $this->bookedToast($booked);
     }
 
     // ── Cancelar, asistencia y lista de espera ────────────────────
@@ -441,7 +435,7 @@ class AgendaDay extends Component
 
         $options = $student ? app(AgendaService::class)->options($this->school(), $student, $this->day(), byReception: true) : [];
 
-        return $this->slotId === null ? $options : array_values(array_filter($options, fn (array $hour) => $hour['slot']->id === $this->slotId));
+        return $options;
     }
 
     #[Computed]
@@ -481,7 +475,6 @@ class AgendaDay extends Component
             'scheduleSlots' => $planner->slots($school),
             'holidays' => $planner->holidays($school, $days),
             'availability' => $isReady ? $agenda->weekAvailability($school, $days, byReception: true) : [],
-            'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'isReady' => $isReady,
             'reasonOptions' => $this->reasons()->pluck('name', 'id')->all(),
             'nextActivity' => $this->selectedStudent ? $agenda->nextActivity($this->selectedStudent) : null,

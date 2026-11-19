@@ -8,6 +8,7 @@ $variants = [
     'secondary' => 'bg-primary-50 text-primary-700 hover:bg-primary-100',
     'outline'   => 'border-[1.5px] border-line-strong bg-white text-ink-900 hover:bg-surface',
     'ghost'     => 'text-ink-700 hover:bg-surface-2',
+    'muted'     => 'bg-surface-2 text-ink-700 hover:bg-line',
     'accent'    => 'bg-accent-500 text-on-accent hover:bg-accent-600',
     'danger'    => 'bg-danger-600 text-white hover:bg-danger-700',
 ];

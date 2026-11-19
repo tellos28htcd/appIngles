@@ -44,6 +44,9 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
   - El nivel del alumno debe estar en la abreviatura del club.
   - En el primer libro, el alumno debe ir en la lección mínima para clubs o más adelante.
   - Cupo: la capacidad del aula del club (física o virtual).
+- **Dos horas a la vez** (19-nov-2026): en "Nueva reservación" (recepción) y en la ventana del alumno se ven todas
+  las horas del día y se marcan **hasta 2 opciones de horas distintas** (otra opción de la misma hora reemplaza a la
+  anterior). Se reservan juntas: si una no se puede, no se reserva ninguna. Botones: Reservar blanco y Cerrar gris claro.
 - **Quién reserva:** recepción siempre puede. El alumno depende de "Reservaciones del alumno":
   - No permitir: no reserva.
   - Día anterior: reserva a partir del día siguiente.
