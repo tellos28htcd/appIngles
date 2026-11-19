@@ -7,6 +7,7 @@ use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
 use App\Enums\BookingStatus;
+use App\Enums\ClubModality;
 use App\Enums\LessonType;
 use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
@@ -348,6 +349,24 @@ class AgendaTest extends TestCase
         $nine = app(AgendaService::class)->weekAvailability($this->school, $days)[self::MONDAY.'|'.$this->slots[9]->id];
         $this->assertSame(['free' => 0, 'capacity' => 10, 'in_person' => 2, 'online' => 5], $nine['session']);
         $this->assertSame(['free' => 0, 'capacity' => 1], $nine['online']);
+    }
+
+    public function test_online_students_share_one_hybrid_room_so_the_other_keeps_its_full_capacity(): void
+    {
+        $this->school->update(['session_capacity' => 5]);
+        $this->actingAs($this->user(Role::RECEPTION));
+
+        // 2 en línea y 6 presenciales: una híbrida (2 en línea + 1 presencial) y la otra con 5 presenciales.
+        foreach (['online', 'in_person', 'in_person', 'online', 'in_person', 'in_person', 'in_person', 'in_person'] as $modality) {
+            $this->receptionBooks($this->student(), 9, 'session', $modality)->assertDispatched('toast', type: 'success');
+        }
+
+        $rooms = Booking::all()->groupBy('classroom_id');
+        $hybrid = $rooms->filter(fn ($bookings) => $bookings->contains('modality', ClubModality::Online));
+        $this->assertCount(1, $hybrid);
+        $this->assertSame([2, 1], [$hybrid->first()->where('modality', ClubModality::Online)->count(), $hybrid->first()->where('modality', ClubModality::InPerson)->count()]);
+        $this->assertSame([5], $rooms->reject(fn ($bookings) => $bookings->contains('modality', ClubModality::Online))->map->count()->values()->all());
+        $this->assertFalse(Booking::query()->where('is_waitlist', true)->exists());
     }
 
     public function test_without_virtual_classrooms_online_practice_joins_a_class_as_hybrid(): void

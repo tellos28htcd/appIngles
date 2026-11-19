@@ -94,6 +94,10 @@ final class RoomBalancer
             return null;
         }
 
+        if ($item['online']) {
+            $candidates = self::hybridCandidates($rooms, $items, $candidates);
+        }
+
         $lowest = min($candidates);
         $ties = array_keys(array_filter($candidates, fn (int $load) => $load === $lowest));
 
@@ -101,9 +105,50 @@ final class RoomBalancer
     }
 
     /**
-     * Reacomoda a los alumnos que se pueden mover para que las cargas de cada grupo (físicas e híbridas;
-     * virtuales) queden lo más parejas posible: mueve o intercambia alumnos mientras baje la suma de los
-     * cuadrados de las cargas.
+     * Un alumno en línea en aula física va a un aula que ya es híbrida (para juntar a los de línea y dejar las
+     * demás con su cupo presencial completo); si ninguna lo es, abre como híbrida la que tenga menos alumnos.
+     *
+     * @param  array<string, array{group: string, capacity: int, teacher_id: ?int}>  $rooms
+     * @param  array<int|string, array<string, mixed>>  $items
+     * @param  array<string, int>  $candidates  aula => carga
+     * @return array<string, int>
+     */
+    private static function hybridCandidates(array $rooms, array $items, array $candidates): array
+    {
+        $physical = array_filter($candidates, fn (int $load, string $key) => $rooms[$key]['group'] === 'physical', ARRAY_FILTER_USE_BOTH);
+
+        if ($physical === []) {
+            return $candidates;
+        }
+
+        $hybrid = array_filter($physical, fn (int $load, string $key) => self::isHybrid($rooms[$key], self::itemsIn($items, $key)), ARRAY_FILTER_USE_BOTH);
+
+        if ($hybrid !== []) {
+            return $hybrid;
+        }
+
+        $counts = array_map(fn (string $key) => count(self::itemsIn($items, $key)), array_combine(array_keys($physical), array_keys($physical)));
+        $fewest = min($counts);
+
+        return array_filter($physical, fn (int $load, string $key) => $counts[$key] === $fewest, ARRAY_FILTER_USE_BOTH);
+    }
+
+    /**
+     * Aula física con alumnos en línea.
+     *
+     * @param  array{group: string, capacity: int, teacher_id: ?int}  $room
+     * @param  list<array<string, mixed>>  $items
+     */
+    private static function isHybrid(array $room, array $items): bool
+    {
+        return $room['group'] === 'physical' && collect($items)->contains('online', true);
+    }
+
+    /**
+     * Reacomoda a los alumnos que se pueden mover: primero junta a los de línea en el menor número de aulas
+     * híbridas (así las demás aulas físicas conservan su cupo presencial) y luego deja las cargas de cada
+     * grupo (físicas e híbridas; virtuales) lo más parejas posible. Mueve o intercambia alumnos mientras baje
+     * el número de aulas híbridas o, sin subirlo, la suma de los cuadrados de las cargas.
      *
      * @param  array<string, array{group: string, capacity: int, teacher_id: ?int}>  $rooms
      * @param  array<int|string, array<string, mixed>>  $items
@@ -166,7 +211,7 @@ final class RoomBalancer
     {
         $loads = self::loads($rooms, $items);
         $best = null;
-        $bestGain = 0;
+        $bestScore = [0, 0];
 
         foreach ($items as $id => $item) {
             if (! $item['movable'] || $item['room'] === null || ! isset($rooms[$item['room']])) {
@@ -174,6 +219,7 @@ final class RoomBalancer
             }
 
             $from = $item['room'];
+            $fromItems = self::itemsIn($items, $from);
 
             foreach ($rooms as $to => $room) {
                 $to = (string) $to;
@@ -182,10 +228,16 @@ final class RoomBalancer
                     continue;
                 }
 
+                $toItems = self::itemsIn($items, $to);
+                $hybridBefore = (int) self::isHybrid($rooms[$from], $fromItems) + (int) self::isHybrid($room, $toItems);
+
                 // Mover el alumno a otra aula.
-                $gain = self::gain($loads[$from], $loads[$to], $item['weight'], 0);
-                if ($gain > $bestGain && self::fits($room, [...self::itemsIn($items, $to), $item])) {
-                    [$best, $bestGain] = [[$id => $to], $gain];
+                $fromAfter = self::itemsIn($items, $from, except: $id);
+                $toAfter = [...$toItems, $item];
+                $score = self::score($rooms[$from], $room, $fromAfter, $toAfter, $hybridBefore,
+                    self::gain($loads[$from], $loads[$to], $item['weight'], 0));
+                if (self::better($score, $bestScore) && self::fits($room, $toAfter)) {
+                    [$best, $bestScore] = [[$id => $to], $score];
                 }
 
                 // Intercambiarlo con un alumno de esa aula.
@@ -194,22 +246,51 @@ final class RoomBalancer
                         continue;
                     }
 
-                    $gain = self::gain($loads[$from], $loads[$to], $item['weight'], $other['weight']);
-                    if ($gain <= $bestGain) {
-                        continue;
-                    }
-
                     $fromAfter = [...self::itemsIn($items, $from, except: $id), $other];
                     $toAfter = [...self::itemsIn($items, $to, except: $otherId), $item];
+                    $score = self::score($rooms[$from], $room, $fromAfter, $toAfter, $hybridBefore,
+                        self::gain($loads[$from], $loads[$to], $item['weight'], $other['weight']));
 
-                    if (self::fits($rooms[$from], $fromAfter) && self::fits($room, $toAfter)) {
-                        [$best, $bestGain] = [[$id => $to, $otherId => $from], $gain];
+                    if (self::better($score, $bestScore) && self::fits($rooms[$from], $fromAfter) && self::fits($room, $toAfter)) {
+                        [$best, $bestScore] = [[$id => $to, $otherId => $from], $score];
                     }
                 }
             }
         }
 
         return $best;
+    }
+
+    /**
+     * Valor de un movimiento: [aulas híbridas que se quitan, baja de la suma de cuadrados]. Nunca se acepta uno
+     * que abra más aulas híbridas.
+     *
+     * @param  array<string, mixed>  $fromRoom
+     * @param  array<string, mixed>  $toRoom
+     * @param  list<array<string, mixed>>  $fromAfter
+     * @param  list<array<string, mixed>>  $toAfter
+     * @return array{int, int}
+     */
+    private static function score(array $fromRoom, array $toRoom, array $fromAfter, array $toAfter, int $hybridBefore, int $gain): array
+    {
+        $hybridAfter = (int) self::isHybrid($fromRoom, $fromAfter) + (int) self::isHybrid($toRoom, $toAfter);
+
+        return [$hybridBefore - $hybridAfter, $gain];
+    }
+
+    /**
+     * ¿El movimiento mejora (primero menos aulas híbridas, luego cargas más parejas) y supera al mejor hasta ahora?
+     *
+     * @param  array{int, int}  $score
+     * @param  array{int, int}  $bestScore
+     */
+    private static function better(array $score, array $bestScore): bool
+    {
+        if ($score[0] < 0 || ($score[0] === 0 && $score[1] <= 0)) {
+            return false;
+        }
+
+        return $score[0] > $bestScore[0] || ($score[0] === $bestScore[0] && $score[1] > $bestScore[1]);
     }
 
     /** Cuánto baja la suma de cuadrados al pasar $moved de "from" a "to" y $back de "to" a "from". */

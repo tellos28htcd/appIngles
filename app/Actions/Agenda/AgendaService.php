@@ -374,19 +374,28 @@ final class AgendaService
      */
     private function placeSession(School $school, Booking $booking, CarbonInterface $date, ScheduleSlot $slot, bool $allowWaitlist = true): bool
     {
-        $state = $this->hourState($school, $date, $slot, $booking->id);
-        $item = $this->itemFor($school, $booking, $this->excludedTeacherIds($booking->student_id));
+        // Sin lugar, una nueva o de la lista de espera: se reacomoda la hora (juntar a los de línea en una sola
+        // híbrida libera cupo presencial) y se intenta otra vez.
+        $retry = ! $booking->exists || $booking->is_waitlist;
 
-        foreach ($booking->modality === ClubModality::Online ? ['physical', 'virtual'] : ['physical'] as $group) {
-            $rooms = array_filter($state['rooms'], fn (array $room) => $room['group'] === $group);
-            $key = RoomBalancer::bestRoom($rooms, $state['items'], $item);
+        do {
+            $state = $this->hourState($school, $date, $slot, $booking->id);
+            $item = $this->itemFor($school, $booking, $this->excludedTeacherIds($booking->student_id));
 
-            if ($key !== null) {
-                $this->assignRoom($school, $booking, $state['rooms'][$key], $date, $slot, $item['excluded']);
+            foreach ($booking->modality === ClubModality::Online ? ['physical', 'virtual'] : ['physical'] as $group) {
+                $rooms = array_filter($state['rooms'], fn (array $room) => $room['group'] === $group);
+                $key = RoomBalancer::bestRoom($rooms, $state['items'], $item);
 
-                return true;
+                if ($key !== null) {
+                    $this->assignRoom($school, $booking, $state['rooms'][$key], $date, $slot, $item['excluded']);
+
+                    return true;
+                }
             }
-        }
+
+            $again = $retry && $this->rebalance($school, $date, $slot, auth()->user()) > 0;
+            $retry = false;
+        } while ($again);
 
         $cells = $this->sessionCells($school, $date, $slot);
         $waits = $booking->modality === ClubModality::InPerson && $this->waitlistAllowed($school, $cells);

@@ -108,9 +108,12 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
   - Física solo presencial: el cupo por sesión de Mi Instituto.
   - Física híbrida (con alumnos en línea): máximo 3 (sin pasar el cupo por sesión) y a lo más 2 en línea.
   - En línea: primero híbrida en un aula física; llenas, un aula virtual del catálogo.
+  - **Los de línea se juntan** (19-nov-2026): el alumno en línea va al aula que ya es híbrida (hasta 2 en línea + 1
+    presencial); solo si no cabe se abre otra híbrida, la de menos alumnos. Así las demás aulas físicas conservan su
+    cupo presencial completo (p. ej. 2 en línea + 1 presencial en un aula y 5 presenciales en la otra).
   - (nov-2026) Se eliminó la actividad PR y la regla "uno a uno"; también las actividades 8 y 9 (DP, CE).
 - **Al agendar:** el alumno va al aula de menor carga que lo acepta; después se **rebalancea** la hora.
-- **Rebalanceo** (al agendar, cancelar, pasar de la lista de espera o cambiar de actividad): se mueven alumnos (o se intercambian) solo de aula y teacher, misma fecha y hora, mientras bajen las diferencias de carga. Físicas e híbridas se balancean juntas; las virtuales entre ellas.
+- **Rebalanceo** (al agendar, cancelar, pasar de la lista de espera o cambiar de actividad): se mueven alumnos (o se intercambian) solo de aula y teacher, misma fecha y hora: primero para quedar con el menor número de aulas híbridas y luego mientras bajen las diferencias de carga (nunca abre otra híbrida). Físicas e híbridas se balancean juntas; las virtuales entre ellas. Si al agendar o al pasar de la lista de espera no hay lugar, primero se rebalancea la hora y se vuelve a intentar.
   - No se mueve a quien ya asistió, ni a un aula con un teacher que el alumno excluyó en su expediente; se respetan las reglas de aulas.
   - Se deja de balancear **3 minutos antes** de la clase. La tolerancia de 10 minutos de recepción para agendar después de empezar sigue igual.
   - Cada movimiento queda en el historial ("Cambió de aula por balanceo") y el alumno recibe un aviso en su cuenta (ventana al entrar, hasta "Entendido"); en Mi agenda ve su aula nueva.
