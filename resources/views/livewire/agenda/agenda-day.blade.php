@@ -363,8 +363,8 @@
                 </div>
             @endif
             <x-slot:footer>
-                <x-ui.button variant="ghost" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
-                <x-ui.button wire:click="saveChange" wire:loading.attr="disabled">{{ __('agenda.edit.save') }}</x-ui.button>
+                <x-ui.button variant="muted" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
+                <x-ui.button variant="outline" wire:click="saveChange" wire:loading.attr="disabled">{{ __('agenda.edit.save') }}</x-ui.button>
             </x-slot:footer>
         </x-ui.modal>
 
