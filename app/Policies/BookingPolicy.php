@@ -24,6 +24,15 @@ class BookingPolicy
         return $this->viewAny($actor) && $actor->loadMissing('role')->role?->slug !== Role::TEACHER;
     }
 
+    /**
+     * Cambiar presencial ↔ en línea (o la actividad) de una reservación ya hecha, p. ej. cuando el alumno o
+     * recepción eligieron por error: solo Recepción y el Administrador de la escuela.
+     */
+    public function changeActivity(User $actor): bool
+    {
+        return $this->viewAny($actor) && in_array($actor->loadMissing('role')->role?->slug, [Role::SCHOOL_ADMIN, Role::RECEPTION], true);
+    }
+
     /** Pesos newton y carga de cada aula en el listado del día: solo Administrador de escuela y Recepción. */
     public function viewWeights(User $actor): bool
     {

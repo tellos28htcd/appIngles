@@ -269,6 +269,7 @@ class AgendaDay extends Component
         try {
             // 1) Otra actividad de esa hora (se vuelve a acomodar) o, si no, otra aula.
             if ($this->editActivity !== '') {
+                $this->authorize('changeActivity', Booking::class);
                 $choice = $this->parseOption($this->editActivity);
                 abort_unless($choice['slot']->id === $booking->schedule_slot_id, 422);
                 $booking = $agenda->changeActivity($booking, $choice['kind'], $choice['modality'], $choice['club_session_id'], auth()->user());

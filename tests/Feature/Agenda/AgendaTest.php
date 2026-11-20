@@ -156,6 +156,28 @@ class AgendaTest extends TestCase
         $this->assertSame(1, Booking::where('student_id', $luis->id)->count());
     }
 
+    public function test_only_reception_and_the_admin_switch_a_booking_between_in_person_and_online(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $ana = $this->student();
+        $this->receptionBooks($ana, 9)->assertDispatched('toast', type: 'success');
+        $booking = Booking::sole();
+        $online = $this->slots[9]->id.'|session|online|';
+
+        // Recepción: eligió presencial por error y lo pasa a en línea.
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $booking->id)
+            ->assertSee(__('agenda.edit.current', ['value' => __('agenda.in_person')]))
+            ->set('editActivity', $online)->call('saveChange')->assertDispatched('toast', type: 'success');
+        $this->assertSame(ClubModality::Online, $booking->fresh()->modality);
+
+        // El Coordinador académico cambia aula o alumno, pero no la modalidad.
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $booking->id)
+            ->assertDontSee(__('agenda.edit.activity'))
+            ->set('editActivity', $this->slots[9]->id.'|session|in_person|')->call('saveChange')->assertForbidden();
+        $this->assertSame(ClubModality::Online, $booking->fresh()->modality);
+    }
+
     public function test_reception_books_in_a_random_room_with_space_and_then_the_waitlist(): void
     {
         $this->actingAs($this->user(Role::RECEPTION));

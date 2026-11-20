@@ -280,9 +280,15 @@
                 <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">
                     {{ $edit['booking']->date->translatedFormat('l j \d\e F') }} · {{ $edit['booking']->slot?->range() }} · {{ $edit['booking']->kind->label() }} {{ $edit['booking']->activityLabel() }}
                 </p>
-                {{-- Cambiar actividad: el alumno viene a otra (club ↔ práctica, presencial ↔ en línea) si hay lugar. --}}
+                {{-- Cambiar presencial ↔ en línea o la actividad (club ↔ práctica) si hay lugar: solo Recepción y Administrador. --}}
+                @can('changeActivity', \App\Models\Booking::class)
                 <div class="flex flex-col gap-2">
-                    <span class="text-sm font-semibold text-ink-700">{{ __('agenda.edit.activity') }}</span>
+                    <span class="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink-700">
+                        {{ __('agenda.edit.activity') }}
+                        <span class="rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-bold text-primary-700">
+                            {{ __('agenda.edit.current', ['value' => $edit['booking']->modality === \App\Enums\ClubModality::Online ? __('agenda.online') : __('agenda.in_person')]) }}
+                        </span>
+                    </span>
                     @if ($edit['activities'] === [])
                         <p class="text-sm text-ink-500">{{ __('agenda.edit.no_activities') }}</p>
                     @else
@@ -290,6 +296,7 @@
                         @include('livewire.agenda.partials.options', ['options' => $edit['activities'], 'model' => 'editActivity', 'current' => $editActivity])
                     @endif
                 </div>
+                @endcan
 
                 @if ($editable && $editActivity === '')
                     <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :hint="__('agenda.edit.room_hint')" wire:model.live="editRoomId" required />
