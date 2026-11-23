@@ -230,7 +230,7 @@
     @if ($canManage)
         {{-- Nueva reservación: se elige al alumno y una opción; el aula la asigna el sistema. --}}
         <x-ui.modal wire:model="creating" size="md" :title="__('agenda.form.title')">
-            <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}</p>
+            <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">{{ $day->translatedFormat('l j \d\e F Y') }}@if ($slotLabel) · {{ $slotLabel }}@endif</p>
 
             @if ($this->selectedStudent)
                 <div class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3">

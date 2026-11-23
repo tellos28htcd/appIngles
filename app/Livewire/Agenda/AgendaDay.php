@@ -436,7 +436,8 @@ class AgendaDay extends Component
 
         $options = $student ? app(AgendaService::class)->options($this->school(), $student, $this->day(), byReception: true) : [];
 
-        return $options;
+        // Clic en una celda del calendario: solo esa hora; con "Nueva reservación", todas las del día.
+        return $this->slotId === null ? $options : array_values(array_filter($options, fn (array $hour) => $hour['slot']->id === $this->slotId));
     }
 
     #[Computed]
@@ -477,6 +478,7 @@ class AgendaDay extends Component
             'holidays' => $planner->holidays($school, $days),
             'availability' => $isReady ? $agenda->weekAvailability($school, $days, byReception: true) : [],
             'isReady' => $isReady,
+            'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'reasonOptions' => $this->reasons()->pluck('name', 'id')->all(),
             'nextActivity' => $this->selectedStudent ? $agenda->nextActivity($this->selectedStudent) : null,
             'dailyLimit' => $this->selectedStudent ? $agenda->dailyLimit($this->selectedStudent, $this->today()) : null,

@@ -52,7 +52,7 @@
 
         <x-ui.modal wire:model="choosing" size="md" :title="__('agenda.form.choose_title')">
             <p class="-mt-3 text-sm font-semibold text-ink-500 first-letter:uppercase">
-                {{ $date ? \Carbon\CarbonImmutable::parse($date)->translatedFormat('l j \d\e F') : '' }}
+                {{ $date ? \Carbon\CarbonImmutable::parse($date)->translatedFormat('l j \d\e F') : '' }}@if ($slotLabel) · {{ $slotLabel }}@endif
             </p>
             @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this::MAX_CHOICES])
             <x-slot:footer>

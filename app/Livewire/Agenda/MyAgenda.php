@@ -123,6 +123,7 @@ class MyAgenda extends Component
         }
 
         return collect(app(AgendaService::class)->options($this->school(), $this->student, CarbonImmutable::parse($this->date)))
+            ->filter(fn (array $hour) => $hour['slot']->id === $this->slotId)
             ->map(fn (array $hour) => [...$hour, 'options' => array_values(array_filter($hour['options'],
                 fn (array $item) => ! $this->clubsOnly || $item['kind'] === BookingKind::Club->value))])
             ->filter(fn (array $hour) => $hour['options'] !== [])->values()->all();
@@ -157,6 +158,7 @@ class MyAgenda extends Component
         $current = $this->today()->startOfWeek(CarbonImmutable::MONDAY);
 
         return view('livewire.agenda.my-agenda', [
+            'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'days' => $days,
             'planner' => $planner,
             'scheduleSlots' => $planner->slots($school),
