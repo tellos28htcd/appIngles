@@ -47,10 +47,29 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
 - **Dos horas a la vez** (19-nov-2026; ajustado 23-nov): con el botón "Nueva reservación" (recepción) se ven todas
   las horas del día y se marcan **hasta 2 opciones de horas distintas**; con clic en una celda del calendario solo sale esa hora (otra opción de la misma hora reemplaza a la
   anterior). Se reservan juntas: si una no se puede, no se reserva ninguna. Botones: Reservar blanco y Cerrar gris claro.
-- **Quién reserva:** recepción siempre puede. El alumno depende de "Reservaciones del alumno":
-  - No permitir: no reserva.
-  - Día anterior: reserva a partir del día siguiente.
-  - A cualquier hora: reserva cualquier hora futura.
+- **Tipos de reservación** (23-nov-2026; `BookingKind`). En "Nueva reservación" primero se elige **Presencial / En
+  línea** y luego el tipo:
+
+  | Tipo | Quién | Lugar | Peso | En línea | Límite | Kardex |
+  |---|---|---|---|---|---|---|
+  | Práctica | Recepción y alumno | Aula de práctica (balanceo) | Sí | Sí | Horas por día | A/B/C o F, mueve la ruta |
+  | Club | Recepción y alumno | Club programado | — | Si el club es en línea | Clubs por día | F |
+  | Mentoría especial | Recepción | Un lugar en el aula de práctica | 0 (no se muestra) | Sí | Horas por día y **3 por semana** | No se califica |
+  | Entrega de material | Recepción | Un lugar en el aula de práctica | 0 | **No** | Horas por día | No se califica |
+  | Presentación 1 a 1 | Recepción | Un aula **vacía** que queda solo para el alumno (con su teacher) | 0 | Sí | Horas por día | F, no mueve la ruta |
+  | Presentación en club | Recepción | Un lugar del club de esa hora (sin revisar nivel) | — | Si el club es en línea | Clubs por día | F, no mueve la ruta |
+- **Quién reserva:** recepción siempre puede. El alumno (si "Reservaciones del alumno" no está en "No permitir"):
+  - Solo **Práctica y Club**; los demás tipos los pide en Recepción.
+  - Solo **a partir del día siguiente** (fijo para todas las escuelas); el mismo día, mensaje de que lo haga con Recepción.
+  - Con clic en una celda, esa hora; con su botón **"+ Nueva reservación"**, elige el día y hasta 2 horas.
+  - Su calendario no muestra números de cupo; lo lleno sale en tono tenue; puede entrar a lista de espera.
+  - Cancela con un **motivo de su menú** (catálogo Motivos de cancelación, casilla "Lo puede elegir el alumno"; no
+    cuentan como falta ni asistencia): Por mas tiempo en el trabajo, Por viaje de trabajo, Por estudio, Por enfermedad,
+    Por accidente, Por trafico, Por vacaciones, Otra.
+  - Arriba ve "Tu siguiente actividad" en grande; ya no ve "Puedes reservar hasta 2 h por día" (Recepción sí).
+- **Teacher en la Agenda:** solo ve el listado del día con **sus** reservaciones (sin calendario ni filtro de teacher).
+- **Botón "Calificaciones"** en cada reservación de Práctica, Club o Presentación (Teacher, Recepción, Coordinador y
+  Administrador): abre la ventana de Kardex → Calificaciones sin salir de la Agenda.
 - **Por día:**
   - No se permiten dos reservaciones a la misma hora.
   - Se respetan el máximo de prácticas y el máximo de clubs por día de Mi Instituto.
@@ -61,7 +80,7 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
   - Cada práctica lleva la actividad siguiente de la ruta de avance (`App\Support\ProgressPath`): libros por nivel → lecciones en su orden → actividades 1–7 (8 en Check Points).
   - Parte de la última práctica reservada; si no hay, del punto de inicio de la ficha de inscripción.
   - La 2.ª hora del día toma la actividad que sigue.
-- **Motivos de cancelación:** catálogo con base en Plataforma y copia por escuela (Configuración → Catálogos académicos → Motivos de cancelación). Cada motivo dice si cuenta como asistencia, como falta o no cuenta. Base: No se presentó (falta), Aviso para cancelar (no cuenta), No terminó la actividad y Asistió, decidió cancelar (asistencia). Cuando el alumno cancela él mismo se usa el primer motivo activo que no cuenta.
+- **Motivos de cancelación:** catálogo con base en Plataforma y copia por escuela (Configuración → Catálogos académicos → Motivos de cancelación). Cada motivo dice si cuenta como asistencia, como falta o no cuenta. Base: No se presentó (falta), Aviso para cancelar (no cuenta), No terminó la actividad y Asistió, decidió cancelar (asistencia). Cuando el alumno cancela él mismo elige uno de los marcados "Lo puede elegir el alumno".
 
 - **Historial:** todo movimiento (reservó, entró a lista de espera, pasó a aula, canceló, asistencia) se guarda en `booking_events` con usuario y hora.
 

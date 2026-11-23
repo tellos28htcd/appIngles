@@ -1,8 +1,10 @@
 {{-- Calendario semanal de la agenda: por día y hora, lugares de práctica (presencial / en línea) y de cada club.
      Variables: $days, $scheduleSlots, $availability, $holidays, $planner, $selectedDate (o null), $canPick (clic en la celda), $canSelectDay.
-     $coordination (opcional, solo personal): lo programado en Horas Coordinador por "fecha|hora"; el alumno nunca lo recibe. --}}
+     $coordination (opcional, solo personal): lo programado en Horas Coordinador por "fecha|hora"; el alumno nunca lo recibe.
+     $studentView (alumno): sin números de cupo ni conteos; lo lleno en tono tenue. --}}
 @php
     $coordination = $coordination ?? [];
+    $studentView = $studentView ?? false;
     // Color de lo de Horas Coordinador: Evaluación de Club en el pastel de su club; si ocupa la hora del teacher, oscuro.
     $coordinationChip = fn (array $item) => match (true) {
         $item['color'] !== null => \App\Support\RoomColors::pastel($item['color']).' text-ink-900',
@@ -64,27 +66,42 @@
                                             'flex items-center justify-between gap-1 rounded px-2 py-1 text-[15px] font-bold leading-tight',
                                             'bg-success-50 text-success-700' => $sessionFree > 0,
                                             'bg-warning-50 text-warning-700' => $sessionFree === 0 && $cell['waitlist'],
-                                            'bg-danger-50 text-danger-700' => $sessionFree === 0 && ! $cell['waitlist'],
+                                            'bg-danger-50 text-danger-700' => $sessionFree === 0 && ! $cell['waitlist'] && ! $studentView,
+                                            'bg-surface-2 text-ink-400' => $sessionFree === 0 && ! $cell['waitlist'] && $studentView,
                                         ])>
                                             <span>{{ __('agenda.grid.session') }}</span>
-                                            <span class="tabular-nums">{{ $sessionFree > 0 ? $sessionFree.'/'.$cell['session']['capacity'] : ($cell['waitlist'] ? __('agenda.grid.waitlist') : __('agenda.grid.full')) }}</span>
+                                            @if ($studentView)
+                                                @if ($sessionFree === 0)<span class="text-[13px]">{{ $cell['waitlist'] ? __('agenda.grid.waitlist') : __('agenda.grid.full') }}</span>@endif
+                                            @else
+                                                <span class="tabular-nums">{{ $sessionFree > 0 ? $sessionFree.'/'.$cell['session']['capacity'] : ($cell['waitlist'] ? __('agenda.grid.waitlist') : __('agenda.grid.full')) }}</span>
+                                            @endif
                                         </span>
                                     @endif
-                                    @if ($cell['session']['in_person'] + $cell['session']['online'] > 0)
+                                    @if (! $studentView && $cell['session']['in_person'] + $cell['session']['online'] > 0)
                                         <span class="px-1 text-sm font-semibold text-ink-700">{{ __('agenda.grid.by_modality', ['in_person' => $cell['session']['in_person'], 'online' => $cell['session']['online']]) }}</span>
                                     @endif
                                     @if ($cell['online']['capacity'] > 0)
                                         <span @class(['flex items-center justify-between gap-1 rounded px-2 py-1 text-[15px] font-bold leading-tight',
-                                            'bg-info-50 text-info-700' => $cell['online']['free'] > 0, 'bg-danger-50 text-danger-700' => $cell['online']['free'] === 0])>
+                                            'bg-info-50 text-info-700' => $cell['online']['free'] > 0,
+                                            'bg-danger-50 text-danger-700' => $cell['online']['free'] === 0 && ! $studentView,
+                                            'bg-surface-2 text-ink-400' => $cell['online']['free'] === 0 && $studentView])>
                                             <span>{{ __('agenda.grid.online') }}</span>
-                                            <span class="tabular-nums">{{ $cell['online']['free'] > 0 ? $cell['online']['free'].'/'.$cell['online']['capacity'] : __('agenda.grid.full') }}</span>
+                                            @if (! $studentView)
+                                                <span class="tabular-nums">{{ $cell['online']['free'] > 0 ? $cell['online']['free'].'/'.$cell['online']['capacity'] : __('agenda.grid.full') }}</span>
+                                            @elseif ($cell['online']['free'] === 0)
+                                                <span class="text-[13px]">{{ __('agenda.grid.full') }}</span>
+                                            @endif
                                         </span>
                                     @endif
                                     @foreach ($cell['clubs'] as $club)
-                                        <span @class(['flex items-center justify-between gap-1 rounded px-2 py-1 text-[15px] font-bold leading-tight', \App\Support\RoomColors::for($club['color'])])
+                                        <span @class(['flex items-center justify-between gap-1 rounded px-2 py-1 text-[15px] font-bold leading-tight', \App\Support\RoomColors::for($club['color']), 'opacity-40' => $studentView && $club['free'] === 0])
                                               title="{{ $club['name'] }} · {{ $club['modality']->label() }}">
                                             <span>{{ $club['code'] }}@if ($club['modality'] === \App\Enums\ClubModality::Online) · {{ __('agenda.grid.online_short') }}@endif</span>
-                                            <span class="tabular-nums">{{ $club['free'] > 0 ? $club['free'].'/'.$club['capacity'] : __('agenda.grid.full') }}</span>
+                                            @if (! $studentView)
+                                                <span class="tabular-nums">{{ $club['free'] > 0 ? $club['free'].'/'.$club['capacity'] : __('agenda.grid.full') }}</span>
+                                            @elseif ($club['free'] === 0)
+                                                <span class="text-[13px]">{{ __('agenda.grid.full') }}</span>
+                                            @endif
                                         </span>
                                     @endforeach
                                     @if ($cell['booked'] > 0 && $canSelectDay)

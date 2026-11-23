@@ -92,7 +92,11 @@ class KardexEntry extends Model
     /** Para la bitácora (sin cargar relaciones). */
     public function auditLabel(): string
     {
-        return $this->kind === BookingKind::Club ? (string) $this->club_code : 'Orden '.$this->sort_order;
+        return match ($this->kind) {
+            BookingKind::Session => 'Orden '.$this->sort_order,
+            BookingKind::Club => (string) $this->club_code,
+            default => $this->practiceLabel(),
+        };
     }
 
     /** Práctica como en el catálogo ("L1-L3-A2-1P") o la abreviatura del club. */
@@ -100,6 +104,14 @@ class KardexEntry extends Model
     {
         if ($this->kind === BookingKind::Club) {
             return (string) $this->club_code;
+        }
+
+        // Presentación 1 a 1 o en club (sin actividad de la ruta).
+        if ($this->kind === BookingKind::ClubPresentation) {
+            return __('agenda.option_club_presentation', ['code' => (string) $this->club_code]);
+        }
+        if ($this->kind !== BookingKind::Session) {
+            return $this->kind->label();
         }
 
         return $this->book && $this->lesson && $this->activity_number

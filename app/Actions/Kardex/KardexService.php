@@ -96,7 +96,8 @@ final class KardexService
     {
         $date = $booking->date->toDateString();
 
-        if (! $booking->status->isActive() || $booking->is_waitlist) {
+        // Mentoría especial y entrega de material no se califican.
+        if (! $booking->status->isActive() || $booking->is_waitlist || ! $booking->kind->isGradable()) {
             throw ValidationException::withMessages(['grades' => __('kardex.validation.not_gradable')]);
         }
         if ($date > $today->toDateString()) {
@@ -199,7 +200,7 @@ final class KardexService
         return count($chosen);
     }
 
-    /** Firma (F) del club de la reservación; un club se califica una sola vez. */
+    /** Firma (F) del club o de la presentación (1 a 1 o en club); se firma una sola vez y no mueve la ruta de prácticas. */
     public function gradeClub(Booking $booking, ?int $gradeId, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null, int|string|null $observationId = null): void
     {
         $this->ensureGradable($booking, $today);
@@ -223,7 +224,7 @@ final class KardexService
 
         DB::transaction(function () use ($booking, $grade, $actor, $reasonId, $comment, $club, $observation): void {
             KardexEntry::withoutGlobalScope('school')->create([
-                'school_id' => $booking->school_id, 'student_id' => $booking->student_id, 'booking_id' => $booking->id, 'kind' => BookingKind::Club,
+                'school_id' => $booking->school_id, 'student_id' => $booking->student_id, 'booking_id' => $booking->id, 'kind' => $booking->kind,
                 'club_session_id' => $booking->club_session_id, 'club_code' => $club?->code, 'grade_id' => $grade->id, 'teacher_id' => $booking->teacher_id ?? $club?->teacher_id,
                 'user_id' => $actor->id, 'session_date' => $booking->date->toDateString(), 'late_reason_id' => $reasonId, 'late_comment' => $comment,
                 'observation_reason_id' => $observation?->id,
@@ -255,7 +256,7 @@ final class KardexService
 
     public function changeGrade(KardexEntry $entry, int $gradeId): void
     {
-        $type = $entry->kind === BookingKind::Club ? GradeType::Signature
+        $type = ! $entry->kind->isPractice() ? GradeType::Signature
             : (Activity::gradeTypesFor($entry->school_id)[$entry->activity_number] ?? GradeType::forActivityNumber((int) $entry->activity_number));
         $grade = $this->grades($entry->school_id, $type)->firstWhere('id', $gradeId);
 

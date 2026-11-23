@@ -31,7 +31,8 @@
         @include('livewire.agenda.partials.legend', ['waitlist' => $waitlist])
     </div>
 
-    @if ($isReady)
+    {{-- El teacher solo ve su listado del día (sin el calendario de lugares). --}}
+    @if ($isReady && ! $isTeacherView)
         {{-- Calendario colapsable: al ocultarlo queda a la vista el listado del día. --}}
         <div class="flex flex-col gap-2">
             <button type="button" wire:click="toggleCalendar" aria-expanded="{{ $calendarCollapsed ? 'false' : 'true' }}" aria-controls="agenda-calendar"
@@ -83,7 +84,7 @@
                     @foreach ($dayCoordination as $item)
                         <li @class(['flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold', $coordinationChip($item)])>
                             <span class="font-bold tabular-nums">{{ $item['slot'] }}</span>
-                            <span>{{ $item['activity'] }}@if ($item['code']) {{ $item['code'] }}@endif</span>
+                            <span>{{ $item['activity'].($item['code'] ? ' '.$item['code'] : '') }}</span>
                             <span class="text-xs uppercase">· {{ $item['teacher'] }}</span>
                         </li>
                     @endforeach
@@ -95,7 +96,9 @@
         <div class="grid gap-3 border-b border-line p-4 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto] sm:items-end">
             <x-ui.select name="filterSlot" :label="__('agenda.filters.hour')" :options="$filterSlots" :placeholder="__('agenda.filters.all_hours')" wire:model.live="filterSlot" />
             <x-ui.select name="filterRoom" :label="__('agenda.filters.room')" :options="$filterRooms" :placeholder="__('agenda.filters.all_rooms')" wire:model.live="filterRoom" />
-            <x-ui.select name="filterTeacher" :label="__('agenda.filters.teacher')" :options="$filterTeachers" :placeholder="__('agenda.filters.all_teachers')" wire:model.live="filterTeacher" />
+            @unless ($isTeacherView)
+                <x-ui.select name="filterTeacher" :label="__('agenda.filters.teacher')" :options="$filterTeachers" :placeholder="__('agenda.filters.all_teachers')" wire:model.live="filterTeacher" />
+            @endunless
             @if ($filterSlot !== '' || $filterRoom !== '' || $filterTeacher !== '')
                 <x-ui.button variant="ghost" wire:click="clearFilters">{{ __('agenda.filters.clear') }}</x-ui.button>
             @endif
@@ -120,6 +123,9 @@
                                     <th scope="col" class="px-4 py-3 text-right" title="{{ __('agenda.weights.hint') }}">{{ __('agenda.weights.weight') }}</th>
                                 @endif
                                 <th scope="col" class="px-4 py-3">{{ __('agenda.status') }}</th>
+                                @if ($canGrade)
+                                    <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('agenda.actions.grades') }}</span></th>
+                                @endif
                                 @if ($canManage)
                                     <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('agenda.actions.cancel') }}</span></th>
                                 @endif
@@ -128,7 +134,7 @@
                         @foreach ($this->bookings as $group)
                             <tbody wire:key="slot-{{ $group['slot']?->id }}" class="border-t border-line">
                                 <tr class="bg-primary-50">
-                                    <th scope="colgroup" colspan="{{ 5 + ($canManage ? 1 : 0) + ($canSeeWeights ? 1 : 0) }}" class="px-4 py-1 text-left">
+                                    <th scope="colgroup" colspan="{{ 5 + ($canManage ? 1 : 0) + ($canSeeWeights ? 1 : 0) + ($canGrade ? 1 : 0) }}" class="px-4 py-1 text-left">
                                         <span class="font-display text-lg font-bold tabular-nums text-primary-700">{{ substr((string) $group['slot']?->starts_at, 0, 5) }} – {{ substr((string) $group['slot']?->ends_at, 0, 5) }}</span>
                                         @if ($canSeeWeights && $group['loads'] !== [])
                                             {{-- Carga (suma de pesos newton) de cada aula a esa hora. --}}
@@ -186,7 +192,7 @@
                                         </td>
                                         @if ($canSeeWeights)
                                             <td @class(['whitespace-nowrap px-4 py-1 text-right tabular-nums', 'font-bold' => $active && ! $booking->is_waitlist, 'text-ink-400' => $booking->is_waitlist])
-                                                @if ($booking->is_waitlist && $active) title="{{ __('agenda.weights.waitlist_hint') }}" @endif>{{ $active ? ($group['weights'][$booking->id] ?? '—') : '—' }}</td>
+                                                @if ($booking->is_waitlist && $active) title="{{ __('agenda.weights.waitlist_hint') }}" @endif>{{ $active ? ($group['weights'][$booking->id] ?? '') : '—' }}</td>
                                         @endif
                                         <td class="whitespace-nowrap px-4 py-1">
                                             @if ($canManage && $booking->status === \App\Enums\BookingStatus::Attended)
@@ -210,6 +216,14 @@
                                                 <span class="text-sm">· {{ $booking->cancellationReason->name }}</span>
                                             @endif
                                         </td>
+                                        @if ($canGrade)
+                                            <td class="px-4 py-1 text-right">
+                                                {{-- Calificaciones (práctica, club y presentación): la ventana de Kardex → Calificaciones. --}}
+                                                @if ($active && ! $booking->is_waitlist && $booking->kind->isGradable())
+                                                    <x-ui.button size="sm" variant="outline" class="h-7 text-[15px]" wire:click="$dispatch('kardex-grade', { bookingId: {{ $booking->id }} })">{{ __('agenda.actions.grades') }}</x-ui.button>
+                                                @endif
+                                            </td>
+                                        @endif
                                         @if ($canManage)
                                             <td class="px-4 py-1 text-right">
                                                 @if ($active)
@@ -376,5 +390,10 @@
                 <x-ui.button variant="danger" wire:click="cancel">{{ __('agenda.actions.confirm_cancel') }}</x-ui.button>
             </x-slot:footer>
         </x-ui.modal>
+    @endif
+
+    {{-- Ventana de calificar (botón "Calificaciones" de cada reservación). --}}
+    @if ($canGrade)
+        <livewire:kardex.grades-day :embedded="true" wire:key="agenda-grades" />
     @endif
 </div>

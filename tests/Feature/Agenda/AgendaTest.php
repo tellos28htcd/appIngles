@@ -42,6 +42,7 @@ use Carbon\CarbonImmutable;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -154,6 +155,72 @@ class AgendaTest extends TestCase
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $luis->id)
             ->set('choices', [$ten, $nine])->call('book')->assertDispatched('toast', type: 'error');
         $this->assertSame(1, Booking::where('student_id', $luis->id)->count());
+    }
+
+    public function test_reception_books_mentoring_material_and_a_one_to_one_presentation_without_weight(): void
+    {
+        $this->weights();
+        $this->actingAs($this->user(Role::RECEPTION));
+
+        // Mentoría especial: un lugar en el aula de práctica con su teacher, peso 0 (no se muestra) y sin actividad de la ruta.
+        $ana = $this->student();
+        $this->receptionBooks($ana, 9, 'mentoring')->assertDispatched('toast', type: 'success');
+        $mentoring = Booking::where('student_id', $ana->id)->sole();
+        $this->assertNotNull($mentoring->classroom_id);
+        $this->assertNull($mentoring->lesson_id);
+        $this->assertNull(app(AgendaService::class)->weightOf($this->school, $mentoring));
+        $this->assertSame(__('agenda.kinds.mentoring'), $mentoring->activityLabel());
+
+        // Entrega de material: solo presencial.
+        $this->receptionBooks($this->student(), 9, 'material', 'online')
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.in_person_only', ['kind' => __('agenda.kinds.material')]));
+        $this->receptionBooks($this->student(), 9, 'material')->assertDispatched('toast', type: 'success');
+
+        // Presentación 1 a 1: un aula vacía que queda solo para el alumno.
+        $eva = $this->student();
+        $this->receptionBooks($eva, 10, 'presentation')->assertDispatched('toast', type: 'success');
+        $presentation = Booking::where('student_id', $eva->id)->sole();
+        $pedro = $this->student();
+        $this->receptionBooks($pedro, 10)->assertDispatched('toast', type: 'success');
+        $this->assertNotSame($presentation->classroom_id, Booking::where('student_id', $pedro->id)->value('classroom_id'));
+        $this->receptionBooks($this->student(), 10, 'presentation')->assertDispatched('toast', type: 'error', message: __('agenda.validation.no_free_room'));
+        $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'success');
+        $this->assertSame(1, Booking::where('schedule_slot_id', $this->slots[10]->id)->where('classroom_id', $presentation->classroom_id)->active()->count());
+
+        // El alumno no ve estos tipos ni los puede agendar él mismo.
+        $user = $this->user(Role::STUDENT);
+        $student = $this->student($user);
+        $this->actingAs($user);
+        $kinds = collect(Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('create')->assertSee(__('agenda.option_reception_only'))->get('options'))
+            ->flatMap(fn (array $hour) => $hour['options'])->pluck('kind')->unique()->values()->all();
+        $this->assertSame([], array_diff($kinds, ['session', 'club']));
+        $this->assertThrows(fn () => app(AgendaService::class)->book($this->school, $student, CarbonImmutable::parse(self::MONDAY), $this->slots[9],
+            BookingKind::Mentoring, ClubModality::InPerson, null, $user, byReception: false), ValidationException::class, __('agenda.validation.reception_only'));
+    }
+
+    public function test_mentoring_is_limited_per_week_and_a_club_presentation_takes_a_club_seat(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $ana = $this->student();
+
+        // Máximo 3 mentorías especiales por semana.
+        foreach (['2026-07-28', '2026-07-29', '2026-07-30'] as $date) {
+            Booking::create(['school_id' => $this->school->id, 'student_id' => $ana->id, 'date' => $date, 'schedule_slot_id' => $this->slots[9]->id,
+                'kind' => BookingKind::Mentoring, 'modality' => 'in_person', 'status' => BookingStatus::Booked]);
+        }
+        $this->receptionBooks($ana, 9, 'mentoring')
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.mentoring_week', ['max' => BookingKind::MENTORING_PER_WEEK]));
+
+        // Presentación en club: ocupa un lugar del club (aquí, el único) y se ve como "Presentación en club".
+        $room = Classroom::create(['school_id' => $this->school->id, 'name' => '7', 'capacity' => 1, 'is_club_room' => true, 'is_active' => true]);
+        $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 10, 'is_active' => true,
+            'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true]]]);
+        $session = ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),
+            'classroom_id' => $room->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id, 'modality' => 'in_person']);
+        $luis = $this->student();
+        $this->receptionBooks($luis, 10, 'club_presentation', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
+        $this->assertSame(__('agenda.option_club_presentation', ['code' => 'C12']), Booking::with('clubSession')->where('student_id', $luis->id)->sole()->activityLabel());
+        $this->receptionBooks($this->student(), 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
     }
 
     public function test_only_reception_and_the_admin_switch_a_booking_between_in_person_and_online(): void
@@ -317,12 +384,18 @@ class AgendaTest extends TestCase
         $mine = Booking::with('classroom')->sole();
         $this->assertFalse($mine->booked_by_reception);
 
-        // No cancela la de otro alumno; la suya sí (con "Aviso para cancelar").
+        // No cancela la de otro alumno; la suya sí, con un motivo de su menú (no uno del personal).
+        $illness = CancellationReason::create(['school_id' => $this->school->id, 'name' => 'Por enfermedad', 'attendance' => AttendanceEffect::None,
+            'for_students' => true, 'sort_order' => 10, 'is_active' => true]);
         $other = Booking::create(['school_id' => $this->school->id, 'student_id' => $this->student()->id, 'date' => self::MONDAY,
             'schedule_slot_id' => $this->slots[10]->id, 'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Booked]);
-        Livewire::test(MyAgenda::class)->call('cancel', $other->id)->assertForbidden();
-        Livewire::test(MyAgenda::class)->assertSee(__('agenda.room', ['name' => $mine->classroom->name]))->call('cancel', $mine->id)->assertDispatched('toast', type: 'success');
-        $this->assertSame($this->reasons['notice']->id, $mine->refresh()->cancellation_reason_id);
+        Livewire::test(MyAgenda::class)->call('confirmCancel', $other->id)->assertForbidden();
+        Livewire::test(MyAgenda::class)->assertSee(__('agenda.room', ['name' => $mine->classroom->name]))
+            ->call('confirmCancel', $mine->id)->assertSee('Por enfermedad')->assertDontSee('No se presentó')
+            ->call('cancel')->assertHasErrors('cancelReasonId')
+            ->set('cancelReasonId', $this->reasons['no_show']->id)->call('cancel')->assertHasErrors('cancelReasonId')
+            ->set('cancelReasonId', $illness->id)->call('cancel')->assertHasNoErrors()->assertDispatched('toast', type: 'success');
+        $this->assertSame($illness->id, $mine->refresh()->cancellation_reason_id);
     }
 
     public function test_the_student_cannot_book_the_same_day_with_day_before(): void
@@ -333,8 +406,14 @@ class AgendaTest extends TestCase
         $this->student($user);
         $this->actingAs($user);
 
-        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('choices', [$this->slots[9]->id.'|session|in_person|'])->call('book')
-            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.day_before'));
+        // El mismo día no se abre la ventana: se le avisa que lo haga con Recepción.
+        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)
+            ->assertDispatched('toast', type: 'warning', message: __('agenda.validation.day_before'))->assertSet('choosing', null);
+
+        // Aunque Mi Instituto permita "cualquier momento", el alumno reserva desde el día siguiente.
+        $this->school->update(['self_booking' => SelfBooking::AnyTime]);
+        $this->assertThrows(fn () => app(AgendaService::class)->book($this->school, Student::where('user_id', $user->id)->sole(), CarbonImmutable::parse(self::MONDAY),
+            $this->slots[9], BookingKind::Session, ClubModality::InPerson, null, $user, byReception: false), ValidationException::class);
     }
 
     public function test_clubs_use_the_room_capacity_and_the_code_level(): void
@@ -351,7 +430,7 @@ class AgendaTest extends TestCase
         [$ana, $luis] = [$this->student(), $this->student()];
 
         $clubs = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $ana->id)->get('options'))
-            ->flatMap(fn (array $hour) => $hour['options'])->pluck('club_session_id')->filter()->values()->all();
+            ->flatMap(fn (array $hour) => $hour['options'])->where('kind', 'club')->pluck('club_session_id')->filter()->values()->all();
         $this->assertSame([$level1->id], $clubs);
 
         $this->receptionBooks($ana, 10, 'club', 'in_person', $level1->id)->assertDispatched('toast', type: 'success');
@@ -439,9 +518,10 @@ class AgendaTest extends TestCase
         $user = $this->user(Role::STUDENT);
         $student = $this->student($user);
 
+        // El alumno ya no puede (y además solo reserva desde el día siguiente).
         $this->actingAs($user);
-        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)->set('choices', [$this->slots[9]->id.'|session|in_person|'])->call('book')
-            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.past'));
+        Livewire::test(MyAgenda::class)->call('openSlot', self::MONDAY, $this->slots[9]->id)
+            ->assertDispatched('toast', type: 'warning', message: __('agenda.validation.day_before'));
 
         $this->actingAs($this->user(Role::RECEPTION));
         $this->receptionBooks($student, 9)->assertDispatched('toast', type: 'success');
@@ -573,7 +653,7 @@ class AgendaTest extends TestCase
         $this->receptionBooks($ana, 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
         $booking = Booking::sole();
         $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $booking->id);
-        $kinds = collect($page->viewData('edit')['activities'][0]['options'])->map(fn (array $item) => $item['kind'].'|'.$item['modality'])->all();
+        $kinds = collect($page->viewData('edit')['activities'][0]['options'])->whereIn('kind', ['session', 'club'])->map(fn (array $item) => $item['kind'].'|'.$item['modality'])->values()->all();
         $this->assertSame(['session|in_person', 'session|online'], $kinds);
 
         $page->set('editActivity', $this->slots[10]->id.'|session|in_person|')->call('saveChange')->assertDispatched('toast', type: 'success');
@@ -965,10 +1045,14 @@ class AgendaTest extends TestCase
             $page->assertSee('(híbrida, presencial)')->assertSee('(híbrida, en línea)');
         }
 
-        // Un teacher consulta la agenda pero no ve pesos ni cargas.
-        $this->actingAs($this->user(Role::TEACHER));
-        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertOk()
-            ->assertDontSee(__('agenda.weights.weight'))->assertDontSee(__('agenda.weights.loads'))->assertSee('(híbrida, en línea)');
+        // Un teacher consulta la agenda pero no ve pesos ni cargas; solo sus reservaciones, sin el calendario.
+        $teacher = $this->user(Role::TEACHER);
+        $melissa->update(['user_id' => $teacher->id]);
+        $this->actingAs($teacher);
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertOk()
+            ->assertDontSee(__('agenda.weights.weight'))->assertDontSee(__('agenda.weights.loads'))->assertSee('(híbrida, en línea)')
+            ->assertDontSee(__('agenda.calendar'))->assertSee(__('agenda.actions.grades'));
+        $this->assertSame(['MELISSA'], $page->instance()->bookings->flatMap(fn (array $group) => $group['bookings'])->map(fn (Booking $booking) => $booking->teacher->short_name)->unique()->values()->all());
     }
 
     public function test_the_audiovisual_room_can_be_enabled_for_practice_with_five_students_at_most(): void

@@ -4,12 +4,16 @@ return [
     'title' => 'Agenda',
     'subtitle' => 'Lugares libres por día y hora. Clic en una celda para agendar; clic en el día para ver su listado y marcar asistencia.',
     'my_title' => 'Agendar',
-    'my_subtitle' => 'Elige en el calendario el día y la hora con lugar. El sistema te asigna el aula.',
+    'my_subtitle' => 'Elige en el calendario el día y la hora. El sistema te asigna el aula.',
     'my_clubs_title' => 'Agendar club',
 
     'kinds' => [
         'session' => 'Práctica',
         'club' => 'Club',
+        'mentoring' => 'Mentoría especial',
+        'material' => 'Entrega de material',
+        'presentation' => 'Presentación 1 a 1',
+        'club_presentation' => 'Presentación en club',
     ],
 
     'statuses' => [
@@ -68,7 +72,11 @@ return [
     'in_person' => 'Presencial',
     'option_session' => 'Práctica',
     'option_club' => 'Club :code · :name',
+    'option_club_presentation' => 'Presentación en club :code',
+    'option_reception_only' => 'Mentoría especial, entrega de material y presentaciones: solicítalas en Recepción.',
     'seats' => '{1} 1 lugar|[2,*] :count lugares',
+    'free_rooms' => '{1} 1 aula libre|[2,*] :count aulas libres',
+    'modality' => 'Modalidad',
     'goes_to_waitlist' => 'Lleno: entra a lista de espera (aula de espera)',
 
     'date' => 'Fecha',
@@ -147,11 +155,14 @@ return [
     'waitlist_note' => 'Estás en lista de espera: recepción te avisará si se libera un lugar.',
     'daily_limit_note' => 'Puedes reservar hasta :hours h por día.',
     'next_activity' => 'Tu siguiente actividad: :label',
+    'next_activity_title' => 'Tu siguiente actividad:',
+    'student_rules' => 'Reserva desde el día siguiente; para hoy, comunícate con Recepción. Con «Nueva reservación» puedes elegir hasta 2 horas de un día.',
 
     'proposals' => 'Lugares liberados',
     'proposals_hint' => 'Se liberó un lugar a esa hora: propón al siguiente alumno de la lista de espera.',
 
     'actions' => [
+        'grades' => 'Calificaciones',
         'new' => 'Nueva reservación',
         'book' => 'Reservar',
         'attended' => 'Asistió',
@@ -190,7 +201,11 @@ return [
         'week_not_ready' => 'La semana aún no está armada en el panel de disponibilidad.',
         'past' => 'Esa hora ya pasó.',
         'self_disabled' => 'Las reservaciones las hace recepción.',
-        'day_before' => 'Solo puedes reservar a partir del día siguiente.',
+        'day_before' => 'Solo puedes reservar a partir del día siguiente. Para reservar hoy, comunícate con Recepción.',
+        'reception_only' => 'Este tipo de reservación se solicita en Recepción.',
+        'in_person_only' => ':kind solo es presencial.',
+        'mentoring_week' => 'Llegó al máximo de :max mentorías especiales por semana.',
+        'no_free_room' => 'No hay un aula libre a esa hora para la presentación 1 a 1.',
         'duplicate' => 'Ya tiene una reservación a esa hora.',
         'daily_limit' => 'Llegó al límite de :hours h por día (según su asistencia de los últimos 7 días).',
         'max_sessions' => 'Llegó al máximo de :max prácticas por día.',

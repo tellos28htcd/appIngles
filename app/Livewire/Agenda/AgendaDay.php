@@ -14,10 +14,13 @@ use App\Models\CancellationReason;
 use App\Models\Classroom;
 use App\Models\ClubSession;
 use App\Models\CoordinatorSession;
+use App\Models\KardexEntry;
+use App\Models\Role;
 use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Policies\KardexEntryPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -26,6 +29,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Session;
 use Livewire\Component;
 
@@ -162,7 +166,7 @@ class AgendaDay extends Component
     public function create(): void
     {
         $this->authorize('manage', Booking::class);
-        $this->reset('search', 'studentId', 'choices', 'slotId');
+        $this->reset('search', 'studentId', 'choices', 'slotId', 'modality');
         $this->resetValidation();
         $this->creating = true;
     }
@@ -370,6 +374,7 @@ class AgendaDay extends Component
     public function bookings(): Collection
     {
         $bookings = Booking::query()->whereDate('date', $this->date)
+            ->when($this->ownTeacherId() !== null, fn ($query) => $query->where('teacher_id', $this->ownTeacherId()))
             ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason'])
             ->get();
 
@@ -377,7 +382,7 @@ class AgendaDay extends Component
         $school = $this->school();
         $agenda = app(AgendaService::class);
         $weights = $bookings->mapWithKeys(fn (Booking $booking) => [$booking->id => $agenda->weightOf($school, $booking)]);
-        $placed = $bookings->filter(fn (Booking $booking) => $booking->kind === BookingKind::Session && ! $booking->is_waitlist && $booking->status->isActive());
+        $placed = $bookings->filter(fn (Booking $booking) => $booking->kind->usesPracticeRoom() && ! $booking->is_waitlist && $booking->status->isActive());
         $roomKey = fn (Booking $booking) => $booking->teacher_availability_id !== null ? 'c'.$booking->teacher_availability_id : 'v'.$booking->classroom_id;
         $hybrid = $placed->filter(fn (Booking $booking) => $booking->teacher_availability_id !== null && $booking->modality === ClubModality::Online)
             ->map(fn (Booking $booking) => $booking->teacher_availability_id)->unique()->values()->all();
@@ -407,6 +412,21 @@ class AgendaDay extends Component
             ])
             ->sortBy(fn (array $group) => $group['slot']?->starts_at)
             ->values();
+    }
+
+    /** Al guardar en la ventana de calificar (botón "Calificaciones"), se refresca el listado. */
+    #[On('kardex-saved')]
+    public function refreshAfterGrading(): void
+    {
+        unset($this->bookings);
+    }
+
+    /** El teacher solo ve en la Agenda lo que le corresponde (sus reservaciones); los demás, todo. */
+    private function ownTeacherId(): ?int
+    {
+        return once(fn () => auth()->user()->loadMissing('role')->role?->slug === Role::TEACHER
+            ? (app(KardexEntryPolicy::class)->teacherIdOf(auth()->user()) ?? 0)
+            : null);
     }
 
     /** @return Collection<int, Booking> */
@@ -454,7 +474,9 @@ class AgendaDay extends Component
         $isReady = $planner->isGenerated($school, $days[0]);
 
         // Filtros con lo que hay ese día; color de cada aula como en el panel (por su número).
-        $dayBookings = Booking::query()->whereDate('date', $this->date)->with(['slot', 'classroom', 'teacher', 'student'])->get();
+        $dayBookings = Booking::query()->whereDate('date', $this->date)
+            ->when($this->ownTeacherId() !== null, fn ($query) => $query->where('teacher_id', $this->ownTeacherId()))
+            ->with(['slot', 'classroom', 'teacher', 'student'])->get();
         $classrooms = Classroom::query()->ofCatalog($school->id)->orderByRaw('CAST(name AS UNSIGNED)')->orderBy('name')->get(['id', 'name']);
 
         return view('livewire.agenda.agenda-day', [
@@ -469,6 +491,8 @@ class AgendaDay extends Component
                 ->sortBy(fn (Booking $booking) => $booking->slot?->starts_at.'|'.$booking->student?->fullName())->values(),
             'edit' => $this->editData(),
             'canManage' => auth()->user()->can('manage', Booking::class),
+            'isTeacherView' => $this->ownTeacherId() !== null,
+            'canGrade' => auth()->user()->can('grade', KardexEntry::class),
             'canSeeWeights' => auth()->user()->can('viewWeights', Booking::class),
             'coordination' => auth()->user()->can('viewCoordination', Booking::class) ? $this->coordination($days) : [],
             'day' => $this->day(),

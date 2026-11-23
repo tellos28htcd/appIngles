@@ -22,6 +22,14 @@ trait ChoosesBookingOptions
     /** Opciones elegidas, una por hora. @var list<string> */
     public array $choices = [];
 
+    /** Modalidad que se muestra (primero se elige Presencial o En línea y luego el tipo). */
+    public string $modality = 'in_person';
+
+    public function updatedModality(): void
+    {
+        $this->modality = in_array($this->modality, ['in_person', 'online'], true) ? $this->modality : 'in_person';
+    }
+
     public const MAX_CHOICES = 2;
 
     /** Elige o quita una opción; otra opción de la misma hora la reemplaza. */

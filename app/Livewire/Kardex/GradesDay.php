@@ -18,6 +18,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Session;
 use Livewire\Component;
 
@@ -39,6 +41,10 @@ class GradesDay extends Component
 
     #[Session]
     public string $filterTeacher = '';
+
+    /** Dentro de la Agenda: solo la ventana de calificar (se abre con el botón "Calificaciones" de cada reservación). */
+    #[Locked]
+    public bool $embedded = false;
 
     /** Reservación abierta en la ventana de calificar. */
     public ?int $gradingId = null;
@@ -103,6 +109,13 @@ class GradesDay extends Component
 
     // ── Ventana de calificar ──────────────────────────────────────
 
+    /** Botón "Calificaciones" de una reservación en la Agenda. */
+    #[On('kardex-grade')]
+    public function openFromAgenda(int $bookingId): void
+    {
+        $this->open($bookingId);
+    }
+
     public function open(int $bookingId): void
     {
         $booking = $this->findBooking($bookingId);
@@ -122,7 +135,7 @@ class GradesDay extends Component
         $this->authorize('gradeBooking', [KardexEntry::class, $booking]);
         $this->resetValidation();
 
-        if ($booking->kind === BookingKind::Club) {
+        if (! $booking->kind->isPractice()) {
             $kardex->gradeClub($booking, $this->grades[0] !== '' ? (int) $this->grades[0] : null, auth()->user(), $this->today(), $this->lateReasonId, $this->lateComment, $this->observations[0] ?? null);
             $saved = 1;
         } else {
@@ -131,6 +144,7 @@ class GradesDay extends Component
 
         $this->gradingId = null;
         unset($this->bookings);
+        $this->dispatch('kardex-saved');
         $this->dispatch('toast', type: 'success', message: trans_choice('kardex.messages.graded', $saved));
     }
 
@@ -144,6 +158,7 @@ class GradesDay extends Component
 
         $this->gradingId = null;
         unset($this->bookings);
+        $this->dispatch('kardex-saved');
         $this->dispatch('toast', type: 'success', message: __('kardex.messages.ungraded'));
     }
 
@@ -198,7 +213,7 @@ class GradesDay extends Component
     {
         $teacherId = $this->isTeacher() ? (app(KardexEntryPolicy::class)->teacherIdOf(auth()->user()) ?? 0) : null;
 
-        return Booking::query()->whereDate('date', $this->date)->active()->where('is_waitlist', false)
+        return Booking::query()->whereDate('date', $this->date)->active()->where('is_waitlist', false)->whereIn('kind', BookingKind::gradableKinds())
             ->when($teacherId !== null, fn ($query) => $query->where('teacher_id', $teacherId))
             ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson'])
             ->get();
@@ -217,7 +232,8 @@ class GradesDay extends Component
             return ['booking' => null, 'steps' => [], 'options' => [], 'byType' => [], 'late' => false, 'gradable' => false];
         }
 
-        $isClub = $booking->kind === BookingKind::Club;
+        // Club y presentaciones: una sola firma (F); la práctica, las prácticas que siguen en el Kardex.
+        $isClub = ! $booking->kind->isPractice();
         $steps = $isClub
             ? ($booking->kardexEntries->isEmpty() ? [['label' => $booking->activityLabel(), 'type' => GradeType::Signature]] : [])
             : $kardex->pendingSteps($booking);
@@ -236,7 +252,7 @@ class GradesDay extends Component
 
     public function render(KardexService $kardex): View
     {
-        $day = $this->dayBookings();
+        $day = $this->embedded ? collect() : $this->dayBookings();
 
         return view('livewire.kardex.grades-day', [
             'day' => CarbonImmutable::parse($this->date),

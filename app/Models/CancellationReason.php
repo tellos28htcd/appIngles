@@ -10,9 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Motivo de cancelación de una reservación de la agenda (catálogo con base en Plataforma
- * y copia por escuela). "attendance" dice si cuenta como asistencia, falta o no cuenta.
+ * y copia por escuela). "attendance" dice si cuenta como asistencia, falta o no cuenta; "for_students", si el
+ * alumno lo puede elegir al cancelar él mismo en "Agendar" (los del alumno no cuentan).
  */
-#[Fillable(['school_id', 'base_id', 'name', 'attendance', 'sort_order', 'is_active'])]
+#[Fillable(['school_id', 'base_id', 'name', 'attendance', 'for_students', 'sort_order', 'is_active'])]
 class CancellationReason extends Model
 {
     use Auditable, BelongsToSchool;
@@ -21,6 +22,7 @@ class CancellationReason extends Model
     {
         return [
             'attendance' => AttendanceEffect::class,
+            'for_students' => 'boolean',
             'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];

@@ -15,6 +15,7 @@ namespace App\Support;
  * - Física híbrida (con alumnos en línea): máximo HYBRID_CAPACITY (sin pasar su cupo) y a lo más HYBRID_MAX_ONLINE en línea.
  * - Física solo presencial y aula virtual: su cupo.
  * - Nunca con un teacher que el alumno excluyó en su expediente.
+ * - Con un alumno 'exclusive' (presentación 1 a 1), nadie más.
  */
 final class RoomBalancer
 {
@@ -41,6 +42,10 @@ final class RoomBalancer
 
         foreach ($items as $item) {
             if ($room['teacher_id'] !== null && in_array($room['teacher_id'], $item['excluded'], true)) {
+                return false;
+            }
+            // Presentación 1 a 1: el aula queda solo para ese alumno.
+            if (($item['exclusive'] ?? false) && $count > 1) {
                 return false;
             }
         }

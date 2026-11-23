@@ -246,6 +246,36 @@ class KardexGradesTest extends TestCase
             ->assertSee('Convivencia')->assertSee('Material extra')->assertDontSee('Pendiente de completar');
     }
 
+    public function test_a_presentation_is_signed_once_without_moving_the_path_and_mentoring_is_not_graded(): void
+    {
+        $student = Student::factory()->create(['school_id' => $this->school->id]);
+        $other = Student::factory()->create(['school_id' => $this->school->id]);
+        $presentation = Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => self::TODAY, 'schedule_slot_id' => $this->slots[9]->id,
+            'kind' => BookingKind::Presentation, 'modality' => ClubModality::InPerson, 'teacher_id' => $this->melissa->id, 'classroom_id' => $this->room->id,
+            'is_waitlist' => false, 'status' => BookingStatus::Booked]);
+        Booking::create(['school_id' => $this->school->id, 'student_id' => $other->id, 'date' => self::TODAY, 'schedule_slot_id' => $this->slots[9]->id,
+            'kind' => BookingKind::Mentoring, 'modality' => ClubModality::InPerson, 'teacher_id' => $this->melissa->id, 'classroom_id' => $this->room->id,
+            'is_waitlist' => false, 'status' => BookingStatus::Booked]);
+        $next = app(AgendaService::class)->nextActivity($student)['label'];
+
+        // Desde la Agenda (botón "Calificaciones"): la ventana de calificar, solo con la firma F.
+        $this->actingAs($this->teacherUser($this->melissa));
+        $page = Livewire::test(GradesDay::class, ['embedded' => true])->dispatch('kardex-grade', bookingId: $presentation->id)
+            ->assertSet('gradingId', $presentation->id)->assertSee(__('agenda.kinds.presentation'));
+        $this->assertSame([$this->grades['F']->id => 'F · Firma'], $page->viewData('grading')['options'][0]);
+        $page->set('grades', [(string) $this->grades['F']->id, '', ''])->call('save')->assertHasNoErrors()->assertDispatched('kardex-saved');
+
+        $entry = KardexEntry::sole();
+        $this->assertSame(BookingKind::Presentation, $entry->kind);
+        $this->assertSame([__('agenda.kinds.presentation').' F'], $this->kardex($student));
+        // No mueve la ruta de prácticas; una segunda firma no se acepta.
+        $this->assertSame($next, app(AgendaService::class)->nextActivity($student->fresh())['label']);
+        Livewire::test(GradesDay::class)->call('open', $presentation->id)->set('grades', [(string) $this->grades['F']->id, '', ''])->call('save')->assertHasErrors('grades');
+
+        // La mentoría especial no aparece en Calificaciones.
+        Livewire::test(GradesDay::class)->assertSee($student->fullName())->assertDontSee($other->fullName());
+    }
+
     public function test_a_booking_can_stay_ungraded_with_a_reason_and_the_kardex_does_not_advance(): void
     {
         $student = Student::factory()->create(['school_id' => $this->school->id]);

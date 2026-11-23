@@ -243,6 +243,7 @@ return [
     ],
 
     'student' => [
+        'yes' => 'Sí',
         'fields' => [
             'code' => 'Clave',
             'name' => 'Nombre',
@@ -251,6 +252,7 @@ return [
             'short_name' => 'Nombre corto',
             'rank' => 'Jerarquía',
             'attendance' => 'Para la asistencia',
+            'for_students' => 'Lo puede elegir el alumno',
             'type' => 'Se usa en',
             'audience' => 'Lo usa',
             'sort_order' => 'Orden',
@@ -270,6 +272,7 @@ return [
             ],
             'cancelaciones' => [
                 'attendance' => 'Para el límite de horas por día (asistencia de los últimos 7 días). Cuando el alumno cancela él mismo se usa el primer motivo que "No cuenta".',
+                'for_students' => 'Aparece en el menú de motivos cuando el alumno cancela él mismo en Agendar. Los del alumno se marcan "No cuenta".',
                 'sort_order' => 'Orden en la lista.',
             ],
         ],

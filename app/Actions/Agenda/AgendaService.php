@@ -302,7 +302,7 @@ final class AgendaService
         $all = $this->sessionCells($school, $date, $slot);
         $cells = $this->physicalCells($all);
         $bookings = Booking::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
-            ->where('schedule_slot_id', $slot->id)->where('kind', BookingKind::Session)->where('is_waitlist', false)->active()
+            ->where('schedule_slot_id', $slot->id)->whereIn('kind', BookingKind::practiceRoomKinds())->where('is_waitlist', false)->active()
             ->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))
             ->with(['classroom:id,name,is_virtual', 'student.user'])->get();
 
@@ -331,10 +331,11 @@ final class AgendaService
 
     /**
      * Datos de una reservación para el balanceo: peso de su actividad en su lección (sin pesos
-     * capturados cuenta 1 por alumno), si va en línea y si se puede mover.
+     * capturados cuenta 1 por alumno; mentoría, entrega de material y presentación pesan 0), si va en línea,
+     * si se puede mover y si el aula queda solo para ella (presentación 1 a 1).
      *
      * @param  list<int>  $excluded
-     * @return array{room: ?string, weight: int, online: bool, movable: bool, excluded: list<int>}
+     * @return array{room: ?string, weight: int, online: bool, movable: bool, excluded: list<int>, exclusive: bool}
      */
     private function itemFor(School $school, Booking $booking, array $excluded): array
     {
@@ -343,17 +344,18 @@ final class AgendaService
 
         return [
             'room' => null,
-            'weight' => $catalog['configured'] ? (int) $weight : 1,
+            'weight' => ! $booking->kind->isPractice() ? 0 : ($catalog['configured'] ? (int) $weight : 1),
+            'exclusive' => $booking->kind->isExclusive(),
             'online' => $booking->modality === ClubModality::Online,
             'movable' => $booking->status === BookingStatus::Booked,
             'excluded' => $excluded,
         ];
     }
 
-    /** Peso newton de una práctica (su actividad en su lección); null en clubs. */
+    /** Peso newton de una práctica (su actividad en su lección); null en los demás tipos (no se muestra). */
     public function weightOf(School $school, Booking $booking): ?int
     {
-        return $booking->kind === BookingKind::Session ? $this->itemFor($school, $booking, [])['weight'] : null;
+        return $booking->kind->isPractice() ? $this->itemFor($school, $booking, [])['weight'] : null;
     }
 
     /** @param  array<string, array<string, mixed>>  $rooms */
@@ -505,8 +507,9 @@ final class AgendaService
         $placed = $bookings->reject(fn (Booking $booking) => $booking->is_waitlist);
         $perCell = $placed->whereNotNull('teacher_availability_id')->countBy('teacher_availability_id');
         $onlinePerCell = $placed->whereNotNull('teacher_availability_id')->where('modality', ClubModality::Online)->countBy('teacher_availability_id');
-        // Lugares de un aula física: su cupo; si ya es híbrida (con alumnos en línea), hasta 3 en total.
-        $cellFree = fn (TeacherAvailability $cell) => max(0, ($onlinePerCell[$cell->id] ?? 0) > 0
+        $exclusiveCells = $placed->filter(fn (Booking $booking) => $booking->kind->isExclusive())->pluck('teacher_availability_id')->filter()->all();
+        // Lugares de un aula física: su cupo; si ya es híbrida (con alumnos en línea), hasta 3 en total; con presentación 1 a 1, ninguno.
+        $cellFree = fn (TeacherAvailability $cell) => in_array($cell->id, $exclusiveCells, true) ? 0 : max(0, ($onlinePerCell[$cell->id] ?? 0) > 0
             ? min(RoomBalancer::HYBRID_CAPACITY, $this->cellCapacity($school, $cell)) - ($perCell[$cell->id] ?? 0)
             : $this->cellCapacity($school, $cell) - ($perCell[$cell->id] ?? 0));
         $perClub = $placed->whereNotNull('club_session_id')->countBy('club_session_id');
@@ -525,7 +528,7 @@ final class AgendaService
             $online = isset($slots[$slotId])
                 ? $this->practiceVirtualRooms($school, CarbonImmutable::parse($date), $slots[$slotId], $group)->sum(fn (Classroom $room) => $this->virtualCapacity($school, $room))
                 : 0;
-            $sessions = $here->filter(fn (Booking $booking) => $booking->kind === BookingKind::Session && ! $booking->is_waitlist);
+            $sessions = $here->filter(fn (Booking $booking) => $booking->kind->usesPracticeRoom() && ! $booking->is_waitlist);
             // Aulas virtuales: solo los de en línea sin aula del panel (los híbridos ocupan lugar en el aula del teacher).
             $onlineTaken = $sessions->filter(fn (Booking $booking) => $booking->modality === ClubModality::Online && $booking->teacher_availability_id === null)->count();
 
@@ -625,6 +628,10 @@ final class AgendaService
                 }
             }
 
+            if ($byReception) {
+                $options = [...$options, ...$this->receptionOptions($school, $student, $date, $slot, $clubs->where('schedule_slot_id', $slot->id), $excluded)];
+            }
+
             if ($options !== []) {
                 $result[] = ['slot' => $slot, 'options' => $options];
             }
@@ -637,15 +644,15 @@ final class AgendaService
      * Lugares para el alumno a esa hora con su siguiente actividad: presenciales (aulas físicas) y en línea
      * (híbrida o aula virtual), según las reglas de aulas.
      *
-     * @param  array{book_id: int, lesson_id: int, activity_number: int}  $step
+     * @param  array{book_id: int, lesson_id: int, activity_number: int}|null  $step
      * @param  list<int>  $excluded
      * @return array{0: int, 1: int}
      */
-    private function seatsFor(School $school, Student $student, array $step, CarbonInterface $date, ScheduleSlot $slot, array $excluded): array
+    private function seatsFor(School $school, Student $student, ?array $step, CarbonInterface $date, ScheduleSlot $slot, array $excluded, BookingKind $kind = BookingKind::Session): array
     {
         $state = $this->hourState($school, $date, $slot);
-        $probe = new Booking(['school_id' => $school->id, 'student_id' => $student->id, 'lesson_id' => $step['lesson_id'],
-            'activity_number' => $step['activity_number'], 'kind' => BookingKind::Session, 'modality' => ClubModality::InPerson, 'status' => BookingStatus::Booked]);
+        $probe = new Booking(['school_id' => $school->id, 'student_id' => $student->id, 'lesson_id' => $step['lesson_id'] ?? null,
+            'activity_number' => $step['activity_number'] ?? null, 'kind' => $kind, 'modality' => ClubModality::InPerson, 'status' => BookingStatus::Booked]);
         $inPerson = $this->itemFor($school, $probe, $excluded);
         $online = [...$inPerson, 'online' => true];
         $seats = fn (array $item, array $groups) => collect($state['rooms'])->filter(fn (array $room) => in_array($room['group'], $groups, true))
@@ -686,11 +693,20 @@ final class AgendaService
         }
 
         if (! $byReception) {
-            match ($school->self_booking) {
-                SelfBooking::Disabled => $fail('self_disabled'),
-                SelfBooking::DayBefore => $date->lte($today) ? $fail('day_before') : null,
-                default => null,
-            };
+            // El alumno: solo práctica y club, y desde el día siguiente (el mismo día, con Recepción).
+            if (! $kind->bookableByStudent()) {
+                $fail('reception_only');
+            }
+            if ($school->self_booking === SelfBooking::Disabled) {
+                $fail('self_disabled');
+            }
+            if ($date->lte($today)) {
+                $fail('day_before');
+            }
+        }
+
+        if ($modality === ClubModality::Online && ! $kind->allowsOnline()) {
+            $fail('in_person_only', ['kind' => $kind->label()]);
         }
 
         return DB::transaction(function () use ($school, $student, $date, $slot, $kind, $modality, $clubSessionId, $user, $byReception, $fail, $today): Booking {
@@ -706,13 +722,7 @@ final class AgendaService
                 $fail('daily_limit', ['hours' => $limit]);
             }
 
-            if ($kind === BookingKind::Session && $school->max_sessions && $day->where('kind', BookingKind::Session)->count() >= $school->max_sessions) {
-                $fail('max_sessions', ['max' => $school->max_sessions]);
-            }
-
-            if ($kind === BookingKind::Club && $school->max_clubs && $day->where('kind', BookingKind::Club)->count() >= $school->max_clubs) {
-                $fail('max_clubs', ['max' => $school->max_clubs]);
-            }
+            $this->checkKindLimits($school, $student, $date, $kind, $day, $fail);
 
             $booking = new Booking([
                 'school_id' => $school->id, 'student_id' => $student->id, 'date' => $date->toDateString(), 'schedule_slot_id' => $slot->id,
@@ -723,7 +733,7 @@ final class AgendaService
 
             $booking->save();
 
-            if ($kind === BookingKind::Session && ! $booking->is_waitlist && $this->rebalance($school, $date, $slot, $user, quiet: [$booking->id]) > 0) {
+            if ($kind->usesPracticeRoom() && ! $booking->is_waitlist && $this->rebalance($school, $date, $slot, $user, quiet: [$booking->id]) > 0) {
                 $booking->refresh();
             }
 
@@ -742,11 +752,12 @@ final class AgendaService
     {
         $path = new ProgressPath($school);
 
-        if ($kind === BookingKind::Club) {
+        if ($kind->usesClub()) {
             $club = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
                 ->where('schedule_slot_id', $slot->id)->with('club')->lockForUpdate()->find($clubSessionId);
 
-            if ($club === null || ! $this->clubAllows($school, $club, $this->nextActivity($student, $path), $path)) {
+            // La presentación en club no depende del nivel del alumno.
+            if ($club === null || ($kind === BookingKind::Club && ! $this->clubAllows($school, $club, $this->nextActivity($student, $path), $path))) {
                 $fail('club_not_allowed');
             }
             if ($this->clubFreeSeats($school, $club) < 1) {
@@ -754,6 +765,10 @@ final class AgendaService
             }
 
             $booking->fill(['club_session_id' => $club->id, 'modality' => $club->modality, 'teacher_id' => $club->teacher_id, 'classroom_id' => $club->classroom_id]);
+        } elseif (! $kind->isPractice()) {
+            // Mentoría, entrega de material o presentación 1 a 1: aula de práctica sin actividad de la ruta ni lista de espera.
+            $booking->student_id ??= $student->id;
+            $this->placeSession($school, $booking, $date, $slot, allowWaitlist: false) || $fail($kind->isExclusive() ? 'no_free_room' : 'full');
         } else {
             $step = $this->nextActivity($student, $path) ?? $fail('no_activity');
             $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
@@ -773,6 +788,67 @@ final class AgendaService
     {
         return $cells->contains(fn (TeacherAvailability $cell) => (bool) $cell->teacher?->is_waitlist)
             || ((bool) $school->books_without_classroom && $cells->isNotEmpty());
+    }
+
+    /**
+     * Límites por tipo: máximo de prácticas por día (práctica, mentoría, entrega de material y presentación 1 a 1),
+     * máximo de clubs por día (club y presentación en club) y máximo de mentorías especiales por semana.
+     *
+     * @param  Collection<int, Booking>  $day  reservaciones activas del alumno ese día (sin la que se cambia)
+     */
+    private function checkKindLimits(School $school, Student $student, CarbonImmutable $date, BookingKind $kind, Collection $day, Closure $fail, ?int $exceptBookingId = null): void
+    {
+        if ($kind->countsAsSession() && $school->max_sessions && $day->filter(fn (Booking $booking) => $booking->kind->countsAsSession())->count() >= $school->max_sessions) {
+            $fail('max_sessions', ['max' => $school->max_sessions]);
+        }
+
+        if ($kind->usesClub() && $school->max_clubs && $day->filter(fn (Booking $booking) => $booking->kind->usesClub())->count() >= $school->max_clubs) {
+            $fail('max_clubs', ['max' => $school->max_clubs]);
+        }
+
+        if ($kind === BookingKind::Mentoring) {
+            $week = Booking::withoutGlobalScope('school')->where('student_id', $student->id)->where('kind', BookingKind::Mentoring)->active()
+                ->whereBetween('date', [$date->startOfWeek(CarbonInterface::MONDAY)->toDateString(), $date->endOfWeek(CarbonInterface::SUNDAY)->toDateString()])
+                ->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))->count();
+
+            if ($week >= BookingKind::MENTORING_PER_WEEK) {
+                $fail('mentoring_week', ['max' => BookingKind::MENTORING_PER_WEEK]);
+            }
+        }
+    }
+
+    /**
+     * Opciones que solo agenda Recepción: mentoría especial (presencial o en línea), entrega de material (solo
+     * presencial), presentación 1 a 1 (un aula vacía que queda para el alumno) y presentación en un club de esa hora.
+     *
+     * @param  Collection<int, ClubSession>  $clubs  clubs de esa hora
+     * @param  list<int>  $excluded
+     * @return list<array{kind: string, modality: string, club_session_id: ?int, label: string, free: int, waitlist: bool}>
+     */
+    private function receptionOptions(School $school, Student $student, CarbonImmutable $date, ScheduleSlot $slot, Collection $clubs, array $excluded): array
+    {
+        $options = [];
+
+        foreach ([BookingKind::Mentoring, BookingKind::Material, BookingKind::Presentation] as $kind) {
+            [$inPerson, $online] = $this->seatsFor($school, $student, null, $date, $slot, $excluded, $kind);
+
+            foreach ([ClubModality::InPerson->value => $inPerson, ClubModality::Online->value => $kind->allowsOnline() ? $online : 0] as $modality => $free) {
+                if ($free > 0) {
+                    $options[] = ['kind' => $kind->value, 'modality' => $modality, 'club_session_id' => null, 'label' => $kind->label(), 'free' => $free, 'waitlist' => false];
+                }
+            }
+        }
+
+        foreach ($clubs as $club) {
+            $seats = $this->clubFreeSeats($school, $club);
+
+            if ($seats > 0) {
+                $options[] = ['kind' => BookingKind::ClubPresentation->value, 'modality' => $club->modality->value, 'club_session_id' => $club->id,
+                    'label' => __('agenda.option_club_presentation', ['code' => $club->code]), 'free' => $seats, 'waitlist' => false];
+            }
+        }
+
+        return $options;
     }
 
     // ── Cambiar aula, teacher o alumno ────────────────────────────
@@ -798,7 +874,7 @@ final class AgendaService
                     ->active()->lockForUpdate()->get();
 
                 $day->contains('schedule_slot_id', $booking->schedule_slot_id) && $fail('duplicate');
-                $booking->kind === BookingKind::Session && $booking->teacher_id && in_array($booking->teacher_id, $this->excludedTeacherIds($student->id), true)
+                $booking->kind->usesPracticeRoom() && $booking->teacher_id && in_array($booking->teacher_id, $this->excludedTeacherIds($student->id), true)
                     && $fail('excluded_teacher', ['teacher' => Teacher::withoutGlobalScope('school')->find($booking->teacher_id)?->panelName() ?? '—']);
                 $limit = $this->dailyLimit($student, CarbonImmutable::now($timezone)->startOfDay());
                 $day->count() >= $limit && $fail('daily_limit', ['hours' => $limit]);
@@ -806,7 +882,7 @@ final class AgendaService
                 $path = new ProgressPath($school);
                 if ($booking->kind === BookingKind::Club) {
                     $booking->clubSession && ! $this->clubAllows($school, $booking->clubSession, $this->nextActivity($student, $path), $path) && $fail('club_not_allowed');
-                } else {
+                } elseif ($booking->kind->isPractice()) {
                     $step = $this->nextActivity($student, $path) ?? $fail('no_activity');
                     $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
                 }
@@ -815,7 +891,7 @@ final class AgendaService
                 $changes[] = $student->fullName();
             }
 
-            if ($booking->kind === BookingKind::Session && $classroomId !== null && $classroomId !== $booking->classroom_id) {
+            if ($booking->kind->usesPracticeRoom() && $classroomId !== null && $classroomId !== $booking->classroom_id) {
                 $room = $this->roomChoices($booking)[$classroomId] ?? $fail('room_full', ['room' => Classroom::withoutGlobalScope('school')->find($classroomId)?->name ?? '—']);
 
                 $booking->fill([
@@ -854,12 +930,10 @@ final class AgendaService
             $day = Booking::withoutGlobalScope('school')->where('student_id', $student->id)->whereDate('date', $booking->date->toDateString())
                 ->active()->whereKeyNot($booking->id)->lockForUpdate()->get();
 
-            if ($kind === BookingKind::Session && $school->max_sessions && $day->where('kind', BookingKind::Session)->count() >= $school->max_sessions) {
-                $fail('max_sessions', ['max' => $school->max_sessions]);
+            if ($modality === ClubModality::Online && ! $kind->allowsOnline()) {
+                $fail('in_person_only', ['kind' => $kind->label()]);
             }
-            if ($kind === BookingKind::Club && $school->max_clubs && $day->where('kind', BookingKind::Club)->count() >= $school->max_clubs) {
-                $fail('max_clubs', ['max' => $school->max_clubs]);
-            }
+            $this->checkKindLimits($school, $student, CarbonImmutable::parse($booking->date->toDateString()), $kind, $day, $fail, $booking->id);
 
             $before = $booking->kind->label().' '.$booking->activityLabel();
             // Libera su lugar mientras se acomoda de nuevo (si no hay lugar, la transacción lo deja como estaba).
@@ -907,6 +981,10 @@ final class AgendaService
         $rooms = collect($state['rooms'])->sortBy(fn (array $room) => ($room['group'] === 'virtual' ? '1' : '0').sprintf('%05d', (int) preg_replace('/\D/', '', $room['label'])).$room['label']);
 
         foreach ($rooms as $key => $room) {
+            // La entrega de material es solo presencial.
+            if ($room['group'] === 'virtual' && ! $booking->kind->allowsOnline()) {
+                continue;
+            }
             // En un aula virtual el alumno va en línea.
             $probe = [...$item, 'online' => $item['online'] || $room['group'] === 'virtual', 'excluded' => $key === $current ? [] : $excluded];
             $free = RoomBalancer::seatsFor($room, RoomBalancer::itemsIn($state['items'], $key), $probe);
@@ -939,7 +1017,7 @@ final class AgendaService
         $booking->update(['status' => BookingStatus::Cancelled, 'cancellation_reason_id' => $reason?->id, 'cancelled_at' => now()]);
         $this->log($booking, 'cancelled', $reason?->name, $user);
 
-        if ($booking->kind === BookingKind::Session && ! $booking->is_waitlist && $booking->slot) {
+        if ($booking->kind->usesPracticeRoom() && ! $booking->is_waitlist && $booking->slot) {
             $this->rebalance(School::findOrFail($booking->school_id), $booking->date, $booking->slot, $user);
         }
     }

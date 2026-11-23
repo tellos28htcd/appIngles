@@ -51,7 +51,7 @@ class StudentCatalogTab extends Component
             'name' => ['text', 80, true], 'rank' => ['number', 99],
         ]],
         'cancelaciones' => ['model' => CancellationReason::class, 'table' => 'cancellation_reasons', 'order' => 'sort_order', 'fields' => [
-            'name' => ['text', 80, true], 'attendance' => ['select', AttendanceEffect::class], 'sort_order' => ['number', 255],
+            'name' => ['text', 80, true], 'attendance' => ['select', AttendanceEffect::class], 'for_students' => ['boolean', 1], 'sort_order' => ['number', 255],
         ]],
         'calificaciones' => ['model' => Grade::class, 'table' => 'grades', 'order' => 'sort_order', 'fields' => [
             'code' => ['code', 2, true], 'name' => ['text', 40], 'type' => ['select', GradeType::class], 'sort_order' => ['number', 255],
@@ -96,6 +96,7 @@ class StudentCatalogTab extends Component
         $this->values = collect($this->config()['fields'])
             ->mapWithKeys(fn (array $field, string $name) => [$name => match (true) {
                 $field[0] === 'select' => $record?->getAttribute($name)?->value ?? $field[1]::cases()[0]->value,
+                $field[0] === 'boolean' => (bool) $record?->getAttribute($name),
                 default => $record?->getAttribute($name) ?? ($field[0] === 'number' ? 0 : ''),
             }])
             ->all();
@@ -112,6 +113,7 @@ class StudentCatalogTab extends Component
             $rules = match ($type) {
                 'number' => ['required', 'integer', 'min:0', "max:$max"],
                 'select' => ['required', Rule::enum($max)],
+                'boolean' => ['boolean'],
                 'code' => ['required', 'string', "max:$max", 'regex:/^[A-Z0-9_\-]+$/'],
                 default => [$name === 'name' || ($field[2] ?? false) ? 'required' : 'nullable', 'string', "max:$max"],
             };
@@ -124,6 +126,11 @@ class StudentCatalogTab extends Component
         })->all();
 
         foreach ($config['fields'] as $name => [$type]) {
+            if ($type === 'boolean') {
+                $this->values[$name] = (bool) ($this->values[$name] ?? false);
+
+                continue;
+            }
             $value = trim((string) ($this->values[$name] ?? ''));
             $this->values[$name] = $type === 'code' ? Str::upper($value) : $value;
         }
@@ -133,7 +140,11 @@ class StudentCatalogTab extends Component
             ->all());
 
         $data = collect($config['fields'])->mapWithKeys(fn (array $field, string $name) => [
-            $name => $field[0] === 'number' ? (int) $this->values[$name] : ($this->values[$name] === '' ? null : $this->values[$name]),
+            $name => match ($field[0]) {
+                'number' => (int) $this->values[$name],
+                'boolean' => (bool) $this->values[$name],
+                default => $this->values[$name] === '' ? null : $this->values[$name],
+            },
         ])->all();
 
         $record = $this->recordId

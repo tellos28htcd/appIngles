@@ -1,4 +1,6 @@
 <div class="flex flex-col gap-6">
+    {{-- Dentro de la Agenda (botón "Calificaciones" de cada reservación) solo se usa la ventana de calificar. --}}
+    @unless ($embedded)
     <x-ui.page-header :title="__('kardex.grades_title')" :subtitle="__('kardex.grades_subtitle', ['days' => $daysBack])" />
 
     <section class="flex flex-col rounded-xl border border-line bg-white shadow-xs">
@@ -95,6 +97,7 @@
             @endif
         </div>
     </section>
+    @endunless
 
     {{-- Ventana de calificar --}}
     @php($booking = $grading['booking'])
@@ -116,7 +119,7 @@
                         <div wire:key="entry-{{ $entry->id }}" class="flex flex-wrap items-center gap-2 text-sm">
                             <span class="min-w-40 font-bold tabular-nums">{{ $entry->practiceLabel() }}</span>
                             @if ($canCorrect)
-                                @php($entryType = $entry->kind === \App\Enums\BookingKind::Club ? 'signature' : (\App\Models\Activity::gradeTypesFor($entry->school_id)[$entry->activity_number] ?? \App\Enums\GradeType::forActivityNumber((int) $entry->activity_number))->value)
+                                @php($entryType = ! $entry->kind->isPractice() ? 'signature' : (\App\Models\Activity::gradeTypesFor($entry->school_id)[$entry->activity_number] ?? \App\Enums\GradeType::forActivityNumber((int) $entry->activity_number))->value)
                                 <div class="w-44">
                                     <x-ui.select name="corrections.{{ $entry->id }}" :label="__('kardex.grade')" :sr-only-label="true" :options="$grading['byType'][$entryType] ?? []" wire:model="corrections.{{ $entry->id }}" />
                                 </div>

@@ -126,6 +126,13 @@ class Booking extends Model
             return (string) $this->clubSession?->code;
         }
 
+        // Tipos sin actividad de la ruta: su nombre (la presentación en club, con la abreviatura del club).
+        if (! $this->kind->isPractice()) {
+            return $this->kind === BookingKind::ClubPresentation
+                ? __('agenda.option_club_presentation', ['code' => (string) $this->clubSession?->code])
+                : $this->kind->label();
+        }
+
         return $this->book && $this->lesson && $this->activity_number
             ? Practice::labelFor((int) $this->book->level, $this->lesson, $this->activity_number,
                 Practice::namesFor($this->school_id)[$this->lesson_id.'|'.$this->activity_number] ?? null, Activity::codesFor($this->school_id))
@@ -145,7 +152,7 @@ class Booking extends Model
             $this->is_waitlist => __('agenda.waitlist'),
             $this->modality === ClubModality::Online && $this->classroom?->is_virtual => __('agenda.virtual_classroom', ['name' => $this->classroom->name]),
             // Práctica en línea dentro de la clase de un teacher presencial (aulas virtuales llenas).
-            $this->kind === BookingKind::Session && $this->modality === ClubModality::Online && $this->classroom_id !== null => __('agenda.hybrid_room', ['name' => $this->classroom?->name ?? '—']),
+            $this->kind->usesPracticeRoom() && $this->modality === ClubModality::Online && $this->classroom_id !== null => __('agenda.hybrid_room', ['name' => $this->classroom?->name ?? '—']),
             $this->modality === ClubModality::Online && $this->classroom_id !== null => __('agenda.room', ['name' => $this->classroom?->name ?? '—']),
             $this->modality === ClubModality::Online => __('agenda.virtual_room', ['number' => $this->virtual_room ?? 1]),
             default => __('agenda.room', ['name' => $this->classroom?->name ?? '—']),

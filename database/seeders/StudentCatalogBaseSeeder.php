@@ -42,11 +42,21 @@ class StudentCatalogBaseSeeder extends Seeder
     ];
 
     /** Motivos de cancelación de la agenda: [nombre, cómo cuenta para la asistencia] */
+    /** [nombre, efecto en la asistencia, ¿lo elige el alumno?] */
     private const CANCELLATION_REASONS = [
         ['No se presentó', AttendanceEffect::Absent],
         ['Aviso para cancelar', AttendanceEffect::None],
         ['No terminó la actividad', AttendanceEffect::Attended],
         ['Asistió, decidió cancelar', AttendanceEffect::Attended],
+        // Los que elige el alumno al cancelar él mismo (no cuentan).
+        ['Por mas tiempo en el trabajo', AttendanceEffect::None, true],
+        ['Por viaje de trabajo', AttendanceEffect::None, true],
+        ['Por estudio', AttendanceEffect::None, true],
+        ['Por enfermedad', AttendanceEffect::None, true],
+        ['Por accidente', AttendanceEffect::None, true],
+        ['Por trafico', AttendanceEffect::None, true],
+        ['Por vacaciones', AttendanceEffect::None, true],
+        ['Otra', AttendanceEffect::None, true],
     ];
 
     /** [nombre, origen, nombre corto] */
@@ -137,9 +147,10 @@ class StudentCatalogBaseSeeder extends Seeder
                 StudentType::ofCatalog(null)->firstOrCreate(['school_id' => null, 'code' => $code], ['name' => $name, 'is_active' => true]);
             }
 
-            foreach (self::CANCELLATION_REASONS as $index => [$name, $attendance]) {
+            foreach (self::CANCELLATION_REASONS as $index => $reason) {
+                [$name, $attendance] = $reason;
                 CancellationReason::ofCatalog(null)->firstOrCreate(['school_id' => null, 'name' => $name], [
-                    'attendance' => $attendance, 'sort_order' => ($index + 1) * 10, 'is_active' => true,
+                    'attendance' => $attendance, 'for_students' => $reason[2] ?? false, 'sort_order' => ($index + 1) * 10, 'is_active' => true,
                 ]);
             }
 

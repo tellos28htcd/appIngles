@@ -140,7 +140,11 @@ class StudentCatalogsTest extends TestCase
     {
         // La base se copia a cada escuela con su efecto en la asistencia.
         $copies = CancellationReason::withoutGlobalScope('school')->where('school_id', $this->schoolA->id)->orderBy('sort_order')->get();
-        $this->assertSame(['No se presentó', 'Aviso para cancelar', 'No terminó la actividad', 'Asistió, decidió cancelar'], $copies->pluck('name')->all());
+        $this->assertSame(['No se presentó', 'Aviso para cancelar', 'No terminó la actividad', 'Asistió, decidió cancelar'], $copies->where('for_students', false)->pluck('name')->values()->all());
+        // Los del alumno (los elige al cancelar él mismo en Agendar) no cuentan para la asistencia.
+        $students = $copies->where('for_students', true);
+        $this->assertSame(['Por mas tiempo en el trabajo', 'Por viaje de trabajo', 'Por estudio', 'Por enfermedad', 'Por accidente', 'Por trafico', 'Por vacaciones', 'Otra'], $students->pluck('name')->values()->all());
+        $this->assertTrue($students->every(fn (CancellationReason $reason) => $reason->attendance === AttendanceEffect::None));
         $this->assertSame(AttendanceEffect::Absent, $copies->first()->attendance);
 
         $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
