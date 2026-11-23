@@ -8,6 +8,7 @@ use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
 use App\Enums\BookingStatus;
 use App\Enums\ClubModality;
+use App\Enums\GradeType;
 use App\Enums\LessonType;
 use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
@@ -26,6 +27,8 @@ use App\Models\Club;
 use App\Models\ClubSession;
 use App\Models\CoordinatorActivity;
 use App\Models\CoordinatorSession;
+use App\Models\Grade;
+use App\Models\KardexEntry;
 use App\Models\Lesson;
 use App\Models\Practice;
 use App\Models\Role;
@@ -348,11 +351,20 @@ class AgendaTest extends TestCase
         $this->receptionBooks($this->student(), 9);
         $booking = Booking::with('student')->sole();
 
+        // Sin asistencia no sale el botón "Calificaciones".
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
-            ->assertSee($booking->student->fullName())->assertSee('L1-L1-A1')
+            ->assertSee($booking->student->fullName())->assertSee('L1-L1-A1')->assertDontSeeHtml('grades-tip-'.$booking->id)
             ->call('markAttended', $booking->id)->assertDispatched('toast', type: 'success');
 
         $this->assertSame(BookingStatus::Attended, $booking->refresh()->status);
+
+        // Con asistencia sale; al pasar el mouse dice lo que ya tiene calificado.
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertSeeHtml('grades-tip-'.$booking->id)->assertSee(__('agenda.grades_tip.pending'));
+        $grade = Grade::create(['school_id' => $booking->school_id, 'code' => 'F', 'name' => 'Firma', 'type' => GradeType::Signature, 'sort_order' => 1, 'is_active' => true]);
+        $entry = KardexEntry::create(['school_id' => $booking->school_id, 'student_id' => $booking->student_id, 'booking_id' => $booking->id, 'kind' => BookingKind::Session,
+            'book_id' => $booking->book_id, 'lesson_id' => $booking->lesson_id, 'activity_number' => $booking->activity_number, 'sort_order' => 1, 'points' => 0,
+            'grade_id' => $grade->id, 'teacher_id' => $booking->teacher_id, 'user_id' => auth()->id(), 'session_date' => $booking->date]);
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertSee(__('agenda.grades_tip.graded'))->assertSeeText($entry->practiceLabel().' · F');
 
         // Con asistencia ya no se puede cambiar (no aparece "Cambiar" y la acción se rechaza).
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->assertDontSeeHtml('editBooking('.$booking->id.')')

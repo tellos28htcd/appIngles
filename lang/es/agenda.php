@@ -220,4 +220,8 @@ return [
         'teacher' => 'Ese teacher no trabaja a esa hora.',
         'room_full' => 'El aula :room ya está llena a esa hora.',
     ],
+    'grades_tip' => [
+        'graded' => 'Ya calificado:',
+        'pending' => 'Aún sin calificar.',
+    ],
 ];

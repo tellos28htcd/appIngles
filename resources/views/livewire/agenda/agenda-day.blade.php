@@ -220,7 +220,23 @@
                                             <td class="px-4 py-1 text-right">
                                                 {{-- Calificaciones (práctica, club y presentación), ya con la asistencia registrada: la ventana de Kardex → Calificaciones. --}}
                                                 @if ($booking->status === \App\Enums\BookingStatus::Attended && ! $booking->is_waitlist && $booking->kind->isGradable())
-                                                    <x-ui.button size="sm" variant="outline" class="h-7 text-[15px]" wire:click="$dispatch('kardex-grade', { bookingId: {{ $booking->id }} })">{{ __('agenda.actions.grades') }}</x-ui.button>
+                                                    {{-- Al pasar el mouse: lo que ya tiene calificado (o el motivo de "Sin calificación"). --}}
+                                                    <span class="group relative inline-block">
+                                                        <x-ui.button size="sm" variant="outline" class="h-7 text-[15px]" aria-describedby="grades-tip-{{ $booking->id }}" wire:click="$dispatch('kardex-grade', { bookingId: {{ $booking->id }} })">{{ __('agenda.actions.grades') }}</x-ui.button>
+                                                        <span id="grades-tip-{{ $booking->id }}" role="tooltip"
+                                                              class="pointer-events-none invisible absolute bottom-full right-0 z-20 mb-2 w-max max-w-xs rounded-lg bg-ink-900 px-3 py-2 text-left text-sm text-white opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                                                            @if ($booking->kardexEntries->isNotEmpty())
+                                                                <span class="block font-bold">{{ __('agenda.grades_tip.graded') }}</span>
+                                                                @foreach ($booking->kardexEntries as $entry)
+                                                                    <span class="block tabular-nums">{{ $entry->practiceLabel() }} · <span class="font-bold">{{ $entry->grade?->code }}</span></span>
+                                                                @endforeach
+                                                            @elseif ($booking->ungradedReason)
+                                                                {{ __('kardex.ungraded_short', ['reason' => $booking->ungradedReason->name]) }}
+                                                            @else
+                                                                {{ __('agenda.grades_tip.pending') }}
+                                                            @endif
+                                                        </span>
+                                                    </span>
                                                 @endif
                                             </td>
                                         @endif

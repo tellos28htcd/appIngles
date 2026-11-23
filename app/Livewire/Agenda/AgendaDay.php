@@ -375,7 +375,7 @@ class AgendaDay extends Component
     {
         $bookings = Booking::query()->whereDate('date', $this->date)
             ->when($this->ownTeacherId() !== null, fn ($query) => $query->where('teacher_id', $this->ownTeacherId()))
-            ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason'])
+            ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson'])
             ->get();
 
         // Peso newton de cada práctica; carga por aula y aulas híbridas de cada hora (con todas las reservaciones, sin filtros).
