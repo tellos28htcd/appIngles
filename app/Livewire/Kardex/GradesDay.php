@@ -4,6 +4,7 @@ namespace App\Livewire\Kardex;
 
 use App\Actions\Kardex\KardexService;
 use App\Enums\BookingKind;
+use App\Enums\BookingStatus;
 use App\Enums\GradeType;
 use App\Models\Booking;
 use App\Models\KardexEntry;
@@ -222,14 +223,14 @@ class GradesDay extends Component
     /**
      * Lo de la ventana abierta: reservación, prácticas por calificar con sus calificaciones posibles y lo ya calificado.
      *
-     * @return array{booking: ?Booking, steps: list<array<string, mixed>>, options: array<int, array<int, string>>, byType: array<string, array<int, string>>, late: bool, gradable: bool}
+     * @return array{booking: ?Booking, steps: list<array<string, mixed>>, options: array<int, array<int, string>>, byType: array<string, array<int, string>>, late: bool, gradable: bool, attended: bool}
      */
     private function gradingData(KardexService $kardex): array
     {
         $booking = $this->gradingId ? Booking::query()->with(['student', 'slot', 'teacher', 'clubSession', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson', 'kardexEntries.user', 'kardexEntries.observationReason'])->find($this->gradingId) : null;
 
         if ($booking === null) {
-            return ['booking' => null, 'steps' => [], 'options' => [], 'byType' => [], 'late' => false, 'gradable' => false];
+            return ['booking' => null, 'steps' => [], 'options' => [], 'byType' => [], 'late' => false, 'gradable' => false, 'attended' => false];
         }
 
         // Club y presentaciones: una sola firma (F); la práctica, las prácticas que siguen en el Kardex.
@@ -238,7 +239,7 @@ class GradesDay extends Component
             ? ($booking->kardexEntries->isEmpty() ? [['label' => $booking->activityLabel(), 'type' => GradeType::Signature]] : [])
             : $kardex->pendingSteps($booking);
         $byType = collect(GradeType::cases())->mapWithKeys(fn (GradeType $type) => [$type->value => $kardex->grades($booking->school_id, $type)
-            ->mapWithKeys(fn ($grade) => [$grade->id => $grade->code.' · '.$grade->name])->all()]);
+            ->mapWithKeys(fn ($grade) => [$grade->id => $grade->code])->all()]);
 
         return [
             'booking' => $booking,
@@ -247,6 +248,7 @@ class GradesDay extends Component
             'byType' => $byType->all(),
             'late' => $kardex->isLate($booking, $this->today()),
             'gradable' => $booking->date->toDateString() >= $kardex->earliestDate($this->today())->toDateString(),
+            'attended' => $booking->status === BookingStatus::Attended,
         ];
     }
 

@@ -45,12 +45,13 @@
                                 <th scope="col" class="px-4 py-3">{{ __('agenda.student') }}</th>
                                 <th scope="col" class="px-4 py-3">{{ __('kardex.reserved') }}</th>
                                 <th scope="col" class="px-4 py-3">{{ __('kardex.graded') }}</th>
+                                <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('agenda.actions.grades') }}</span></th>
                             </tr>
                         </thead>
                         @foreach ($this->bookings as $group)
                             <tbody wire:key="slot-{{ $group['slot']?->id }}" class="border-t border-line">
                                 <tr class="bg-primary-50">
-                                    <th scope="colgroup" colspan="5" class="px-4 py-1 text-left">
+                                    <th scope="colgroup" colspan="6" class="px-4 py-1 text-left">
                                         <span class="font-display text-lg font-bold tabular-nums text-primary-700">{{ substr((string) $group['slot']?->starts_at, 0, 5) }} – {{ substr((string) $group['slot']?->ends_at, 0, 5) }}</span>
                                     </th>
                                 </tr>
@@ -86,6 +87,14 @@
                                                 @endif
                                             @else
                                                 <span class="text-sm text-ink-500">{{ __('kardex.pending') }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-1.5 text-right">
+                                            {{-- Se califica cuando ya se registró la asistencia en la Agenda. --}}
+                                            @if ($booking->status === \App\Enums\BookingStatus::Attended)
+                                                <x-ui.button size="sm" variant="outline" class="h-7 text-[15px]" wire:click="open({{ $booking->id }})">{{ __('agenda.actions.grades') }}</x-ui.button>
+                                            @else
+                                                <span class="text-sm text-ink-500">{{ __('kardex.no_attendance') }}</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -150,7 +159,10 @@
                     <x-ui.button :variant="$ungraded ? 'primary' : 'ghost'" size="sm" wire:click="$set('ungraded', true)">{{ __('kardex.tab_ungraded') }}</x-ui.button>
                 </div>
 
-                @if (! $ungraded)
+                @if (! $ungraded && ! $grading['attended'])
+                    {{-- Primero se registra la asistencia en la Agenda; "Sin calificación" sí se puede. --}}
+                    <p class="rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-700">{{ __('kardex.not_attended') }}</p>
+                @elseif (! $ungraded)
                     {{-- Las 3 prácticas que siguen en el Kardex: se califican en orden, sin saltarse ninguna. --}}
                     <p class="text-sm text-ink-700">{{ __('kardex.in_order_hint') }}</p>
                     <ol class="flex flex-col gap-3">
@@ -196,7 +208,7 @@
             @if ($booking && $grading['gradable'] && $grading['steps'] !== [])
                 @if ($ungraded)
                     <x-ui.button wire:click="saveUngraded">{{ __('kardex.actions.save_ungraded') }}</x-ui.button>
-                @else
+                @elseif ($grading['attended'])
                     <x-ui.button wire:click="save">{{ __('kardex.actions.save') }}</x-ui.button>
                 @endif
             @endif

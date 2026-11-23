@@ -123,7 +123,7 @@ class KardexGradesTest extends TestCase
         return Booking::create([
             'school_id' => $this->school->id, 'student_id' => $student->id, 'date' => $date, 'schedule_slot_id' => $this->slots[$hour]->id,
             'kind' => BookingKind::Session, 'modality' => ClubModality::InPerson, 'teacher_id' => $teacher->id, 'classroom_id' => $this->room->id,
-            'is_waitlist' => false, 'status' => BookingStatus::Booked, 'book_id' => $this->book->id, 'lesson_id' => $this->lessons[$lesson]->id, 'activity_number' => $activity,
+            'is_waitlist' => false, 'status' => BookingStatus::Attended, 'book_id' => $this->book->id, 'lesson_id' => $this->lessons[$lesson]->id, 'activity_number' => $activity,
         ]);
     }
 
@@ -179,9 +179,35 @@ class KardexGradesTest extends TestCase
         $this->assertSame($this->teacherUser($this->melissa)->id, KardexEntry::first()->user_id);
         $this->assertSame($this->melissa->id, KardexEntry::first()->teacher_id);
 
-        // La agenda asigna la siguiente sin calificar del Kardex; calificar no marca asistencia.
+        // La agenda asigna la siguiente sin calificar del Kardex.
         $this->assertSame('L1-L1-A6-WP', app(AgendaService::class)->nextActivity($student->fresh())['label']);
-        $this->assertSame(BookingStatus::Booked, $booking->fresh()->status);
+    }
+
+    public function test_grading_needs_the_attendance_first_but_it_can_stay_ungraded(): void
+    {
+        $student = Student::factory()->create(['school_id' => $this->school->id]);
+        $booking = $this->booking($student, $this->melissa, 1);
+        $booking->update(['status' => BookingStatus::Booked]);
+        $this->actingAs($this->teacherUser($this->melissa));
+
+        // En el listado, sin asistencia no sale el botón "Calificaciones".
+        // (El nombre del alumno también abre la ventana: con el botón serían 2 clics que abren.)
+        $html = Livewire::test(GradesDay::class)->assertSee(__('kardex.no_attendance'))->html();
+        $this->assertSame(1, substr_count($html, 'wire:click="open('.$booking->id.')"'));
+
+        $page = Livewire::test(GradesDay::class)->call('open', $booking->id)->assertSee(__('kardex.not_attended'))->assertDontSee(__('kardex.actions.save'))
+            ->set('grades', [(string) $this->grades['F']->id, '', ''])->call('save')->assertHasErrors('grades');
+        $this->assertSame([], $this->kardex($student));
+
+        // "Sin calificación" sí se puede (por ejemplo, si no vino).
+        $page->set('ungraded', true)->set('ungradedReasonId', $this->reasons['Pendiente de revisar']->id)->set('ungradedComment', 'No vino')
+            ->call('saveUngraded')->assertHasNoErrors();
+
+        // Con la asistencia registrada ya se califica.
+        $other = $this->booking(Student::factory()->create(['school_id' => $this->school->id]), $this->melissa, 1);
+        $this->assertSame(2, substr_count(Livewire::test(GradesDay::class)->html(), 'wire:click="open('.$other->id.')"'));
+        Livewire::test(GradesDay::class)->call('open', $other->id)->assertDontSee(__('kardex.not_attended'))
+            ->set('grades', [(string) $this->grades['F']->id, '', ''])->call('save')->assertHasNoErrors();
     }
 
     public function test_the_kardex_continues_into_the_next_lesson_and_moves_the_upcoming_bookings(): void
@@ -252,7 +278,7 @@ class KardexGradesTest extends TestCase
         $other = Student::factory()->create(['school_id' => $this->school->id]);
         $presentation = Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => self::TODAY, 'schedule_slot_id' => $this->slots[9]->id,
             'kind' => BookingKind::Presentation, 'modality' => ClubModality::InPerson, 'teacher_id' => $this->melissa->id, 'classroom_id' => $this->room->id,
-            'is_waitlist' => false, 'status' => BookingStatus::Booked]);
+            'is_waitlist' => false, 'status' => BookingStatus::Attended]);
         Booking::create(['school_id' => $this->school->id, 'student_id' => $other->id, 'date' => self::TODAY, 'schedule_slot_id' => $this->slots[9]->id,
             'kind' => BookingKind::Mentoring, 'modality' => ClubModality::InPerson, 'teacher_id' => $this->melissa->id, 'classroom_id' => $this->room->id,
             'is_waitlist' => false, 'status' => BookingStatus::Booked]);
@@ -262,7 +288,7 @@ class KardexGradesTest extends TestCase
         $this->actingAs($this->teacherUser($this->melissa));
         $page = Livewire::test(GradesDay::class, ['embedded' => true])->dispatch('kardex-grade', bookingId: $presentation->id)
             ->assertSet('gradingId', $presentation->id)->assertSee(__('agenda.kinds.presentation'));
-        $this->assertSame([$this->grades['F']->id => 'F · Firma'], $page->viewData('grading')['options'][0]);
+        $this->assertSame([$this->grades['F']->id => 'F'], $page->viewData('grading')['options'][0]);
         $page->set('grades', [(string) $this->grades['F']->id, '', ''])->call('save')->assertHasNoErrors()->assertDispatched('kardex-saved');
 
         $entry = KardexEntry::sole();
@@ -301,7 +327,7 @@ class KardexGradesTest extends TestCase
             'classroom_id' => $this->room->id, 'date' => self::TODAY, 'schedule_slot_id' => $this->slots[11]->id, 'modality' => 'in_person']);
         $booking = Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => self::TODAY, 'schedule_slot_id' => $this->slots[11]->id,
             'kind' => BookingKind::Club, 'modality' => ClubModality::InPerson, 'club_session_id' => $session->id, 'teacher_id' => $this->melissa->id,
-            'classroom_id' => $this->room->id, 'is_waitlist' => false, 'status' => BookingStatus::Booked]);
+            'classroom_id' => $this->room->id, 'is_waitlist' => false, 'status' => BookingStatus::Attended]);
         $this->actingAs($this->teacherUser($this->melissa));
 
         $page = Livewire::test(GradesDay::class)->call('open', $booking->id)->assertSee('C12')

@@ -46,6 +46,8 @@ return [
     'observation_for' => 'Observación de :practice',
     'no_observation' => 'Sin observación',
     'too_old' => 'Solo se califica hasta :days días después de la práctica.',
+    'not_attended' => 'Primero registra en la Agenda que el alumno asistió; después podrás calificar. Si no vino, usa "Sin calificación".',
+    'no_attendance' => 'Sin asistencia',
     'nothing_to_grade' => 'No hay más prácticas por calificar.',
     'confirm_remove' => '¿Quitar esta calificación del Kardex?',
 
@@ -71,6 +73,7 @@ return [
     ],
 
     'validation' => [
+        'not_attended' => 'Primero registra en la Agenda que el alumno asistió; después podrás calificar.',
         'not_gradable' => 'Esta reservación no se puede calificar (cancelada o en lista de espera).',
         'future' => 'Solo se califican prácticas de hoy o de días anteriores.',
         'too_old' => 'Solo se califica hasta :days días después de la práctica.',

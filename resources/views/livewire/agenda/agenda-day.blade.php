@@ -218,8 +218,8 @@
                                         </td>
                                         @if ($canGrade)
                                             <td class="px-4 py-1 text-right">
-                                                {{-- Calificaciones (práctica, club y presentación): la ventana de Kardex → Calificaciones. --}}
-                                                @if ($active && ! $booking->is_waitlist && $booking->kind->isGradable())
+                                                {{-- Calificaciones (práctica, club y presentación), ya con la asistencia registrada: la ventana de Kardex → Calificaciones. --}}
+                                                @if ($booking->status === \App\Enums\BookingStatus::Attended && ! $booking->is_waitlist && $booking->kind->isGradable())
                                                     <x-ui.button size="sm" variant="outline" class="h-7 text-[15px]" wire:click="$dispatch('kardex-grade', { bookingId: {{ $booking->id }} })">{{ __('agenda.actions.grades') }}</x-ui.button>
                                                 @endif
                                             </td>

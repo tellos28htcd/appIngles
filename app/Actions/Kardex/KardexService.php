@@ -4,6 +4,7 @@ namespace App\Actions\Kardex;
 
 use App\Actions\Agenda\AgendaService;
 use App\Enums\BookingKind;
+use App\Enums\BookingStatus;
 use App\Enums\GradeType;
 use App\Models\Activity;
 use App\Models\Booking;
@@ -92,6 +93,14 @@ final class KardexService
         return $booking->date->toDateString() < $today->toDateString();
     }
 
+    /** Para calificar, primero se registra la asistencia ("Asistió") en la Agenda. */
+    private function ensureAttended(Booking $booking): void
+    {
+        if ($booking->status !== BookingStatus::Attended) {
+            throw ValidationException::withMessages(['grades' => __('kardex.validation.not_attended')]);
+        }
+    }
+
     private function ensureGradable(Booking $booking, CarbonInterface $today): void
     {
         $date = $booking->date->toDateString();
@@ -154,6 +163,7 @@ final class KardexService
     public function gradeSession(Booking $booking, array $gradeIds, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null, array $observationIds = []): int
     {
         $this->ensureGradable($booking, $today);
+        $this->ensureAttended($booking);
         $steps = $this->pendingSteps($booking);
         $gradeIds = array_map(fn ($id) => $id === null || $id === '' ? null : (int) $id, array_slice(array_values($gradeIds), 0, count($steps)));
 
@@ -204,6 +214,7 @@ final class KardexService
     public function gradeClub(Booking $booking, ?int $gradeId, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null, int|string|null $observationId = null): void
     {
         $this->ensureGradable($booking, $today);
+        $this->ensureAttended($booking);
 
         if (KardexEntry::withoutGlobalScope('school')->where('booking_id', $booking->id)->exists()) {
             throw ValidationException::withMessages(['grades' => __('kardex.validation.club_done')]);
