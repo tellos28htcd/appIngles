@@ -34,6 +34,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | WhatsApp
+    |--------------------------------------------------------------------------
+    | Lada del país que se antepone a los celulares de 10 dígitos (México: 52).
+    */
+
+    'whatsapp' => [
+        'country_code' => env('WHATSAPP_COUNTRY_CODE', '52'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Super Administrador inicial
     |--------------------------------------------------------------------------
     | Lo crea SuperAdminSeeder. Sin contraseña en .env, el seeder genera una

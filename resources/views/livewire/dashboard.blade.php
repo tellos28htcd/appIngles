@@ -20,8 +20,9 @@
             <section class="flex flex-col gap-4 rounded-xl border border-line bg-white p-5 shadow-xs md:p-6" aria-labelledby="birthdays-title">
                 <h2 id="birthdays-title" class="flex items-center gap-2 text-h4 font-semibold"><span aria-hidden="true">🎂</span> {{ __('birthdays.today.title') }}</h2>
                 @forelse ($birthdays as $student)
-                    <a href="{{ route('students.show', $student) }}" wire:navigate wire:key="birthday-{{ $student->id }}"
-                       class="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+                    <div wire:key="birthday-{{ $student->id }}" class="-mx-2 flex items-center gap-2">
+                    <a href="{{ route('students.show', $student) }}" wire:navigate
+                       class="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
                        title="{{ __('birthdays.today.view') }}">
                         @include('livewire.students.partials.avatar', ['student' => $student, 'size' => 'size-10 text-sm'])
                         <span class="flex min-w-0 flex-1 flex-col">
@@ -31,6 +32,15 @@
                             </span>
                         </span>
                     </a>
+                    {{-- Felicitación por WhatsApp: abre la aplicación con el mensaje ya escrito (falta solo enviarlo). --}}
+                    @if ($whatsAppUrl = $student->birthdayWhatsAppUrl($schoolName))
+                        <a href="{{ $whatsAppUrl }}" target="_blank" rel="noopener noreferrer"
+                           class="flex size-11 shrink-0 items-center justify-center rounded-full bg-success-50 text-success-600 transition hover:bg-success-500 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-success-200"
+                           title="{{ __('birthdays.whatsapp.send', ['name' => $student->fullName()]) }}" aria-label="{{ __('birthdays.whatsapp.send', ['name' => $student->fullName()]) }}">
+                            <x-ui.icon name="whatsapp" class="size-6" />
+                        </a>
+                    @endif
+                    </div>
                 @empty
                     <p class="text-sm text-ink-500">{{ __('birthdays.today.empty') }}</p>
                 @endforelse

@@ -286,6 +286,33 @@ class Student extends Model
         return $this->birth_date?->age;
     }
 
+    /** Celular con lada del país para WhatsApp (solo dígitos); null si no tiene uno válido. */
+    public function whatsAppNumber(): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string) $this->mobile_phone);
+        $countryCode = (string) config('appingles.whatsapp.country_code');
+
+        if (strlen($digits) === 10) {
+            return $countryCode.$digits;
+        }
+
+        return strlen($digits) >= 11 && strlen($digits) <= 15 ? $digits : null;
+    }
+
+    /** Enlace que abre WhatsApp con la felicitación de cumpleaños ya escrita; null sin celular válido. */
+    public function birthdayWhatsAppUrl(string $school): ?string
+    {
+        $number = $this->whatsAppNumber();
+
+        if ($number === null) {
+            return null;
+        }
+
+        $message = __('birthdays.whatsapp.message', ['name' => Str::title(mb_strtolower($this->first_name)), 'school' => $school]);
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($message);
+    }
+
     /**
      * Alumnos que cumplen años en esa fecha. Quien nació el 29 de febrero celebra el 28
      * en los años que no son bisiestos.

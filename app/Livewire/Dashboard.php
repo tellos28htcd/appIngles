@@ -31,6 +31,7 @@ class Dashboard extends Component
         return view('livewire.dashboard', [
             'user' => $user,
             'birthdays' => $birthdays,
+            'schoolName' => $user->school?->name ?: config('appingles.brand.name'),
             'firstName' => Str::before($user->name, ' '),
             'todayLabel' => Str::ucfirst($today->translatedFormat('l j \d\e F \d\e Y')),
             'roadmap' => [

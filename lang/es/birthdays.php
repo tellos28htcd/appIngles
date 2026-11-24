@@ -15,6 +15,11 @@ return [
         'view' => 'Ver expediente',
     ],
 
+    'whatsapp' => [
+        'send' => 'Enviar felicitación por WhatsApp a :name',
+        'message' => '¡Feliz cumpleaños, :name! 🎉 Todo el equipo de :school te desea un día increíble. Gracias por aprender con nosotros: ¡que este nuevo año venga lleno de logros!',
+    ],
+
     'mail' => [
         'subject' => '¡Feliz cumpleaños, :name!',
         'greeting' => '¡Feliz cumpleaños, :name!',

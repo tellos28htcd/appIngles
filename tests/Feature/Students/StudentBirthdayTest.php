@@ -112,6 +112,25 @@ class StudentBirthdayTest extends TestCase
             ->get(route('dashboard'))->assertOk()->assertDontSee('Cumpleaños de hoy');
     }
 
+    public function test_the_birthday_list_links_to_whatsapp_with_the_greeting_written(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 21)->setTime(9, 0));
+        $this->school->update(['name' => 'Academia Centro']);
+        $this->student('2000-10-21', ['first_name' => 'ALEXIS SAIDY', 'mobile_phone' => '378 148 3660'], withUser: false);
+        $this->student('2000-10-21', ['first_name' => 'SINCEL', 'mobile_phone' => null], withUser: false);
+
+        $message = __('birthdays.whatsapp.message', ['name' => 'Alexis Saidy', 'school' => 'Academia Centro']);
+        $html = $this->actingAs(User::factory()->create(['role_id' => Role::where('slug', Role::RECEPTION)->value('id'), 'school_id' => $this->school->id]))
+            ->get(route('dashboard'))->assertOk()
+            ->assertSee('https://wa.me/523781483660?text='.rawurlencode($message), false)
+            ->assertSee('SINCEL')->getContent();
+        $this->assertSame(1, substr_count($html, 'href="https://wa.me/'));
+
+        // Sin celular válido no sale el icono; con lada ya incluida se respeta.
+        $this->assertNull(Student::factory()->make(['mobile_phone' => '12345'])->whatsAppNumber());
+        $this->assertSame('523781483660', Student::factory()->make(['mobile_phone' => '+52 378 148 3660'])->whatsAppNumber());
+    }
+
     public function test_the_command_is_scheduled_every_day(): void
     {
         $this->artisan('schedule:list')->expectsOutputToContain('students:birthday-greetings');
