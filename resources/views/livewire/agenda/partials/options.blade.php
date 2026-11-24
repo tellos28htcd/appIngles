@@ -3,7 +3,8 @@
        tipo: Práctica, Club, Mentoría especial, Entrega de material, Presentación 1 a 1 o Presentación en club; se eligen
        hasta 2 horas distintas (toggleChoice, en $choices).
      - Sin $multiple ("Cambiar reservación"): una sola opción en $model ("option" por omisión; otro clic la quita), con
-       la modalidad en cada botón. Variables: $options, $model y $current (valor elegido). --}}
+       la modalidad en cada botón. Variables: $options, $model y $current (valor elegido).
+     - Una opción con 'blocked' (club que no le toca, lleno, presentación sin aula libre) sale deshabilitada con el motivo. --}}
 @php($model ??= 'option')
 @php($multiple ??= false)
 @php($current = $current ?? '')
@@ -37,6 +38,13 @@
                         @foreach ($hour['options'] as $item)
                             @php($value = $valueOf($hour, $item))
                             @php($selected = in_array($value, $chosen, true))
+                            @php($blocked = $item['blocked'] ?? null)
+                            @if ($blocked)
+                                <button type="button" wire:key="option-{{ $value }}" disabled title="{{ $blocked }}" @class([$chip, 'cursor-not-allowed border-dashed border-line bg-surface-2 text-ink-400'])>
+                                    <span class="font-semibold">{{ $item['label'] }}</span>
+                                    <span class="text-xs font-semibold text-warning-700">{{ $blocked }}</span>
+                                </button>
+                            @else
                             <button type="button" wire:key="option-{{ $value }}" wire:click="{{ $clickOf($value, $selected) }}" aria-pressed="{{ $selected ? 'true' : 'false' }}"
                                     @class([$chip, 'border-primary-500 bg-primary-50 ring-2 ring-primary-500' => $selected, 'border-line hover:border-primary-500' => ! $selected])>
                                 <span class="font-semibold">{{ $item['label'] }}</span>
@@ -44,6 +52,7 @@
                                     {{ $item['waitlist'] ? __('agenda.goes_to_waitlist') : ($item['kind'] === 'presentation' ? trans_choice('agenda.free_rooms', $item['free']) : trans_choice('agenda.seats', $item['free'])) }}
                                 </span>
                             </button>
+                            @endif
                         @endforeach
                     </div>
                 @else
@@ -56,6 +65,13 @@
                                     @foreach ($items as $item)
                                         @php($value = $valueOf($hour, $item))
                                         @php($selected = in_array($value, $chosen, true))
+                                        @if ($item['blocked'] ?? null)
+                                            <button type="button" wire:key="option-{{ $value }}" disabled title="{{ $item['blocked'] }}" @class([$chip, 'cursor-not-allowed border-dashed border-line bg-surface-2 text-ink-400'])>
+                                                <span class="font-semibold">{{ $item['club_session_id'] ? $item['label'] : ($item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person')) }}</span>
+                                                <span class="text-xs font-semibold text-warning-700">{{ $item['blocked'] }}</span>
+                                            </button>
+                                            @continue
+                                        @endif
                                         <button type="button" wire:key="option-{{ $value }}" wire:click="{{ $clickOf($value, $selected) }}" aria-pressed="{{ $selected ? 'true' : 'false' }}"
                                                 @class([$chip, 'border-primary-500 bg-primary-50 ring-2 ring-primary-500' => $selected, 'border-line hover:border-primary-500' => ! $selected])>
                                             <span class="font-semibold">{{ $item['club_session_id'] ? $item['label'] : ($item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person')) }}</span>

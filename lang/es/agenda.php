@@ -220,6 +220,13 @@ return [
         'teacher' => 'Ese teacher no trabaja a esa hora.',
         'room_full' => 'El aula :room ya está llena a esa hora.',
     ],
+    'blocked' => [
+        'level' => '{1} Es para nivel :levels|[2,*] Es para niveles :levels',
+        'lesson' => 'Desde la Lección :lesson',
+        'no_activity' => 'Sin actividad siguiente',
+        'full' => 'Lleno',
+        'no_room' => 'Sin aula libre',
+    ],
     'grades_tip' => [
         'graded' => 'Ya calificado:',
         'pending' => 'Aún sin calificar.',

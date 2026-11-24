@@ -556,13 +556,19 @@ final class AgendaService
     /** ¿El alumno puede ir a ese club? (nivel de la abreviatura y lección mínima para clubs). */
     public function clubAllows(School $school, ClubSession $club, ?array $step, ProgressPath $path): bool
     {
+        return $this->clubBlockReason($school, $club, $step, $path) === null;
+    }
+
+    /** Por qué el alumno no puede entrar a ese club (nivel o lección mínima); null si sí puede. */
+    public function clubBlockReason(School $school, ClubSession $club, ?array $step, ProgressPath $path): ?string
+    {
         if ($step === null) {
-            return false;
+            return __('agenda.blocked.no_activity');
         }
 
         $levels = $club->club?->codeInfo($club->code)['levels'] ?? [];
         if ($levels !== [] && ! in_array($step['level'], array_map('intval', $levels), true)) {
-            return false;
+            return trans_choice('agenda.blocked.level', count($levels), ['levels' => implode(', ', $levels)]);
         }
 
         if ($school->club_min_lesson_number) {
@@ -572,11 +578,11 @@ final class AgendaService
             $current = $path->indexOf($step['lesson_id'], $step['activity_number']);
 
             if ($step['book_id'] === $first['book_id'] && $minimum !== false && $current !== null && $current < $minimum) {
-                return false;
+                return __('agenda.blocked.lesson', ['lesson' => $school->club_min_lesson_number]);
             }
         }
 
-        return true;
+        return null;
     }
 
     /**
@@ -619,20 +625,21 @@ final class AgendaService
                     'label' => __('agenda.option_session'), 'free' => $onlineSeats, 'waitlist' => false];
             }
 
+            // El club de esa hora sale siempre; si no le toca (nivel, lección o lleno), deshabilitado con el motivo.
             foreach ($clubs->where('schedule_slot_id', $slot->id) as $club) {
                 $seats = $this->clubFreeSeats($school, $club);
+                $blocked = $this->clubBlockReason($school, $club, $step, $path) ?? ($seats > 0 ? null : __('agenda.blocked.full'));
 
-                if ($seats > 0 && $this->clubAllows($school, $club, $step, $path)) {
-                    $options[] = ['kind' => BookingKind::Club->value, 'modality' => $club->modality->value, 'club_session_id' => $club->id,
-                        'label' => __('agenda.option_club', ['code' => $club->code, 'name' => $club->club?->name]), 'free' => $seats, 'waitlist' => false];
-                }
+                $options[] = ['kind' => BookingKind::Club->value, 'modality' => $club->modality->value, 'club_session_id' => $club->id,
+                    'label' => __('agenda.option_club', ['code' => $club->code, 'name' => $club->club?->name]), 'free' => $seats, 'waitlist' => false, 'blocked' => $blocked];
             }
 
             if ($byReception) {
                 $options = [...$options, ...$this->receptionOptions($school, $student, $date, $slot, $clubs->where('schedule_slot_id', $slot->id), $excluded)];
             }
 
-            if ($options !== []) {
+            // Una hora sin nada que se pueda reservar no se muestra (aunque tenga opciones deshabilitadas).
+            if (collect($options)->contains(fn (array $item) => ($item['blocked'] ?? null) === null)) {
                 $result[] = ['slot' => $slot, 'options' => $options];
             }
         }
@@ -835,6 +842,9 @@ final class AgendaService
             foreach ([ClubModality::InPerson->value => $inPerson, ClubModality::Online->value => $kind->allowsOnline() ? $online : 0] as $modality => $free) {
                 if ($free > 0) {
                     $options[] = ['kind' => $kind->value, 'modality' => $modality, 'club_session_id' => null, 'label' => $kind->label(), 'free' => $free, 'waitlist' => false];
+                } elseif ($kind === BookingKind::Presentation && $modality === ClubModality::InPerson->value) {
+                    // La presentación 1 a 1 necesita un aula vacía: sin ella sale deshabilitada con el motivo.
+                    $options[] = ['kind' => $kind->value, 'modality' => $modality, 'club_session_id' => null, 'label' => $kind->label(), 'free' => 0, 'waitlist' => false, 'blocked' => __('agenda.blocked.no_room')];
                 }
             }
         }

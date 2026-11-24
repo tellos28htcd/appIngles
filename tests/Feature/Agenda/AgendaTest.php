@@ -187,6 +187,10 @@ class AgendaTest extends TestCase
         $this->receptionBooks($pedro, 10)->assertDispatched('toast', type: 'success');
         $this->assertNotSame($presentation->classroom_id, Booking::where('student_id', $pedro->id)->value('classroom_id'));
         $this->receptionBooks($this->student(), 10, 'presentation')->assertDispatched('toast', type: 'error', message: __('agenda.validation.no_free_room'));
+        // Sin aula vacía, la presentación 1 a 1 sale deshabilitada con el motivo.
+        $presentations = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->student()->id)->get('options'))
+            ->firstWhere('slot.id', $this->slots[10]->id)['options'];
+        $this->assertSame([__('agenda.blocked.no_room')], collect($presentations)->where('kind', 'presentation')->pluck('blocked')->all());
         $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'success');
         $this->assertSame(1, Booking::where('schedule_slot_id', $this->slots[10]->id)->where('classroom_id', $presentation->classroom_id)->active()->count());
 
@@ -441,9 +445,12 @@ class AgendaTest extends TestCase
         $this->actingAs($this->user(Role::RECEPTION));
         [$ana, $luis] = [$this->student(), $this->student()];
 
-        $clubs = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $ana->id)->get('options'))
-            ->flatMap(fn (array $hour) => $hour['options'])->where('kind', 'club')->pluck('club_session_id')->filter()->values()->all();
-        $this->assertSame([$level1->id], $clubs);
+        // El club de otro nivel también sale, pero deshabilitado con el motivo.
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $ana->id);
+        $clubs = collect($page->get('options'))->flatMap(fn (array $hour) => $hour['options'])->where('kind', 'club')
+            ->mapWithKeys(fn (array $item) => [$item['club_session_id'] => $item['blocked']])->all();
+        $this->assertSame([$level1->id => null, $level3->id => trans_choice('agenda.blocked.level', 2, ['levels' => '3, 4'])], $clubs);
+        $page->assertSee('Es para niveles 3, 4');
 
         $this->receptionBooks($ana, 10, 'club', 'in_person', $level1->id)->assertDispatched('toast', type: 'success');
         $this->receptionBooks($luis, 10, 'club', 'in_person', $level1->id)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
