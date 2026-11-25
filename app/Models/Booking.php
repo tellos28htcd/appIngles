@@ -126,11 +126,17 @@ class Booking extends Model
             return (string) $this->clubSession?->code;
         }
 
-        // Tipos sin actividad de la ruta: su nombre (la presentación en club, con la abreviatura del club).
+        // Tipos sin actividad de la ruta: su nombre (la presentación en club, con la abreviatura del club); la
+        // presentación de la ruta lleva además su actividad ("Presentación · L1-CP1-A7-SP").
         if (! $this->kind->isPractice()) {
-            return $this->kind === BookingKind::ClubPresentation
+            $name = $this->kind === BookingKind::ClubPresentation
                 ? __('agenda.option_club_presentation', ['code' => (string) $this->clubSession?->code])
                 : $this->kind->label();
+
+            return $this->lesson_id !== null && $this->book && $this->lesson && $this->activity_number
+                ? $name.' · '.Practice::labelFor((int) $this->book->level, $this->lesson, $this->activity_number,
+                    Practice::namesFor($this->school_id)[$this->lesson_id.'|'.$this->activity_number] ?? null, Activity::codesFor($this->school_id))
+                : $name;
         }
 
         return $this->book && $this->lesson && $this->activity_number

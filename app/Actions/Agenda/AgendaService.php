@@ -3,6 +3,7 @@
 namespace App\Actions\Agenda;
 
 use App\Actions\Clubs\ScheduleClub;
+use App\Actions\Kardex\PresentationService;
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
@@ -72,7 +73,7 @@ final class AgendaService
     /** Minutos antes del inicio de la hora en que se deja de rebalancear las aulas. */
     public const REBALANCE_CUTOFF_MINUTES = 3;
 
-    public function __construct(private AvailabilityPlanner $planner, private ScheduleClub $clubs) {}
+    public function __construct(private AvailabilityPlanner $planner, private ScheduleClub $clubs, private PresentationService $presentations) {}
 
     // ── Avance (LLA) ──────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ final class AgendaService
             ->whereNotNull('lesson_id')->get(['lesson_id', 'activity_number'])
             ->map(fn (KardexEntry $entry) => $path->nearestIndex($entry->lesson_id, $entry->activity_number, before: true));
         $reserved = Booking::withoutGlobalScope('school')->where('student_id', $student->id)->active()->whereNull('ungraded_reason_id')
-            ->where('kind', BookingKind::Session)->whereNotNull('lesson_id')->get(['lesson_id', 'activity_number'])
+            ->whereIn('kind', [BookingKind::Session, ...PresentationService::KINDS])->whereNotNull('lesson_id')->get(['lesson_id', 'activity_number'])
             ->map(fn (Booking $booking) => $path->nearestIndex($booking->lesson_id, $booking->activity_number, before: true));
         $last = $graded->toBase()->merge($reserved->toBase())->filter(fn ($index) => $index !== null)->max();
 
@@ -100,6 +101,18 @@ final class AgendaService
         }
 
         return $path->at($this->startIndex($student, $path) + $offset);
+    }
+
+    /**
+     * Presentación que le toca agendar (la pendiente o su siguiente A7), o null.
+     *
+     * @return array{step: array<string, mixed>, pending: bool}|null
+     */
+    public function presentationTurn(Student $student): ?array
+    {
+        $path = new ProgressPath($student->school);
+
+        return $this->presentations->turn($student, $path, $this->nextActivity($student, $path));
     }
 
     /** Posición en la ruta del punto de inicio de la ficha de inscripción (sin él, la práctica de orden 1). */
@@ -125,9 +138,16 @@ final class AgendaService
         return $attended + $absent === 0 ? null : $attended / ($attended + $absent);
     }
 
-    /** Horas que puede reservar por día según su asistencia (nuevo o ≥ 0.8: 2; menos: 1). */
+    /**
+     * Prácticas que puede reservar por día: su caso especial (expediente) si lo tiene; si no, según su
+     * asistencia (nuevo o ≥ 0.8: 2; menos: 1).
+     */
     public function dailyLimit(Student $student, CarbonInterface $today): int
     {
+        if ($student->max_daily_practices) {
+            return $student->max_daily_practices;
+        }
+
         $index = $this->attendanceIndex($student, $today);
 
         return $index === null || $index >= self::ATTENDANCE_THRESHOLD ? self::FULL_ATTENDANCE_HOURS : self::LOW_ATTENDANCE_HOURS;
@@ -601,6 +621,9 @@ final class AgendaService
         $step = $this->nextActivity($student, $path);
         $clubs = ClubSession::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())->with(['club', 'classroom'])->get();
         $excluded = $this->excludedTeacherIds($student->id);
+        // Le toca su presentación o tiene una pendiente que ya lo frena: la práctica sale deshabilitada con el motivo.
+        $practiceBlock = $this->presentations->practiceBlock($student, $path, $step);
+        $turn = $this->presentations->turn($student, $path, $step);
         $result = [];
 
         foreach ($this->planner->slots($school) as $slot) {
@@ -610,12 +633,17 @@ final class AgendaService
 
             $options = [];
             $cells = $this->sessionCells($school, $date, $slot);
-            [$freeSeats, $onlineSeats] = $step ? $this->seatsFor($school, $student, $step, $date, $slot, $excluded) : [0, 0];
+            [$freeSeats, $onlineSeats] = $step && ! $practiceBlock ? $this->seatsFor($school, $student, $step, $date, $slot, $excluded) : [0, 0];
+
+            if ($practiceBlock) {
+                $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null,
+                    'label' => __('agenda.option_session'), 'free' => 0, 'waitlist' => false, 'blocked' => __('agenda.blocked.'.$practiceBlock[0], $practiceBlock[1])];
+            }
 
             if ($freeSeats > 0) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => $freeSeats, 'waitlist' => false];
-            } elseif ($step && $this->waitlistAllowed($school, $cells) && $this->physicalCells($cells)->isNotEmpty()) {
+            } elseif ($step && ! $practiceBlock && $this->waitlistAllowed($school, $cells) && $this->physicalCells($cells)->isNotEmpty()) {
                 $options[] = ['kind' => BookingKind::Session->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null,
                     'label' => __('agenda.option_session'), 'free' => 0, 'waitlist' => true];
             }
@@ -636,7 +664,7 @@ final class AgendaService
             }
 
             if ($byReception) {
-                $options = [...$options, ...$this->receptionOptions($school, $student, $date, $slot, $clubs->where('schedule_slot_id', $slot->id), $excluded)];
+                $options = [...$options, ...$this->receptionOptions($school, $student, $date, $slot, $clubs->where('schedule_slot_id', $slot->id), $excluded, $turn)];
             }
 
             // Una hora sin nada que se pueda reservar no se muestra (aunque tenga opciones deshabilitadas).
@@ -733,7 +761,7 @@ final class AgendaService
 
             $limit = $this->dailyLimit($student, $today);
             if ($kind->countsAsSession() && $this->practiceCount($day) >= $limit) {
-                $fail('daily_limit', ['hours' => $limit]);
+                $fail($student->max_daily_practices ? 'daily_limit_special' : 'daily_limit', ['hours' => $limit]);
             }
 
             $this->checkKindLimits($school, $student, $date, $kind, $day, $fail, slotId: $slot->id);
@@ -782,17 +810,39 @@ final class AgendaService
             }
 
             $booking->fill(['club_session_id' => $club->id, 'modality' => $club->modality, 'teacher_id' => $club->teacher_id, 'classroom_id' => $club->classroom_id]);
+            $kind === BookingKind::ClubPresentation && $this->fillPresentation($student, $path, $booking, $fail);
         } elseif (! $kind->isPractice()) {
+            $kind === BookingKind::Presentation && $this->fillPresentation($student, $path, $booking, $fail);
             // Mentoría, entrega de material o presentación 1 a 1: aula de práctica sin actividad de la ruta ni lista de espera.
             $booking->student_id ??= $student->id;
             $this->placeSession($school, $booking, $date, $slot, allowWaitlist: false) || $fail($kind->isExclusive() ? 'no_free_room' : 'full');
         } else {
             $step = $this->nextActivity($student, $path) ?? $fail('no_activity');
+            $this->ensurePracticeAllowed($student, $path, $step, $fail);
             $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
 
             $booking->student_id ??= $student->id;
             $this->placeSession($school, $booking, $date, $slot) || $fail('full');
         }
+    }
+
+    /**
+     * La práctica no se agenda si le toca su presentación o si su presentación pendiente ya lo frena.
+     *
+     * @param  array<string, mixed>  $step
+     */
+    private function ensurePracticeAllowed(Student $student, ProgressPath $path, array $step, Closure $fail): void
+    {
+        if ($block = $this->presentations->practiceBlock($student, $path, $step)) {
+            $fail($block[0], $block[1]);
+        }
+    }
+
+    /** La presentación lleva la actividad que le toca (la pendiente o su siguiente A7). */
+    private function fillPresentation(Student $student, ProgressPath $path, Booking $booking, Closure $fail): void
+    {
+        $turn = $this->presentations->turn($student, $path, $this->nextActivity($student, $path)) ?? $fail('no_presentation');
+        $booking->fill(['book_id' => $turn['step']['book_id'], 'lesson_id' => $turn['step']['lesson_id'], 'activity_number' => $turn['step']['activity_number']]);
     }
 
     /**
@@ -820,7 +870,8 @@ final class AgendaService
             $fail('kind_slot_full', ['kind' => $kind->label(), 'max' => $kind->perSlotLimit()]);
         }
 
-        if ($kind->countsAsSession() && $school->max_sessions && $day->filter(fn (Booking $booking) => $booking->kind->countsAsSession())->count() >= $school->max_sessions) {
+        // Con caso especial manda solo su máximo (dailyLimit), no el de Mi Escuela.
+        if ($kind->countsAsSession() && $school->max_sessions && ! $student->max_daily_practices && $day->filter(fn (Booking $booking) => $booking->kind->countsAsSession())->count() >= $school->max_sessions) {
             $fail('max_sessions', ['max' => $school->max_sessions]);
         }
 
@@ -872,11 +923,18 @@ final class AgendaService
      * @param  list<int>  $excluded
      * @return list<array{kind: string, modality: string, club_session_id: ?int, label: string, free: int, waitlist: bool}>
      */
-    private function receptionOptions(School $school, Student $student, CarbonImmutable $date, ScheduleSlot $slot, Collection $clubs, array $excluded): array
+    private function receptionOptions(School $school, Student $student, CarbonImmutable $date, ScheduleSlot $slot, Collection $clubs, array $excluded, ?array $turn = null): array
     {
         $options = [];
 
         foreach ([BookingKind::Mentoring, BookingKind::Material, BookingKind::Presentation] as $kind) {
+            // Presentación: solo cuando le toca (su A7 de las lecciones 15 y 17) o tiene una pendiente.
+            if ($kind === BookingKind::Presentation && $turn === null) {
+                $options[] = ['kind' => $kind->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null, 'label' => $kind->label(), 'free' => 0, 'waitlist' => false,
+                    'blocked' => __('agenda.blocked.no_presentation')];
+
+                continue;
+            }
             [$inPerson, $online] = $this->seatsFor($school, $student, null, $date, $slot, $excluded, $kind);
 
             // Máximo de alumnos a la misma hora (mentoría y material: 2, entre presencial y en línea).
@@ -902,7 +960,7 @@ final class AgendaService
             }
         }
 
-        foreach ($clubs as $club) {
+        foreach ($turn === null ? [] : $clubs as $club) {
             $seats = $this->clubFreeSeats($school, $club);
             // Una sola presentación por club: si ya la tiene, sale deshabilitada con el motivo.
             $taken = $this->clubPresentationTaken($club);
@@ -948,8 +1006,11 @@ final class AgendaService
                 $path = new ProgressPath($school);
                 if ($booking->kind === BookingKind::Club) {
                     $booking->clubSession && ! $this->clubAllows($school, $booking->clubSession, $this->nextActivity($student, $path), $path) && $fail('club_not_allowed');
+                } elseif (in_array($booking->kind, PresentationService::KINDS, true) && $booking->lesson_id !== null) {
+                    $this->fillPresentation($student, $path, $booking, $fail);
                 } elseif ($booking->kind->isPractice()) {
                     $step = $this->nextActivity($student, $path) ?? $fail('no_activity');
+                    $this->ensurePracticeAllowed($student, $path, $step, $fail);
                     $booking->fill(['book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']]);
                 }
 

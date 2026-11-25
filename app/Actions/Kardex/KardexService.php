@@ -25,15 +25,21 @@ use Illuminate\Validation\ValidationException;
  * Kardex → Calificaciones. En cada reservación se califican, en orden y sin saltarse ninguna, la práctica que
  * indica el Kardex (la siguiente sin calificar de la ruta) y hasta 2 más si el alumno avanzó en la asesoría.
  * Las actividades de firma (1–3) y los clubs llevan F; las demás A, B o C. Se califica el mismo día o hasta
- * DAYS_BACK días después, con motivo y comentario; o se deja "Sin calificación" con motivo.
+ * DAYS_BACK días después, con motivo y comentario; o se deja "Sin calificación" con motivo. Las presentaciones de la
+ * ruta (A7 de las lecciones 15 y 17) se califican con A/B/C o quedan pendientes (PresentationService).
  */
 final class KardexService
 {
+    public function __construct(private PresentationService $presentations) {}
+
     /** Prácticas que se muestran para calificar en cada reservación. */
     public const STEPS_SHOWN = 3;
 
     /** Días anteriores en que todavía se puede calificar (con motivo). */
     public const DAYS_BACK = 4;
+
+    /** Valor de la calificación de una presentación que se deja pendiente. */
+    public const PENDING = 'pending';
 
     // ── Ruta del alumno ───────────────────────────────────────────
 
@@ -56,17 +62,30 @@ final class KardexService
     {
         $student = $booking->student()->withoutGlobalScope('school')->firstOrFail();
         $path ??= new ProgressPath($student->school);
+        $types = Activity::gradeTypesFor($booking->school_id);
+        $withType = fn (int $index, array $step): array => ['index' => $index, ...$step, 'type' => $types[$step['activity_number']] ?? GradeType::forActivityNumber($step['activity_number'])];
+
+        // Presentación de la ruta reservada como Presentación: solo esa actividad (la siguiente o la pendiente).
+        if (in_array($booking->kind, PresentationService::KINDS, true) && $booking->lesson_id !== null) {
+            $index = $path->indexOf($booking->lesson_id, $booking->activity_number);
+            $entry = KardexEntry::withoutGlobalScope('school')->where('student_id', $student->id)->where('lesson_id', $booking->lesson_id)
+                ->where('activity_number', $booking->activity_number)->first();
+
+            return $index === null || ($entry !== null && ! $entry->is_pending) ? [] : [$withType($index, $path->at($index))];
+        }
+
         $last = $this->lastGradedIndex($student, $path);
         $start = $last !== null ? $last + 1 : ($path->nearestIndex($booking->lesson_id, $booking->activity_number, before: false) ?? 0);
-        $types = Activity::gradeTypesFor($booking->school_id);
+        // Con una presentación pendiente de otro libro, solo las actividades permitidas del libro nuevo.
+        $blockedFrom = $this->presentations->blockedFrom($student, $path);
 
         $steps = [];
         for ($index = $start; $index < $start + self::STEPS_SHOWN; $index++) {
             $step = $path->at($index);
-            if ($step === null) {
+            if ($step === null || ($blockedFrom !== null && $index >= $blockedFrom)) {
                 break;
             }
-            $steps[] = ['index' => $index, ...$step, 'type' => $types[$step['activity_number']] ?? GradeType::forActivityNumber($step['activity_number'])];
+            $steps[] = $withType($index, $step);
         }
 
         return $steps;
@@ -153,8 +172,9 @@ final class KardexService
 
     /**
      * Guarda las prácticas calificadas de una reservación (en orden, sin huecos). $gradeIds sigue el orden de
-     * pendingSteps(); las vacías al final no se guardan. $observationIds: la observación (motivo del Kardex,
-     * opcional) de cada práctica, en el mismo orden.
+     * pendingSteps(); las vacías al final no se guardan. Una presentación puede ir como PENDING (queda pendiente y se
+     * sigue con las siguientes). $observationIds: la observación (motivo del Kardex, opcional) de cada práctica, en el
+     * mismo orden.
      *
      * @param  list<int|string|null>  $gradeIds
      * @param  list<int|string|null>  $observationIds
@@ -165,7 +185,11 @@ final class KardexService
         $this->ensureGradable($booking, $today);
         $this->ensureAttended($booking);
         $steps = $this->pendingSteps($booking);
-        $gradeIds = array_map(fn ($id) => $id === null || $id === '' ? null : (int) $id, array_slice(array_values($gradeIds), 0, count($steps)));
+        $gradeIds = array_map(fn ($id) => match (true) {
+            $id === null || $id === '' => null,
+            $id === self::PENDING => self::PENDING,
+            default => (int) $id,
+        }, array_slice(array_values($gradeIds), 0, count($steps)));
 
         $filled = count(array_filter($gradeIds));
         if ($filled === 0) {
@@ -177,9 +201,13 @@ final class KardexService
         }
 
         $chosen = [];
+        $student = Student::withoutGlobalScope('school')->findOrFail($booking->student_id);
         foreach (array_slice($steps, 0, $filled) as $position => $step) {
-            $grade = $this->grades($booking->school_id, $step['type'])->firstWhere('id', $gradeIds[$position]);
-            if ($grade === null) {
+            if ($gradeIds[$position] === self::PENDING) {
+                $this->ensureCanLeavePending($student, $step, $actor, $position);
+            }
+            $grade = $gradeIds[$position] === self::PENDING ? null : $this->grades($booking->school_id, $step['type'])->firstWhere('id', $gradeIds[$position]);
+            if ($grade === null && $gradeIds[$position] !== self::PENDING) {
                 throw ValidationException::withMessages(["grades.$position" => __('kardex.validation.grade_type', ['practice' => $step['label']])]);
             }
             $observationId = $observationIds[$position] ?? null;
@@ -194,13 +222,16 @@ final class KardexService
 
         DB::transaction(function () use ($booking, $chosen, $actor, $reasonId, $comment): void {
             foreach ($chosen as [$step, $grade, $observation]) {
-                KardexEntry::withoutGlobalScope('school')->create([
-                    'school_id' => $booking->school_id, 'student_id' => $booking->student_id, 'booking_id' => $booking->id, 'kind' => BookingKind::Session,
-                    'book_id' => $step['book_id'], 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number'],
-                    'sort_order' => $step['order'], 'points' => $step['points'], 'grade_id' => $grade->id, 'teacher_id' => $booking->teacher_id,
-                    'user_id' => $actor->id, 'session_date' => $booking->date->toDateString(), 'late_reason_id' => $reasonId, 'late_comment' => $comment,
-                    'observation_reason_id' => $observation?->id,
-                ]);
+                // La presentación pendiente se califica en su mismo renglón del Kardex.
+                KardexEntry::withoutGlobalScope('school')->updateOrCreate(
+                    ['student_id' => $booking->student_id, 'lesson_id' => $step['lesson_id'], 'activity_number' => $step['activity_number']],
+                    [
+                        'school_id' => $booking->school_id, 'booking_id' => $booking->id, 'kind' => BookingKind::Session, 'book_id' => $step['book_id'],
+                        'sort_order' => $step['order'], 'points' => $step['points'], 'grade_id' => $grade?->id, 'is_pending' => $grade === null,
+                        'teacher_id' => $booking->teacher_id, 'user_id' => $actor->id, 'session_date' => $booking->date->toDateString(),
+                        'late_reason_id' => $reasonId, 'late_comment' => $comment, 'observation_reason_id' => $observation?->id,
+                    ],
+                );
             }
 
             $booking->update(['ungraded_reason_id' => null, 'ungraded_comment' => null]);
@@ -210,7 +241,27 @@ final class KardexService
         return count($chosen);
     }
 
-    /** Firma (F) del club o de la presentación (1 a 1 o en club); se firma una sola vez y no mueve la ruta de prácticas. */
+    /**
+     * Una presentación de la ruta queda pendiente solo si quien califica puede (teacher o Recepción) y no tiene otra.
+     *
+     * @param  array<string, mixed>  $step
+     */
+    private function ensureCanLeavePending(Student $student, array $step, User $actor, int $position): void
+    {
+        $current = $this->presentations->pending($student);
+        $error = match (true) {
+            ! PresentationService::isPresentation($step) => __('kardex.validation.pending_not_presentation', ['practice' => $step['label']]),
+            ! $this->presentations->canLeavePending($actor) => __('kardex.validation.pending_role'),
+            $current !== null && ($current->lesson_id !== $step['lesson_id'] || $current->activity_number !== $step['activity_number']) => __('kardex.validation.one_pending'),
+            default => null,
+        };
+
+        if ($error !== null) {
+            throw ValidationException::withMessages(["grades.$position" => $error]);
+        }
+    }
+
+    /** Firma (F) del club o de una presentación sin actividad de la ruta (anterior a las presentaciones A7); se firma una sola vez. */
     public function gradeClub(Booking $booking, ?int $gradeId, User $actor, CarbonInterface $today, ?int $lateReasonId = null, ?string $lateComment = null, int|string|null $observationId = null): void
     {
         $this->ensureGradable($booking, $today);
@@ -275,7 +326,8 @@ final class KardexService
             throw ValidationException::withMessages(['correction' => __('kardex.validation.grade_type', ['practice' => $entry->practiceLabel()])]);
         }
 
-        $entry->update(['grade_id' => $grade->id]);
+        // Si era una presentación pendiente, queda calificada.
+        $entry->update(['grade_id' => $grade->id, 'is_pending' => false]);
     }
 
     /** Solo se quita la última práctica calificada del alumno (o un club), para no romper el orden. */
@@ -337,7 +389,7 @@ final class KardexService
     /**
      * Resumen del Kardex: práctica que sigue, puntos acumulados (los de la última calificada) y lo calificado.
      *
-     * @return array{next: ?array<string, mixed>, points: int, graded: int, total: int, entries: Collection<int, KardexEntry>}
+     * @return array{next: ?array<string, mixed>, points: int, graded: int, pending: ?KardexEntry, total: int, entries: Collection<int, KardexEntry>}
      */
     public function summary(Student $student): array
     {
@@ -353,7 +405,8 @@ final class KardexService
         return [
             'next' => $path->at($last !== null ? $last + 1 : app(AgendaService::class)->startIndex($student, $path)),
             'points' => $last !== null ? (int) ($path->at($last)['points'] ?? 0) : 0,
-            'graded' => $entries->where('kind', BookingKind::Session)->count(),
+            'graded' => $entries->where('kind', BookingKind::Session)->where('is_pending', false)->count(),
+            'pending' => $entries->firstWhere('is_pending', true),
             'total' => $path->steps()->count(),
             'entries' => $entries,
         ];

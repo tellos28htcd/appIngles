@@ -26,8 +26,19 @@ Decisiones del 18-nov-2026. Primer submódulo: **Calificaciones**.
   (la siguiente sin calificar según el **Orden** del catálogo de Prácticas; sin nada calificado, la de la
   reservación) y las 2 siguientes (si se acaba el libro, siguen las del siguiente). Cada una solo ofrece las letras
   de su tipo. Se guardan solo las calificadas, **en orden y sin huecos**. Al volver a abrir salen las 3 siguientes.
-- Club y **Presentación** (1 a 1 o en club, 23-nov-2026): se firman con **F** una sola vez; quedan en el Kardex pero no
-  mueven el avance de prácticas. Mentoría especial y Entrega de material no se califican (no salen en el listado).
+- Club: se firma con **F** una sola vez; queda en el Kardex pero no mueve el avance de prácticas. Mentoría especial y
+  Entrega de material no se califican (no salen en el listado).
+- **Presentaciones** (25-nov-2026): son la **A7 de las lecciones 15 y 17** (Check Point C1 y C2) de cada libro, marcadas
+  en el catálogo de Prácticas (columna "Presentación", `practices.is_presentation`). Se agendan como Presentación (1 a 1
+  presencial o en línea, o en el club de la hora; la reservación lleva esa actividad) y se califican con **A/B/C** como
+  actividad de la ruta. Las presentaciones anteriores sin actividad se siguen firmando con F.
+  - **Pendiente**: el teacher o Recepción la dejan pendiente (opción "Pendiente" al calificar, o "Dejar pendiente y
+    continuar" en Nueva reservación). Queda en el Kardex sin calificación (`kardex_entries.is_pending`) y la ruta sigue
+    con las actividades siguientes. **Una a la vez.** Al presentarla se califica ese mismo renglón.
+  - **Cambio de libro** con una pendiente: puede hacer **2 actividades** del libro nuevo y después se bloquea (práctica
+    deshabilitada) hasta que la presente (`PresentationService::BOOK_CHANGE_GRACE`).
+  - Se ve en: el expediente ("Presentación pendiente"), la Agenda y Calificaciones (etiqueta junto al alumno), Nueva
+    reservación, Agendar y Mi avance del alumno (en ámbar).
 - En la Agenda, cada reservación calificable tiene el botón **"Calificaciones"** que abre esta misma ventana.
 - **Sin calificación**: motivo + comentario en la reservación (`bookings.ungraded_reason_id`, `ungraded_comment`);
   el Kardex no avanza y la práctica se vuelve a asignar.

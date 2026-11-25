@@ -3,6 +3,7 @@
 namespace App\Livewire\Kardex;
 
 use App\Actions\Kardex\KardexService;
+use App\Actions\Kardex\PresentationService;
 use App\Enums\BookingKind;
 use App\Enums\BookingStatus;
 use App\Enums\GradeType;
@@ -136,7 +137,7 @@ class GradesDay extends Component
         $this->authorize('gradeBooking', [KardexEntry::class, $booking]);
         $this->resetValidation();
 
-        if (! $booking->kind->isPractice()) {
+        if ($this->signsOnce($booking)) {
             $kardex->gradeClub($booking, $this->grades[0] !== '' ? (int) $this->grades[0] : null, auth()->user(), $this->today(), $this->lateReasonId, $this->lateComment, $this->observations[0] ?? null);
             $saved = 1;
         } else {
@@ -216,7 +217,7 @@ class GradesDay extends Component
 
         return Booking::query()->whereDate('date', $this->date)->active()->where('is_waitlist', false)->whereIn('kind', BookingKind::gradableKinds())
             ->when($teacherId !== null, fn ($query) => $query->where('teacher_id', $teacherId))
-            ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson'])
+            ->with(['student.pendingPresentation.lesson', 'student.pendingPresentation.book', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson'])
             ->get();
     }
 
@@ -225,7 +226,7 @@ class GradesDay extends Component
      *
      * @return array{booking: ?Booking, steps: list<array<string, mixed>>, options: array<int, array<int, string>>, byType: array<string, array<int, string>>, late: bool, gradable: bool, attended: bool}
      */
-    private function gradingData(KardexService $kardex): array
+    private function gradingData(KardexService $kardex, PresentationService $presentations): array
     {
         $booking = $this->gradingId ? Booking::query()->with(['student', 'slot', 'teacher', 'clubSession', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson', 'kardexEntries.user', 'kardexEntries.observationReason'])->find($this->gradingId) : null;
 
@@ -233,18 +234,21 @@ class GradesDay extends Component
             return ['booking' => null, 'steps' => [], 'options' => [], 'byType' => [], 'late' => false, 'gradable' => false, 'attended' => false];
         }
 
-        // Club y presentaciones: una sola firma (F); la práctica, las prácticas que siguen en el Kardex.
-        $isClub = ! $booking->kind->isPractice();
+        // Club (y presentaciones anteriores sin actividad): una sola firma (F); la práctica y la presentación de la ruta, lo que sigue en el Kardex.
+        $isClub = $this->signsOnce($booking);
         $steps = $isClub
             ? ($booking->kardexEntries->isEmpty() ? [['label' => $booking->activityLabel(), 'type' => GradeType::Signature]] : [])
             : $kardex->pendingSteps($booking);
+        // Una presentación de la ruta puede quedar pendiente (teacher o Recepción; una a la vez).
+        $canLeavePending = $presentations->canLeavePending(auth()->user()) && $booking->student && $presentations->pending($booking->student) === null;
         $byType = collect(GradeType::cases())->mapWithKeys(fn (GradeType $type) => [$type->value => $kardex->grades($booking->school_id, $type)
             ->mapWithKeys(fn ($grade) => [$grade->id => $grade->code])->all()]);
 
         return [
             'booking' => $booking,
             'steps' => $steps,
-            'options' => collect($steps)->map(fn (array $step) => $byType[$step['type']->value])->all(),
+            'options' => collect($steps)->map(fn (array $step) => $byType[$step['type']->value] + ($canLeavePending && PresentationService::isPresentation($step)
+                ? [KardexService::PENDING => __('kardex.pending_option')] : []))->all(),
             'byType' => $byType->all(),
             'late' => $kardex->isLate($booking, $this->today()),
             'gradable' => $booking->date->toDateString() >= $kardex->earliestDate($this->today())->toDateString(),
@@ -252,13 +256,13 @@ class GradesDay extends Component
         ];
     }
 
-    public function render(KardexService $kardex): View
+    public function render(KardexService $kardex, PresentationService $presentations): View
     {
         $day = $this->embedded ? collect() : $this->dayBookings();
 
         return view('livewire.kardex.grades-day', [
             'day' => CarbonImmutable::parse($this->date),
-            'grading' => $this->gradingData($kardex),
+            'grading' => $this->gradingData($kardex, $presentations),
             'reasonOptions' => UngradedReason::query()->usableBy(auth()->user())->orderBy('sort_order')->orderBy('name')->pluck('name', 'id')->all(),
             'filterSlots' => $day->pluck('slot')->filter()->unique('id')->sortBy('starts_at')->mapWithKeys(fn (ScheduleSlot $slot) => [$slot->id => $slot->range()])->all(),
             'filterTeachers' => $this->isTeacher() ? [] : $day->pluck('teacher')->filter()->unique('id')->sortBy(fn (Teacher $teacher) => $teacher->panelName())
@@ -271,6 +275,12 @@ class GradesDay extends Component
     }
 
     // ── Apoyo ─────────────────────────────────────────────────────
+
+    /** Se firma una sola vez con F: el club y las presentaciones sin actividad de la ruta (anteriores a las A7). */
+    private function signsOnce(Booking $booking): bool
+    {
+        return ! $booking->kind->isPractice() && $booking->lesson_id === null;
+    }
 
     private function isTeacher(): bool
     {

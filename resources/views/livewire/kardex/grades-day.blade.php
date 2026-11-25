@@ -64,6 +64,7 @@
                                             <button type="button" wire:click="open({{ $booking->id }})" title="{{ __('kardex.open') }}"
                                                     class="rounded text-left font-bold text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">{{ $booking->student?->fullName() }}</button>
                                             <span class="text-sm tabular-nums text-ink-700">· {{ $booking->student?->enrollment_number }}</span>
+                                            @include('livewire.kardex.partials.pending-presentation', ['student' => $booking->student])
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-1.5">
                                             @if ($booking->kind === \App\Enums\BookingKind::Club)
@@ -75,8 +76,8 @@
                                             @if ($booking->kardexEntries->isNotEmpty())
                                                 <span class="flex flex-wrap gap-1.5">
                                                     @foreach ($booking->kardexEntries as $entry)
-                                                        <span class="inline-flex items-center gap-1 rounded-full bg-success-50 px-2.5 py-0.5 text-sm font-semibold text-success-700">
-                                                            <span class="tabular-nums">{{ $entry->practiceLabel() }}</span><span class="font-bold">{{ $entry->grade?->code }}</span>
+                                                        <span @class(['inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold', 'bg-success-50 text-success-700' => ! $entry->is_pending, 'bg-warning-50 text-warning-700' => $entry->is_pending])>
+                                                            <span class="tabular-nums">{{ $entry->practiceLabel() }}</span><span class="font-bold">{{ $entry->is_pending ? __('kardex.pending_short') : $entry->grade?->code }}</span>
                                                         </span>
                                                     @endforeach
                                                 </span>
@@ -134,6 +135,8 @@
                                 </div>
                                 <x-ui.button variant="ghost" size="sm" wire:click="changeGrade({{ $entry->id }})">{{ __('kardex.actions.correct') }}</x-ui.button>
                                 <x-ui.button variant="ghost" size="sm" wire:click="removeEntry({{ $entry->id }})" wire:confirm="{{ __('kardex.confirm_remove') }}">{{ __('kardex.actions.remove') }}</x-ui.button>
+                            @elseif ($entry->is_pending)
+                                <span class="rounded-full bg-warning-50 px-2.5 py-0.5 font-bold text-warning-700">{{ __('kardex.pending_presentation') }}</span>
                             @else
                                 <span class="rounded-full bg-success-50 px-2.5 py-0.5 font-bold text-success-700">{{ $entry->grade?->code }} · {{ $entry->grade?->name }}</span>
                             @endif
@@ -174,6 +177,7 @@
                                         {{ $position === 0 ? __('kardex.kardex_says') : __('kardex.if_advanced') }}
                                         @isset($step['order']) · {{ __('catalogs.practices.order') }} {{ $step['order'] }} @endisset
                                         · {{ $step['type']->label() }}
+                                        @if ($step['is_presentation'] ?? false) · <span class="font-semibold text-warning-700">{{ __('kardex.presentation_step') }}</span>@endif
                                     </span>
                                 </span>
                                 <x-ui.select name="grades.{{ $position }}" :label="__('kardex.grade_for', ['practice' => $step['label']])" :sr-only-label="true"

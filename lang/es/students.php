@@ -59,6 +59,8 @@ return [
         'survey_hint' => 'Opcional. Ayuda a dar seguimiento al alumno.',
         'guardians' => 'Tutores',
         'excluded_teachers' => 'Teachers con los que no quiere practicar',
+        'special_case' => 'Caso especial',
+        'pending_presentation' => 'Presentación pendiente',
         'history' => 'Histórico de estatus',
         'absences' => 'Ausencias',
         'term' => 'Plazo del curso',
@@ -242,6 +244,21 @@ return [
         'document_body' => 'El alumno tiene el beneficio de solicitar ausencia hasta por :max días naturales durante cada año de su programa. Durante el periodo autorizado no asistirá a clases. Los días de ausencia se suman a la fecha de fin del curso.',
         'document_sign_student' => 'Firma del alumno',
         'document_sign_school' => 'Firma y sello de la escuela',
+    ],
+
+    'pending_presentation' => [
+        'hint' => 'Puede seguir con las actividades siguientes; al cambiar de libro solo 2 más y después debe presentarla. Se agenda como Presentación.',
+        'since' => 'Desde :date · la dejó pendiente :user',
+    ],
+
+    'special_case' => [
+        'hint' => 'Si tiene número, al agendar puede reservar esas horas de práctica por día en lugar de la regla de 2 horas (los clubs no cuentan).',
+        'max_daily_practices' => 'Máximo de horas de práctica',
+        'field_hint' => 'Por día. Déjalo vacío para la regla normal.',
+        'current' => '{1} Máximo :count hora de práctica por día.|[2,*] Máximo :count horas de práctica por día.',
+        'empty' => 'Sin caso especial: aplica la regla de 2 horas por día.',
+        'save' => 'Guardar',
+        'saved' => 'Caso especial guardado.',
     ],
 
     'excluded_teachers' => [

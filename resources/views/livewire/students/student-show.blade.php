@@ -207,6 +207,36 @@
                 @endif
             </x-ui.card>
 
+            {{-- Presentación (A7) que dejó pendiente para seguir con las actividades siguientes (una a la vez). --}}
+            @if ($student->pendingPresentation)
+                <x-ui.card :title="__('students.sections.pending_presentation')" :description="__('students.pending_presentation.hint')">
+                    <p class="flex flex-wrap items-center gap-2 text-sm">
+                        <span class="rounded-full bg-warning-50 px-2.5 py-0.5 font-bold tabular-nums text-warning-700">{{ $student->pendingPresentation->practiceLabel() }}</span>
+                        <span class="text-ink-500">{{ __('students.pending_presentation.since', ['date' => $student->pendingPresentation->session_date->translatedFormat('j M Y'), 'user' => $student->pendingPresentation->user?->name ?? '—']) }}</span>
+                    </p>
+                </x-ui.card>
+            @endif
+
+            {{-- Caso especial: máximo de horas de práctica por día (reemplaza la regla de 2 horas al agendar). --}}
+            <x-ui.card :title="__('students.sections.special_case')" :description="__('students.special_case.hint')">
+                <p class="text-sm">
+                    @if ($student->max_daily_practices)
+                        <span class="font-bold">{{ trans_choice('students.special_case.current', $student->max_daily_practices) }}</span>
+                    @else
+                        <span class="text-ink-500">{{ __('students.special_case.empty') }}</span>
+                    @endif
+                </p>
+                @if ($canUpdate)
+                    <div class="flex items-end gap-2">
+                        <div class="min-w-0 flex-1">
+                            <x-ui.input name="maxDailyPractices" type="number" min="1" max="{{ \App\Models\Student::MAX_SPECIAL_DAILY_PRACTICES }}" inputmode="numeric"
+                                        :label="__('students.special_case.max_daily_practices')" :hint="__('students.special_case.field_hint')" wire:model="maxDailyPractices" />
+                        </div>
+                        <x-ui.button variant="secondary" wire:click="saveSpecialCase">{{ __('students.special_case.save') }}</x-ui.button>
+                    </div>
+                @endif
+            </x-ui.card>
+
             {{-- Histórico de estatus --}}
             <x-ui.card :title="__('students.sections.history')">
                 <ol class="flex flex-col gap-4 border-l-2 border-line pl-4">

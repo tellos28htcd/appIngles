@@ -109,6 +109,11 @@ return [
         'points' => 'Puntos acumulados',
         'book' => 'Libro',
         'empty' => 'Sin prácticas en el catálogo.',
+        'presentation' => 'Presentación',
+        'is_presentation' => 'Presentación',
+        'toggle_presentation' => 'Marcar o desmarcar como presentación (se agenda como Presentación y puede quedar pendiente)',
+        'marked' => 'Práctica marcada como presentación.',
+        'unmarked' => 'La práctica ya no es presentación.',
     ],
 
     'coordination' => [

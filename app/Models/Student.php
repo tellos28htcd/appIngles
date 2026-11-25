@@ -31,12 +31,15 @@ use Illuminate\Support\Str;
     'course_starts_on', 'withdrawn_on', 'graduated_on',
     'student_type_id', 'information_source_id', 'advertising_consent',
     'learns_visual', 'learns_auditory', 'learns_kinesthetic',
-    'photo_path', 'photo_source_url', 'status', 'notes',
+    'photo_path', 'photo_source_url', 'status', 'notes', 'max_daily_practices',
 ])]
 class Student extends Model
 {
     /** @use HasFactory<StudentFactory> */
     use Auditable, BelongsToSchool, HasFactory;
+
+    /** Caso especial: tope del máximo de horas de práctica por día que se puede capturar. */
+    public const MAX_SPECIAL_DAILY_PRACTICES = 12;
 
     protected function casts(): array
     {
@@ -51,6 +54,7 @@ class Student extends Model
             'learns_auditory' => 'boolean',
             'learns_kinesthetic' => 'boolean',
             'status' => StudentStatus::class,
+            'max_daily_practices' => 'integer',
         ];
     }
 
@@ -114,6 +118,12 @@ class Student extends Model
     public function guardians(): BelongsToMany
     {
         return $this->belongsToMany(Guardian::class)->withPivot('relationship')->withTimestamps();
+    }
+
+    /** Presentación (A7) que dejó pendiente en el Kardex para seguir con las actividades siguientes (una a la vez). @return HasOne<KardexEntry, $this> */
+    public function pendingPresentation(): HasOne
+    {
+        return $this->hasOne(KardexEntry::class)->where('is_pending', true);
     }
 
     /** Máximo de teachers con los que el alumno no quiere hacer prácticas. */

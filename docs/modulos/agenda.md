@@ -56,8 +56,8 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
   | Club | Recepción y alumno | Club programado | — | Si el club es en línea | Clubs por día | F |
   | Mentoría especial | Recepción | Un lugar en el aula de práctica | 0 (no se muestra) | Sí | Horas por día y **3 por semana** | No se califica |
   | Entrega de material | Recepción | Un lugar en el aula de práctica | 0 | **No** | Horas por día | No se califica |
-  | Presentación 1 a 1 | Recepción | Un aula **vacía** que queda solo para el alumno (con su teacher) | 0 | Sí | Horas por día | F, no mueve la ruta |
-  | Presentación en club | Recepción | Un lugar del club de esa hora (sin revisar nivel) | — | Si el club es en línea | Clubs por día; **una sola presentación por club** | F, no mueve la ruta |
+  | Presentación 1 a 1 | Recepción, **solo cuando le toca su A7** (lecciones 15 y 17) o tiene una pendiente | Un aula **vacía** que queda solo para el alumno (con su teacher) | 0 | Sí | Horas por día | A/B/C, es su actividad de la ruta |
+  | Presentación en club | Recepción, igual que la 1 a 1 | Un lugar del club de esa hora (sin revisar nivel) | — | Si el club es en línea | Clubs por día; **una sola presentación por club** | A/B/C, es su actividad de la ruta |
 - **Quién reserva:** recepción siempre puede. El alumno (si "Reservaciones del alumno" no está en "No permitir"):
   - Solo **Práctica y Club**; los demás tipos los pide en Recepción.
   - Solo **a partir del día siguiente** (fijo para todas las escuelas); el mismo día, mensaje de que lo haga con Recepción.
@@ -77,6 +77,8 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
     - Índice ≥ 0.8, o alumno sin historial: 2 horas.
     - Índice menor: 1 hora.
     - Solo cuentan las prácticas (práctica, mentoría, entrega de material y presentación 1 a 1); **los clubs no cuentan** (su único tope es el máximo de clubs por día de Mi Instituto, si se llena).
+  - **Caso especial** (expediente, 25-nov-2026): "Máximo de horas de práctica" por día (1–12; lo captura quien edita el expediente). Si tiene número, reemplaza la regla de 2/1 horas y el máximo de Mi Instituto; en "Nueva reservación" se eligen a la vez hasta ese número.
+- **Presentaciones de la ruta** (25-nov-2026): ver docs/modulos/kardex.md. Cuando la siguiente actividad es presentación, la práctica sale deshabilitada ("Le toca su presentación …") y se agenda como Presentación (1 a 1 presencial o en línea, o en el club de la hora), que lleva esa actividad. En "Nueva reservación" Recepción puede **"Dejar pendiente y continuar"**. El alumno ve el aviso en Agendar y en Mi avance.
 - **Actividad (LLA):**
   - Cada práctica lleva la actividad siguiente de la ruta de avance (`App\Support\ProgressPath`): libros por nivel → lecciones en su orden → actividades 1–7 (8 en Check Points).
   - Parte de la última práctica reservada; si no hay, del punto de inicio de la ficha de inscripción.

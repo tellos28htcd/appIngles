@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Nueva reservación (recepción y alumno): se eligen hasta MAX_CHOICES opciones, cada una a una hora distinta
+ * Nueva reservación (recepción y alumno): se eligen hasta MAX_CHOICES opciones (o el caso especial del alumno), cada una a una hora distinta
  * ("slot|kind|modality|club_session_id"), y se reservan juntas (si una no se puede, no se reserva ninguna).
  */
 trait ChoosesBookingOptions
@@ -32,6 +32,15 @@ trait ChoosesBookingOptions
 
     public const MAX_CHOICES = 2;
 
+    /** Alumno de la reservación (para su caso especial). */
+    abstract protected function bookingStudent(): ?Student;
+
+    /** Horas que se eligen a la vez: MAX_CHOICES, o su caso especial si es mayor. */
+    public function maxChoices(): int
+    {
+        return max(self::MAX_CHOICES, (int) $this->bookingStudent()?->max_daily_practices);
+    }
+
     /** Elige o quita una opción; otra opción de la misma hora la reemplaza. */
     public function toggleChoice(string $value): void
     {
@@ -44,8 +53,8 @@ trait ChoosesBookingOptions
         $slotId = strtok($value, '|');
         $others = array_values(array_filter($this->choices, fn (string $choice) => strtok($choice, '|') !== $slotId));
 
-        if (count($others) >= self::MAX_CHOICES) {
-            $this->dispatch('toast', type: 'error', message: __('agenda.validation.max_choices', ['max' => self::MAX_CHOICES]));
+        if (count($others) >= $this->maxChoices()) {
+            $this->dispatch('toast', type: 'error', message: __('agenda.validation.max_choices', ['max' => $this->maxChoices()]));
 
             return;
         }
@@ -61,7 +70,7 @@ trait ChoosesBookingOptions
     protected function bookChoices(AgendaService $agenda, School $school, Student $student, CarbonImmutable $date, bool $byReception, bool $clubsOnly = false, bool $duringClass = false): ?array
     {
         $parsed = [];
-        foreach (array_slice($this->choices, 0, self::MAX_CHOICES) as $choice) {
+        foreach (array_slice($this->choices, 0, max(self::MAX_CHOICES, (int) $student->max_daily_practices)) as $choice) {
             [$slotId, $kind, $modality, $clubId] = array_pad(explode('|', $choice), 4, '');
             $slot = ScheduleSlot::query()->find((int) $slotId);
             $kind = BookingKind::tryFrom($kind);

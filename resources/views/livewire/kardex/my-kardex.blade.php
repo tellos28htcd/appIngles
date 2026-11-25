@@ -20,6 +20,13 @@
             </div>
         </div>
 
+        @if ($summary['pending'])
+            <p class="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm font-semibold text-warning-700">
+                <x-ui.icon name="alert" class="mt-px size-4 flex-none" />
+                <span>{{ __('agenda.presentation.student_pending', ['practice' => $summary['pending']->practiceLabel()]) }}</span>
+            </p>
+        @endif
+
         <section class="flex flex-col rounded-xl border border-line bg-white shadow-xs">
             <h2 class="border-b border-line p-4 font-display text-lg font-bold">{{ __('kardex.my_grades') }}</h2>
             @if ($summary['entries']->isEmpty())
@@ -45,7 +52,13 @@
                                         @endif
                                         {{ $entry->practiceLabel() }}
                                     </td>
-                                    <td class="px-4 py-2"><span class="rounded-full bg-success-50 px-2.5 py-0.5 text-sm font-bold text-success-700">{{ $entry->grade?->code }} · {{ $entry->grade?->name }}</span></td>
+                                    <td class="px-4 py-2">
+                                        @if ($entry->is_pending)
+                                            <span class="rounded-full bg-warning-50 px-2.5 py-0.5 text-sm font-bold text-warning-700">{{ __('kardex.pending_presentation') }}</span>
+                                        @else
+                                            <span class="rounded-full bg-success-50 px-2.5 py-0.5 text-sm font-bold text-success-700">{{ $entry->grade?->code }} · {{ $entry->grade?->name }}</span>
+                                        @endif
+                                    </td>
                                     <td class="whitespace-nowrap px-4 py-2 text-sm font-semibold">{{ $entry->teacher?->panelName() ?? '—' }}</td>
                                 </tr>
                             @endforeach

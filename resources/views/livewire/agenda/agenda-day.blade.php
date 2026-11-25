@@ -182,6 +182,7 @@
                                                 <span class="font-bold">{{ $booking->student?->fullName() }}</span>
                                             @endif
                                             <span class="text-sm text-ink-700 tabular-nums">· {{ $booking->student?->enrollment_number }}@if ($booking->booked_by_reception) · {{ __('agenda.by_reception') }}@endif</span>
+                                            @include('livewire.kardex.partials.pending-presentation', ['student' => $booking->student])
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-1">
                                             {{-- Práctica: solo su nombre (p. ej. L1-L1-A2-1P); el club lleva "Club". --}}
@@ -269,13 +270,15 @@
                         <span class="text-xs text-ink-500 tabular-nums">
                             {{ $this->selectedStudent->enrollment_number }}
                             @if ($nextActivity) · {{ __('agenda.next_activity', ['label' => $nextActivity['label']]) }}@endif
-                            · {{ __('agenda.daily_limit_note', ['hours' => $dailyLimit]) }}
+                            · {{ __($this->selectedStudent->max_daily_practices ? 'agenda.daily_limit_special_note' : 'agenda.daily_limit_note', ['hours' => $dailyLimit]) }}
                         </span>
                     </div>
                     <x-ui.button size="sm" variant="ghost" wire:click="clearStudent">{{ __('agenda.actions.change_student') }}</x-ui.button>
                 </div>
 
-                @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this::MAX_CHOICES])
+                @include('livewire.agenda.partials.presentation-turn', ['turn' => $presentationTurn, 'canLeavePending' => $canLeavePending])
+
+                @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this->maxChoices()])
             @else
                 <x-ui.input name="search" :label="__('agenda.form.search')" :placeholder="__('agenda.form.search_placeholder')" wire:model.live.debounce.300ms="search" autocomplete="off" />
                 @if (mb_strlen(trim($search)) >= 2)

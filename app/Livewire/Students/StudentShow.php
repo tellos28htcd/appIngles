@@ -92,6 +92,7 @@ class StudentShow extends Component
     {
         $this->authorize('view', $student);
         $this->studentId = $student->id;
+        $this->maxDailyPractices = (string) ($student->max_daily_practices ?? '');
     }
 
     #[Computed]
@@ -100,6 +101,7 @@ class StudentShow extends Component
         return Student::query()->where('school_id', auth()->user()->school_id)
             ->with([
                 'user', 'type', 'informationSource', 'state', 'municipality', 'school',
+                'pendingPresentation.book', 'pendingPresentation.lesson', 'pendingPresentation.user',
                 'enrollments' => fn ($query) => $query->latest('registered_on')->latest('id'),
                 'enrollments.salesAdvisor', 'enrollments.plan', 'enrollments.bankAccount', 'enrollments.startBook', 'enrollments.startLesson', 'enrollments.startActivity',
                 'statusChanges' => fn ($query) => $query->latest('changed_on')->latest('id'),
@@ -404,6 +406,24 @@ class StudentShow extends Component
         return Guardian::query()->where('school_id', auth()->user()->school_id)->orderBy('name')->get(['id', 'name', 'mobile_phone'])
             ->mapWithKeys(fn (Guardian $guardian) => [$guardian->id => trim($guardian->name.' '.($guardian->mobile_phone ? "· {$guardian->mobile_phone}" : ''))])
             ->all();
+    }
+
+    // ── Caso especial ─────────────────────────────────────────────
+
+    /** Máximo de horas de práctica por día (vacío = reglas normales: 2, o 1 con asistencia baja). */
+    public string $maxDailyPractices = '';
+
+    public function saveSpecialCase(): void
+    {
+        $student = $this->authorizeUpdate();
+        $this->validate([
+            'maxDailyPractices' => ['nullable', 'integer', 'min:1', 'max:'.Student::MAX_SPECIAL_DAILY_PRACTICES],
+        ], attributes: ['maxDailyPractices' => Str::lower(__('students.special_case.max_daily_practices'))]);
+
+        $student->update(['max_daily_practices' => $this->maxDailyPractices === '' ? null : (int) $this->maxDailyPractices]);
+
+        unset($this->student);
+        $this->dispatch('toast', type: 'success', message: __('students.special_case.saved'));
     }
 
     // ── Teachers que no quiere (prácticas) ─────────────────────────

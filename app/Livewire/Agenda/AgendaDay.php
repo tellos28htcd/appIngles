@@ -3,6 +3,7 @@
 namespace App\Livewire\Agenda;
 
 use App\Actions\Agenda\AgendaService;
+use App\Actions\Kardex\PresentationService;
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
@@ -184,6 +185,33 @@ class AgendaDay extends Component
     {
         $this->reset('studentId', 'choices');
         unset($this->options);
+    }
+
+    /**
+     * Le toca su presentación (A7) y no la va a hacer todavía: queda pendiente en el Kardex y la ruta sigue con la
+     * actividad siguiente (teacher o Recepción; una a la vez).
+     */
+    public function leavePresentationPending(AgendaService $agenda, PresentationService $presentations): void
+    {
+        $this->authorize('manage', Booking::class);
+        $student = Student::query()->findOrFail($this->studentId);
+        $turn = $agenda->presentationTurn($student);
+
+        if ($turn === null || $turn['pending']) {
+            return;
+        }
+
+        try {
+            $presentations->leavePending($student, $turn['step'], auth()->user(), $this->today());
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->choices = [];
+        unset($this->options, $this->bookings);
+        $this->dispatch('toast', type: 'success', message: __('agenda.presentation.left_pending', ['practice' => $turn['step']['label']]));
     }
 
     /** Recepción y el Administrador agendan mientras la clase no termine (el resto del personal, 10 minutos). */
@@ -382,7 +410,7 @@ class AgendaDay extends Component
     {
         $bookings = Booking::query()->whereDate('date', $this->date)
             ->when($this->ownTeacherId() !== null, fn ($query) => $query->where('teacher_id', $this->ownTeacherId()))
-            ->with(['student', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson'])
+            ->with(['student.pendingPresentation.lesson', 'student.pendingPresentation.book', 'slot', 'teacher', 'classroom', 'book', 'lesson', 'clubSession.club', 'events.user', 'cancellationReason', 'ungradedReason', 'kardexEntries.grade', 'kardexEntries.book', 'kardexEntries.lesson'])
             ->get();
 
         // Peso newton de cada práctica; carga por aula y aulas híbridas de cada hora (con todas las reservaciones, sin filtros).
@@ -467,6 +495,11 @@ class AgendaDay extends Component
         return $this->slotId === null ? $options : array_values(array_filter($options, fn (array $hour) => $hour['slot']->id === $this->slotId));
     }
 
+    protected function bookingStudent(): ?Student
+    {
+        return $this->selectedStudent;
+    }
+
     #[Computed]
     public function selectedStudent(): ?Student
     {
@@ -513,6 +546,8 @@ class AgendaDay extends Component
             'reasonOptions' => $this->reasons()->pluck('name', 'id')->all(),
             'nextActivity' => $this->selectedStudent ? $agenda->nextActivity($this->selectedStudent) : null,
             'dailyLimit' => $this->selectedStudent ? $agenda->dailyLimit($this->selectedStudent, $this->today()) : null,
+            'presentationTurn' => $this->selectedStudent ? $agenda->presentationTurn($this->selectedStudent) : null,
+            'canLeavePending' => $this->selectedStudent && app(PresentationService::class)->canLeavePending(auth()->user()),
         ])->title(__('agenda.title'));
     }
 

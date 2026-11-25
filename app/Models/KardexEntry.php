@@ -13,11 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Renglón del Kardex del alumno: una práctica de la ruta (libro + lección + actividad, con su orden) o un club,
  * con su calificación, la reservación en que se calificó, el teacher y quién la capturó. Si se capturó un día
  * después de la práctica, lleva el motivo y el comentario. Puede llevar una observación (motivo del Kardex) para el
- * seguimiento del alumno.
+ * seguimiento del alumno. Una presentación (A7 de las lecciones 15 y 17) puede quedar pendiente: sin calificación
+ * (is_pending) para que el alumno siga con las actividades siguientes; al presentarla se califica ese mismo renglón.
  */
 #[Fillable([
     'school_id', 'student_id', 'booking_id', 'kind', 'book_id', 'lesson_id', 'activity_number', 'sort_order', 'points',
-    'club_session_id', 'club_code', 'grade_id', 'teacher_id', 'user_id', 'session_date', 'late_reason_id', 'late_comment',
+    'club_session_id', 'club_code', 'grade_id', 'is_pending', 'teacher_id', 'user_id', 'session_date', 'late_reason_id', 'late_comment',
     'observation_reason_id',
 ])]
 class KardexEntry extends Model
@@ -32,6 +33,7 @@ class KardexEntry extends Model
             'activity_number' => 'integer',
             'sort_order' => 'integer',
             'points' => 'integer',
+            'is_pending' => 'boolean',
         ];
     }
 

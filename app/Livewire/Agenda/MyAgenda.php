@@ -176,6 +176,11 @@ class MyAgenda extends Component
         return CancellationReason::query()->where('is_active', true)->where('for_students', true)->orderBy('sort_order')->orderBy('name')->get();
     }
 
+    protected function bookingStudent(): ?Student
+    {
+        return $this->student;
+    }
+
     #[Computed]
     public function student(): ?Student
     {
@@ -247,6 +252,7 @@ class MyAgenda extends Component
             'canGoBack' => $days[0]->gt($current),
             'canGoForward' => $days[0]->lt($current->addWeeks(self::WEEKS_AHEAD)),
             'nextActivity' => $this->student ? $agenda->nextActivity($this->student) : null,
+            'presentationTurn' => $this->student ? $agenda->presentationTurn($this->student) : null,
         ])->title(__($this->clubsOnly ? 'agenda.my_clubs_title' : 'agenda.my_title'));
     }
 

@@ -15,14 +15,15 @@ use Illuminate\Support\Collection;
  * Cada hora de práctica corresponde a un paso de esta ruta (LLA).
  *
  * Si la escuela no tiene catálogo de prácticas, la ruta se arma lección por lección (en su orden) con sus
- * actividades 1–7 (o las que tengan peso newton).
+ * actividades 1–7 (o las que tengan peso newton). Los pasos marcados como presentación (catálogo de Prácticas) se
+ * agendan como Presentación y pueden quedar pendientes (PresentationService).
  */
 final class ProgressPath
 {
     /** Actividades por lección cuando no hay catálogo de prácticas. */
     public const ACTIVITIES_PER_LESSON = 7;
 
-    /** @var Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int}> */
+    /** @var Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int, is_presentation: bool}> */
     private Collection $steps;
 
     public function __construct(School $school)
@@ -54,6 +55,7 @@ final class ProgressPath
                 return [
                     'book_id' => $book->id, 'level' => (int) $book->level, 'lesson_id' => $lesson->id, 'lesson_number' => (int) $lesson->number,
                     'activity_number' => $practice->activity_number, 'order' => $practice->sort_order, 'points' => $practice->points,
+                    'is_presentation' => $practice->is_presentation,
                     'label' => Practice::labelFor((int) $book->level, $lesson, $practice->activity_number, $practice->name, $codes),
                 ];
             })->values();
@@ -79,14 +81,14 @@ final class ProgressPath
 
                 return [
                     'book_id' => $book->id, 'level' => (int) $book->level, 'lesson_id' => $lesson->id, 'lesson_number' => (int) $lesson->number,
-                    'activity_number' => $activity, 'order' => $order, 'points' => $order,
+                    'activity_number' => $activity, 'order' => $order, 'points' => $order, 'is_presentation' => false,
                     'label' => Practice::labelFor((int) $book->level, $lesson, $activity, null, $codes),
                 ];
             });
         }))->values();
     }
 
-    /** @return Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int}> */
+    /** @return Collection<int, array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int, is_presentation: bool}> */
     public function steps(): Collection
     {
         return $this->steps;
@@ -123,10 +125,18 @@ final class ProgressPath
         return $index ?? ($before ? null : $this->firstOfLesson($lessonId));
     }
 
-    /** @return array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int}|null */
+    /** @return array{book_id: int, level: int, lesson_id: int, lesson_number: int, activity_number: int, label: string, order: int, points: int, is_presentation: bool}|null */
     public function at(int $index): ?array
     {
         return $this->steps->get($index);
+    }
+
+    /** Primer paso de un libro de nivel mayor a $level (cambio de libro), o null si no hay. */
+    public function firstAboveLevel(int $level): ?int
+    {
+        $index = $this->steps->search(fn (array $step) => $step['level'] > $level);
+
+        return $index === false ? null : $index;
     }
 
     /** Primera actividad de una lección (para el inicio del alumno si solo trae lección). */

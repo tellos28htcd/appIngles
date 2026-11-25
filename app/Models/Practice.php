@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Práctica de la ruta de avance (catálogo "Prácticas", Excel Cat_Practicas.xlsx): libro + lección + actividad,
  * con su orden (consecutivo en que se asignan en la agenda y se califican en el Kardex) y sus puntos acumulados.
- * El nombre propio (p. ej. "DIRECT P.") sustituye al código de la actividad en esa lección.
+ * El nombre propio (p. ej. "DIRECT P.") sustituye al código de la actividad en esa lección. Las marcadas como
+ * presentación (A7 de las lecciones 15 y 17) se agendan como Presentación y pueden quedar pendientes en el Kardex.
  */
-#[Fillable(['school_id', 'base_id', 'book_id', 'lesson_id', 'activity_number', 'name', 'sort_order', 'points', 'is_active'])]
+#[Fillable(['school_id', 'base_id', 'book_id', 'lesson_id', 'activity_number', 'name', 'is_presentation', 'sort_order', 'points', 'is_active'])]
 class Practice extends Model
 {
     use Auditable, BelongsToSchool;
@@ -24,6 +25,7 @@ class Practice extends Model
             'activity_number' => 'integer',
             'sort_order' => 'integer',
             'points' => 'integer',
+            'is_presentation' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

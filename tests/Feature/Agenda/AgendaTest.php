@@ -3,6 +3,8 @@
 namespace Tests\Feature\Agenda;
 
 use App\Actions\Agenda\AgendaService;
+use App\Actions\Kardex\KardexService;
+use App\Actions\Kardex\PresentationService;
 use App\Actions\Teachers\AvailabilityPlanner;
 use App\Enums\AttendanceEffect;
 use App\Enums\BookingKind;
@@ -14,7 +16,9 @@ use App\Enums\SelfBooking;
 use App\Livewire\Agenda\AgendaDay;
 use App\Livewire\Agenda\MyAgenda;
 use App\Livewire\BookingNotices;
+use App\Livewire\Catalogs\PracticesTab;
 use App\Livewire\Catalogs\WeightsTab;
+use App\Livewire\Kardex\GradesDay;
 use App\Livewire\Settings\ClassroomIndex;
 use App\Livewire\Students\StudentShow;
 use App\Models\Activity;
@@ -134,6 +138,41 @@ class AgendaTest extends TestCase
             ->set('choices', [$this->slots[$hour]->id."|$kind|$modality|".$clubId])->call('book');
     }
 
+    /**
+     * Catálogo de Prácticas: Lección 1 y Lección 2 con sus actividades 1–7; la A7 de cada una es presentación.
+     * Con $nextBook, además un libro 2 con 4 actividades (para el cambio de libro).
+     */
+    private function presentationCatalog(bool $nextBook = false): void
+    {
+        $order = 0;
+        $lessons = Lesson::where('school_id', $this->school->id)->orderBy('sort_order')->get();
+        if ($nextBook) {
+            $book = Book::create(['school_id' => $this->school->id, 'level' => 2, 'name' => 'Book 2', 'is_active' => true]);
+            $lessons->push(Lesson::create(['school_id' => $this->school->id, 'book_id' => $book->id, 'number' => 1, 'name' => 'Lesson 1', 'type' => LessonType::Lesson, 'sort_order' => 1, 'is_active' => true]));
+        }
+        foreach ($lessons as $lesson) {
+            foreach (range(1, $lesson->book_id === $this->firstLesson->book_id ? 7 : 4) as $activity) {
+                $order++;
+                Practice::create(['school_id' => $this->school->id, 'book_id' => $lesson->book_id, 'lesson_id' => $lesson->id, 'activity_number' => $activity,
+                    'is_presentation' => $lesson->book_id === $this->firstLesson->book_id && $activity === 7, 'sort_order' => $order, 'points' => $order * 10, 'is_active' => true]);
+            }
+        }
+    }
+
+    /** Alumno con el Kardex calificado hasta esa práctica del catálogo (por su orden): le toca la siguiente. */
+    private function studentUpTo(int $order): Student
+    {
+        $student = $this->student();
+        $grade = Grade::firstOrCreate(['school_id' => $this->school->id, 'code' => 'A'], ['name' => 'Excelente', 'type' => GradeType::Score, 'sort_order' => 1, 'is_active' => true]);
+        foreach (Practice::where('school_id', $this->school->id)->where('sort_order', '<=', $order)->get() as $practice) {
+            KardexEntry::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'kind' => BookingKind::Session, 'book_id' => $practice->book_id,
+                'lesson_id' => $practice->lesson_id, 'activity_number' => $practice->activity_number, 'sort_order' => $practice->sort_order,
+                'points' => $practice->points, 'grade_id' => $grade->id, 'session_date' => '2026-07-20']);
+        }
+
+        return $student;
+    }
+
     public function test_reception_and_the_student_book_two_different_hours_at_once(): void
     {
         $this->actingAs($this->user(Role::RECEPTION));
@@ -163,6 +202,7 @@ class AgendaTest extends TestCase
     public function test_reception_books_mentoring_material_and_a_one_to_one_presentation_without_weight(): void
     {
         $this->weights();
+        $this->presentationCatalog();
         $this->actingAs($this->user(Role::RECEPTION));
 
         // Mentoría especial: un lugar en el aula de práctica con su teacher, peso 0 (no se muestra) y sin actividad de la ruta.
@@ -179,16 +219,17 @@ class AgendaTest extends TestCase
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.in_person_only', ['kind' => __('agenda.kinds.material')]));
         $this->receptionBooks($this->student(), 9, 'material')->assertDispatched('toast', type: 'success');
 
-        // Presentación 1 a 1: un aula vacía que queda solo para el alumno.
-        $eva = $this->student();
+        // Presentación 1 a 1 (le toca su A7): un aula vacía que queda solo para el alumno; lleva su actividad.
+        $eva = $this->studentUpTo(6);
         $this->receptionBooks($eva, 10, 'presentation')->assertDispatched('toast', type: 'success');
-        $presentation = Booking::where('student_id', $eva->id)->sole();
+        $presentation = Booking::with(['book', 'lesson'])->where('student_id', $eva->id)->sole();
+        $this->assertSame(__('agenda.kinds.presentation').' · L1-L1-A7-SP', $presentation->activityLabel());
         $pedro = $this->student();
         $this->receptionBooks($pedro, 10)->assertDispatched('toast', type: 'success');
         $this->assertNotSame($presentation->classroom_id, Booking::where('student_id', $pedro->id)->value('classroom_id'));
-        $this->receptionBooks($this->student(), 10, 'presentation')->assertDispatched('toast', type: 'error', message: __('agenda.validation.no_free_room'));
+        $this->receptionBooks($this->studentUpTo(6), 10, 'presentation')->assertDispatched('toast', type: 'error', message: __('agenda.validation.no_free_room'));
         // Sin aula vacía, la presentación 1 a 1 sale deshabilitada con el motivo.
-        $presentations = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->student()->id)->get('options'))
+        $presentations = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->studentUpTo(6)->id)->get('options'))
             ->firstWhere('slot.id', $this->slots[10]->id)['options'];
         $this->assertSame([__('agenda.blocked.no_room')], collect($presentations)->where('kind', 'presentation')->pluck('blocked')->all());
         $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'success');
@@ -207,6 +248,7 @@ class AgendaTest extends TestCase
 
     public function test_mentoring_is_limited_per_week_and_a_club_presentation_takes_a_club_seat(): void
     {
+        $this->presentationCatalog();
         $this->actingAs($this->user(Role::RECEPTION));
         $ana = $this->student();
 
@@ -238,13 +280,13 @@ class AgendaTest extends TestCase
             'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true]]]);
         $session = ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),
             'classroom_id' => $room->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id, 'modality' => 'in_person']);
-        $luis = $this->student();
+        $luis = $this->studentUpTo(6);
         // En la ventana, "Presentación" es un botón que abre sus dos formas: 1 a 1 y en el club de esa hora.
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $luis->id)
             ->assertSee(__('agenda.presentation_choose'))->assertSee(__('agenda.presentation_one'))->assertSee(__('agenda.presentation_club', ['code' => 'C12']))
             ->assertDontSee(__('agenda.option_club_presentation', ['code' => 'C12']));
         $this->receptionBooks($luis, 10, 'club_presentation', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
-        $this->assertSame(__('agenda.option_club_presentation', ['code' => 'C12']), Booking::with('clubSession')->where('student_id', $luis->id)->sole()->activityLabel());
+        $this->assertSame(__('agenda.option_club_presentation', ['code' => 'C12']).' · L1-L1-A7', Booking::with(['clubSession', 'book', 'lesson'])->where('student_id', $luis->id)->sole()->activityLabel());
         $this->receptionBooks($this->student(), 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
     }
 
@@ -401,19 +443,144 @@ class AgendaTest extends TestCase
         app(AgendaService::class)->changeActivity($club, BookingKind::Session, ClubModality::InPerson, null, null);
     }
 
+    public function test_the_presentation_of_the_path_is_booked_as_a_presentation_and_graded_with_a_b_c(): void
+    {
+        $this->presentationCatalog();
+        $this->actingAs($this->user(Role::RECEPTION));
+        $ana = $this->studentUpTo(6);
+
+        // Le toca su A7: la práctica sale deshabilitada con el motivo y la ventana lo avisa.
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $ana->id)
+            ->assertSee(__('agenda.presentation.turn', ['practice' => 'L1-L1-A7']))->assertSee(__('agenda.presentation.leave_pending'));
+        $nine = collect($page->get('options'))->firstWhere('slot.id', $this->slots[9]->id)['options'];
+        $this->assertSame([__('agenda.blocked.presentation_turn', ['practice' => 'L1-L1-A7'])], collect($nine)->where('kind', 'session')->pluck('blocked')->all());
+        $this->receptionBooks($ana, 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.presentation_turn', ['practice' => 'L1-L1-A7']));
+
+        // Un alumno al que no le toca no puede agendar presentación.
+        $this->receptionBooks($this->student(), 9, 'presentation')->assertDispatched('toast', type: 'error', message: __('agenda.validation.no_presentation'));
+
+        // Presentación 1 a 1 en línea con su A7; después la práctica sigue con la Lección 2.
+        $this->receptionBooks($ana, 9, 'presentation', 'online')->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($ana, 10)->assertDispatched('toast', type: 'success');
+        $presentation = Booking::where('student_id', $ana->id)->where('kind', BookingKind::Presentation)->sole();
+        $this->assertSame([$this->firstLesson->id, 7], [$presentation->lesson_id, $presentation->activity_number]);
+        $secondLesson = Lesson::where('school_id', $this->school->id)->where('number', 2)->value('id');
+        $this->assertSame([$secondLesson, 1], Booking::where('student_id', $ana->id)->where('kind', BookingKind::Session)->get(['lesson_id', 'activity_number'])->map->only('lesson_id', 'activity_number')->flatten()->all());
+
+        // Se califica con A/B/C como actividad de la ruta.
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 12:00', 'America/Mexico_City'));
+        $presentation->update(['status' => BookingStatus::Attended]);
+        $kardex = app(KardexService::class);
+        $steps = $kardex->pendingSteps($presentation->refresh());
+        $this->assertSame([['L1-L1-A7', GradeType::Score]], array_map(fn (array $step) => [$step['label'], $step['type']], $steps));
+        $kardex->gradeSession($presentation, [(string) Grade::where('code', 'A')->value('id')], $this->user(Role::RECEPTION), CarbonImmutable::parse(self::MONDAY));
+        $entry = KardexEntry::where('student_id', $ana->id)->where('lesson_id', $this->firstLesson->id)->where('activity_number', 7)->sole();
+        $this->assertSame(['A', false, $presentation->id], [$entry->grade->code, $entry->is_pending, $entry->booking_id]);
+
+        // El Administrador marca o desmarca en el catálogo qué práctica es presentación.
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $practice = Practice::where('school_id', $this->school->id)->where('sort_order', 2)->sole();
+        Livewire::test(PracticesTab::class, ['schoolId' => $this->school->id])->call('togglePresentation', $practice->id)->assertDispatched('toast', type: 'success');
+        $this->assertTrue($practice->refresh()->is_presentation);
+    }
+
+    public function test_a_presentation_left_pending_lets_the_student_go_on_one_at_a_time_and_two_activities_into_the_next_book(): void
+    {
+        $this->presentationCatalog(nextBook: true);
+        $reception = $this->user(Role::RECEPTION);
+        $this->actingAs($reception);
+        $ana = $this->studentUpTo(6);
+
+        // Recepción la deja pendiente desde "Nueva reservación": la ruta sigue con la Lección 2.
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $ana->id)
+            ->call('leavePresentationPending')->assertDispatched('toast', type: 'success', message: __('agenda.presentation.left_pending', ['practice' => 'L1-L1-A7']))
+            ->assertSee(__('agenda.presentation.pending', ['practice' => 'L1-L1-A7']));
+        $pending = KardexEntry::where('student_id', $ana->id)->where('is_pending', true)->sole();
+        $this->assertSame([null, 7], [$pending->grade_id, $pending->activity_number]);
+        $this->assertSame('L1-L2-A1', app(AgendaService::class)->nextActivity($ana)['label']);
+        $this->receptionBooks($ana, 9)->assertDispatched('toast', type: 'success');
+        $this->assertTrue(app(AgendaService::class)->presentationTurn($ana)['pending']);
+
+        // Se ve en el expediente.
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        Livewire::test(StudentShow::class, ['student' => $ana])->assertSee(__('students.sections.pending_presentation'))->assertSee('L1-L1-A7');
+        $this->actingAs($reception);
+
+        // Una a la vez: la siguiente presentación ya no puede quedar pendiente.
+        $path = new ProgressPath($this->school);
+        $this->assertThrows(fn () => app(PresentationService::class)->leavePending($ana, $path->at(13), $reception, CarbonImmutable::parse(self::MONDAY)),
+            ValidationException::class, __('kardex.validation.one_pending'));
+
+        // Cambio de libro con la presentación L1-L2-A7 pendiente: 2 actividades del libro 2 y después se bloquea.
+        $owes = function (int $upTo): Student {
+            $student = $this->studentUpTo($upTo);
+            KardexEntry::where('student_id', $student->id)->where('sort_order', 14)->update(['grade_id' => null, 'is_pending' => true]);
+
+            return $student;
+        };
+        $this->receptionBooks($owes(15), 9)->assertDispatched('toast', type: 'success');
+        $bob = $owes(16);
+        $this->receptionBooks($bob, 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.presentation_blocked', ['practice' => 'L1-L2-A7']));
+
+        // La pendiente se agenda como Presentación y, al calificarla, deja de estar pendiente y lo desbloquea.
+        $this->receptionBooks($bob, 10, 'presentation')->assertDispatched('toast', type: 'success');
+        $presentation = Booking::where('student_id', $bob->id)->where('kind', BookingKind::Presentation)->sole();
+        $this->assertSame(7, $presentation->activity_number);
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 12:00', 'America/Mexico_City'));
+        $presentation->update(['status' => BookingStatus::Attended]);
+        app(KardexService::class)->gradeSession($presentation->refresh(), [(string) Grade::where('code', 'A')->value('id')], $reception, CarbonImmutable::parse(self::MONDAY));
+        $this->assertNull(app(PresentationService::class)->pending($bob));
+        $this->assertNull(app(PresentationService::class)->practiceBlock($bob, $path, app(AgendaService::class)->nextActivity($bob)));
+    }
+
+    public function test_another_school_cannot_mark_presentations_in_this_catalog(): void
+    {
+        $this->presentationCatalog();
+        $practice = Practice::where('school_id', $this->school->id)->where('sort_order', 2)->sole();
+        $other = School::factory()->create();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $other));
+
+        Livewire::test(PracticesTab::class, ['schoolId' => $other->id])->call('togglePresentation', $practice->id)->assertNotFound();
+        $this->assertFalse($practice->refresh()->is_presentation);
+    }
+
+    public function test_only_the_teacher_and_reception_leave_a_presentation_pending_when_grading(): void
+    {
+        $this->presentationCatalog();
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 12:00', 'America/Mexico_City'));
+        $dan = $this->studentUpTo(6);
+        $booking = Booking::create(['school_id' => $this->school->id, 'student_id' => $dan->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[9]->id,
+            'kind' => BookingKind::Session, 'modality' => 'in_person', 'status' => BookingStatus::Attended, 'lesson_id' => $this->firstLesson->id, 'activity_number' => 6,
+            'book_id' => $this->firstLesson->book_id, 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id')]);
+        $kardex = app(KardexService::class);
+        // La A1 que sigue se firma con F.
+        $gradeF = (string) Grade::create(['school_id' => $this->school->id, 'code' => 'F', 'name' => 'Firma', 'type' => GradeType::Signature, 'sort_order' => 2, 'is_active' => true])->id;
+
+        // La A7 sale en la ventana de calificar con la opción "Pendiente" para Recepción.
+        $this->actingAs($this->user(Role::RECEPTION));
+        Livewire::test(GradesDay::class)->call('open', $booking->id)->assertSee(__('kardex.pending_option'))->assertSee(__('kardex.presentation_step'));
+
+        $this->assertThrows(fn () => $kardex->gradeSession($booking, [KardexService::PENDING, $gradeF, ''], $this->user(Role::ACADEMIC_COORDINATOR), CarbonImmutable::parse(self::MONDAY)),
+            ValidationException::class, __('kardex.validation.pending_role'));
+        $this->assertSame(2, $kardex->gradeSession($booking, [KardexService::PENDING, $gradeF, ''], $this->user(Role::RECEPTION), CarbonImmutable::parse(self::MONDAY)));
+        $this->assertSame([[7, true], [1, false]], KardexEntry::where('booking_id', $booking->id)->orderBy('sort_order')->get()
+            ->map(fn (KardexEntry $entry) => [$entry->activity_number, $entry->is_pending])->all());
+    }
+
     public function test_a_club_takes_only_one_presentation(): void
     {
         $this->actingAs($this->user(Role::RECEPTION));
         $session = $this->clubSession(10);
+        $this->presentationCatalog();
 
-        $this->receptionBooks($this->student(), 10, 'club_presentation', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
-        $this->receptionBooks($this->student(), 10, 'club_presentation', 'in_person', $session->id)
+        $this->receptionBooks($this->studentUpTo(6), 10, 'club_presentation', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($this->studentUpTo(6), 10, 'club_presentation', 'in_person', $session->id)
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.club_presentation_taken'));
         // El club sigue con lugar para alumnos normales.
         $this->receptionBooks($this->student(), 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
 
         // En la ventana, la presentación en ese club sale deshabilitada con el motivo.
-        $options = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->student()->id)->get('options'))
+        $options = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->studentUpTo(6)->id)->get('options'))
             ->firstWhere('slot.id', $this->slots[10]->id)['options'];
         $this->assertSame([__('agenda.blocked.presentation_taken')], collect($options)->where('kind', 'club_presentation')->pluck('blocked')->all());
     }
@@ -929,6 +1096,43 @@ class AgendaTest extends TestCase
         // Recepción no modifica el expediente.
         $this->actingAs($this->user(Role::RECEPTION));
         Livewire::test(StudentShow::class, ['student' => $student])->call('removeExcludedTeacher', $teachers[1]->id)->assertForbidden();
+    }
+
+    public function test_the_special_case_sets_the_daily_practices_and_replaces_the_other_rules(): void
+    {
+        $student = $this->student();
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $page = Livewire::test(StudentShow::class, ['student' => $student])->assertSee(__('students.sections.special_case'))->assertSee(__('students.special_case.empty'));
+        $page->set('maxDailyPractices', '13')->call('saveSpecialCase')->assertHasErrors('maxDailyPractices');
+        $page->set('maxDailyPractices', '5')->call('saveSpecialCase')->assertHasNoErrors()->assertSee(trans_choice('students.special_case.current', 5));
+        $this->assertSame(5, $student->refresh()->max_daily_practices);
+        $page->set('maxDailyPractices', '')->call('saveSpecialCase');
+        $this->assertNull($student->refresh()->max_daily_practices);
+
+        // Con caso especial manda solo su número: ni el máximo de Mi Escuela ni la asistencia baja.
+        $this->school->update(['max_sessions' => 1]);
+        $student->update(['max_daily_practices' => 2]);
+        foreach (['2026-07-20' => 'no_show', '2026-07-21' => 'no_show'] as $date => $result) {
+            Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => $date, 'schedule_slot_id' => $this->slots[9]->id,
+                'kind' => 'session', 'modality' => 'in_person', 'status' => BookingStatus::Cancelled, 'cancellation_reason_id' => $this->reasons['no_show']->id]);
+        }
+        $this->actingAs($this->user(Role::RECEPTION));
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $student->id)
+            ->assertSee(__('agenda.daily_limit_special_note', ['hours' => 2]))
+            ->set('choices', [$this->slots[9]->id.'|session|in_person|', $this->slots[10]->id.'|session|in_person|'])->call('book')
+            ->assertDispatched('toast', type: 'success');
+        $this->assertSame(2, Booking::where('student_id', $student->id)->whereDate('date', self::MONDAY)->active()->count());
+
+        // Con caso especial de 1, la segunda práctica ya no.
+        $other = $this->student();
+        $other->update(['max_daily_practices' => 1]);
+        $this->receptionBooks($other, 9)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($other, 10)->assertDispatched('toast', type: 'error', message: __('agenda.validation.daily_limit_special', ['hours' => 1]));
+
+        // Se eligen a la vez hasta su máximo (5), sin caso especial hasta 2.
+        $other->update(['max_daily_practices' => 5]);
+        $this->assertSame(5, Livewire::test(AgendaDay::class)->call('create')->call('pickStudent', $other->id)->instance()->maxChoices());
+        $this->assertSame(2, Livewire::test(AgendaDay::class)->call('create')->call('pickStudent', $this->student()->id)->instance()->maxChoices());
     }
 
     // ── Balanceo por pesos ────────────────────────────────────────

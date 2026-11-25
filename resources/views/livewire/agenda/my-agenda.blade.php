@@ -21,6 +21,14 @@
             </p>
         @endif
 
+        {{-- Su presentación (A7) la agenda Recepción. --}}
+        @if ($presentationTurn)
+            <p class="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm font-semibold text-warning-700">
+                <x-ui.icon name="alert" class="mt-px size-4 flex-none" />
+                <span>{{ __($presentationTurn['pending'] ? 'agenda.presentation.student_pending' : 'agenda.presentation.student_turn', ['practice' => $presentationTurn['step']['label']]) }}</span>
+            </p>
+        @endif
+
         @php($nav = 'flex size-11 items-center justify-center rounded-md border-[1.5px] border-line-strong bg-white text-ink-700 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 disabled:opacity-40 disabled:pointer-events-none')
         <div class="flex flex-wrap items-center gap-2">
             <button type="button" wire:click="shiftWeek(-1)" class="{{ $nav }}" @disabled(! $canGoBack) aria-label="{{ __('agenda.previous_week') }}" title="{{ __('agenda.previous_week') }}">‹</button>
@@ -75,7 +83,7 @@
                     {{ $date ? \Carbon\CarbonImmutable::parse($date)->translatedFormat('l j \d\e F') : '' }}@if ($slotLabel) · {{ $slotLabel }}@endif
                 </p>
             @endif
-            @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this::MAX_CHOICES])
+            @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this->maxChoices()])
             <p class="rounded-lg bg-surface px-3 py-2 text-sm text-ink-700">{{ __('agenda.option_reception_only') }}</p>
             <x-slot:footer>
                 <x-ui.button variant="muted" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>

@@ -48,6 +48,12 @@ return [
     'too_old' => 'Solo se califica hasta :days días después de la práctica.',
     'not_attended' => 'Primero registra en la Agenda que el alumno asistió; después podrás calificar. Si no vino, usa "Sin calificación".',
     'no_attendance' => 'Sin asistencia',
+    'pending_option' => 'Pendiente (sigue con las siguientes)',
+    'pending_short' => 'Pendiente',
+    'pending_presentation' => 'Presentación pendiente',
+    'pending_presentation_short' => 'Pres. pendiente :practice',
+    'pending_presentation_of' => 'Tiene pendiente la presentación :practice',
+    'presentation_step' => 'Presentación',
     'nothing_to_grade' => 'No hay más prácticas por calificar.',
     'confirm_remove' => '¿Quitar esta calificación del Kardex?',
 
@@ -73,6 +79,9 @@ return [
     ],
 
     'validation' => [
+        'pending_role' => 'Solo el teacher o Recepción pueden dejar pendiente una presentación.',
+        'pending_not_presentation' => ':practice no es una presentación: no puede quedar pendiente.',
+        'one_pending' => 'Ya tiene una presentación pendiente: primero debe presentarla (solo una a la vez).',
         'not_attended' => 'Primero registra en la Agenda que el alumno asistió; después podrás calificar.',
         'not_gradable' => 'Esta reservación no se puede calificar (cancelada o en lista de espera).',
         'future' => 'Solo se califican prácticas de hoy o de días anteriores.',
