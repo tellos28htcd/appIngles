@@ -729,7 +729,7 @@ final class AgendaService
                 $fail('daily_limit', ['hours' => $limit]);
             }
 
-            $this->checkKindLimits($school, $student, $date, $kind, $day, $fail);
+            $this->checkKindLimits($school, $student, $date, $kind, $day, $fail, slotId: $slot->id);
 
             $booking = new Booking([
                 'school_id' => $school->id, 'student_id' => $student->id, 'date' => $date->toDateString(), 'schedule_slot_id' => $slot->id,
@@ -803,8 +803,13 @@ final class AgendaService
      *
      * @param  Collection<int, Booking>  $day  reservaciones activas del alumno ese día (sin la que se cambia)
      */
-    private function checkKindLimits(School $school, Student $student, CarbonImmutable $date, BookingKind $kind, Collection $day, Closure $fail, ?int $exceptBookingId = null): void
+    private function checkKindLimits(School $school, Student $student, CarbonImmutable $date, BookingKind $kind, Collection $day, Closure $fail, ?int $exceptBookingId = null, ?int $slotId = null): void
     {
+        // Mentoría especial y entrega de material: máximo de alumnos a la misma hora.
+        if ($slotId !== null && $kind->perSlotLimit() !== null && $this->slotKindCount($school, $date, $slotId, $kind, $exceptBookingId) >= $kind->perSlotLimit()) {
+            $fail('kind_slot_full', ['kind' => $kind->label(), 'max' => $kind->perSlotLimit()]);
+        }
+
         if ($kind->countsAsSession() && $school->max_sessions && $day->filter(fn (Booking $booking) => $booking->kind->countsAsSession())->count() >= $school->max_sessions) {
             $fail('max_sessions', ['max' => $school->max_sessions]);
         }
@@ -824,6 +829,14 @@ final class AgendaService
         }
     }
 
+    /** Reservaciones activas (sin lista de espera) de ese tipo a esa hora en la escuela. */
+    private function slotKindCount(School $school, CarbonImmutable $date, int $slotId, BookingKind $kind, ?int $exceptBookingId = null): int
+    {
+        return Booking::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+            ->where('schedule_slot_id', $slotId)->where('kind', $kind)->where('is_waitlist', false)->active()
+            ->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))->count();
+    }
+
     /**
      * Opciones que solo agenda Recepción: mentoría especial (presencial o en línea), entrega de material (solo
      * presencial), presentación 1 a 1 (un aula vacía que queda para el alumno) y presentación en un club de esa hora.
@@ -838,6 +851,19 @@ final class AgendaService
 
         foreach ([BookingKind::Mentoring, BookingKind::Material, BookingKind::Presentation] as $kind) {
             [$inPerson, $online] = $this->seatsFor($school, $student, null, $date, $slot, $excluded, $kind);
+
+            // Máximo de alumnos a la misma hora (mentoría y material: 2, entre presencial y en línea).
+            if ($kind->perSlotLimit() !== null) {
+                $remaining = max(0, $kind->perSlotLimit() - $this->slotKindCount($school, $date, $slot->id, $kind));
+                [$inPerson, $online] = [min($inPerson, $remaining), min($online, $remaining)];
+
+                if ($remaining === 0) {
+                    $options[] = ['kind' => $kind->value, 'modality' => ClubModality::InPerson->value, 'club_session_id' => null, 'label' => $kind->label(), 'free' => 0, 'waitlist' => false,
+                        'blocked' => __('agenda.blocked.per_hour', ['max' => $kind->perSlotLimit()])];
+
+                    continue;
+                }
+            }
 
             foreach ([ClubModality::InPerson->value => $inPerson, ClubModality::Online->value => $kind->allowsOnline() ? $online : 0] as $modality => $free) {
                 if ($free > 0) {
@@ -943,7 +969,7 @@ final class AgendaService
             if ($modality === ClubModality::Online && ! $kind->allowsOnline()) {
                 $fail('in_person_only', ['kind' => $kind->label()]);
             }
-            $this->checkKindLimits($school, $student, CarbonImmutable::parse($booking->date->toDateString()), $kind, $day, $fail, $booking->id);
+            $this->checkKindLimits($school, $student, CarbonImmutable::parse($booking->date->toDateString()), $kind, $day, $fail, $booking->id, $booking->schedule_slot_id);
 
             $before = $booking->kind->label().' '.$booking->activityLabel();
             // Libera su lugar mientras se acomoda de nuevo (si no hay lugar, la transacción lo deja como estaba).

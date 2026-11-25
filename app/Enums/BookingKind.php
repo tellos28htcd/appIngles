@@ -18,6 +18,15 @@ enum BookingKind: string
     /** Máximo de mentorías especiales por semana (lunes a domingo). */
     public const MENTORING_PER_WEEK = 3;
 
+    /** Máximo de alumnos a la misma hora (mentoría especial y entrega de material: 2); null = sin límite propio. */
+    public function perSlotLimit(): ?int
+    {
+        return match ($this) {
+            self::Mentoring, self::Material => 2,
+            default => null,
+        };
+    }
+
     public function label(): string
     {
         return __("agenda.kinds.{$this->value}");

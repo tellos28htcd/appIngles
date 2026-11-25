@@ -209,6 +209,7 @@ return [
         'reception_only' => 'Este tipo de reservación se solicita en Recepción.',
         'in_person_only' => ':kind solo es presencial.',
         'mentoring_week' => 'Llegó al máximo de :max mentorías especiales por semana.',
+        'kind_slot_full' => ':kind: ya hay :max alumnos a esa hora (máximo :max).',
         'no_free_room' => 'No hay un aula libre a esa hora para la presentación 1 a 1.',
         'duplicate' => 'Ya tiene una reservación a esa hora.',
         'daily_limit' => 'Llegó al límite de :hours h por día (según su asistencia de los últimos 7 días).',
@@ -230,6 +231,7 @@ return [
         'no_activity' => 'Sin actividad siguiente',
         'full' => 'Lleno',
         'no_room' => 'Sin aula libre',
+        'per_hour' => 'Lleno (máx. :max por hora)',
     ],
     'grades_tip' => [
         'graded' => 'Ya calificado:',

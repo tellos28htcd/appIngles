@@ -218,6 +218,20 @@ class AgendaTest extends TestCase
         $this->receptionBooks($ana, 9, 'mentoring')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.mentoring_week', ['max' => BookingKind::MENTORING_PER_WEEK]));
 
+        // Mentoría especial y entrega de material: máximo 2 alumnos a la misma hora (presencial y en línea juntos).
+        foreach (['mentoring' => __('agenda.kinds.mentoring'), 'material' => __('agenda.kinds.material')] as $kind => $label) {
+            $this->receptionBooks($this->student(), 9, $kind)->assertDispatched('toast', type: 'success');
+            $this->receptionBooks($this->student(), 9, $kind, $kind === 'mentoring' ? 'online' : 'in_person')->assertDispatched('toast', type: 'success');
+            $third = $this->student();
+            $this->receptionBooks($third, 9, $kind)->assertDispatched('toast', type: 'error', message: __('agenda.validation.kind_slot_full', ['kind' => $label, 'max' => 2]));
+            if ($kind === 'mentoring') {
+                // En la ventana sale deshabilitada: "Lleno (máx. 2 por hora)".
+                $blocked = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $third->id)->get('options'))
+                    ->firstWhere('slot.id', $this->slots[9]->id)['options'];
+                $this->assertSame([__('agenda.blocked.per_hour', ['max' => 2])], collect($blocked)->where('kind', $kind)->pluck('blocked')->all());
+            }
+        }
+
         // Presentación en club: ocupa un lugar del club (aquí, el único) y se ve como "Presentación en club".
         $room = Classroom::create(['school_id' => $this->school->id, 'name' => '7', 'capacity' => 1, 'is_club_room' => true, 'is_active' => true]);
         $club = Club::create(['school_id' => $this->school->id, 'name' => 'Conversation Club', 'sort_order' => 10, 'is_active' => true,
