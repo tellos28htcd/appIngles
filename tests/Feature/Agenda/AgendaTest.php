@@ -225,6 +225,10 @@ class AgendaTest extends TestCase
         $session = ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),
             'classroom_id' => $room->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id, 'modality' => 'in_person']);
         $luis = $this->student();
+        // En la ventana, "Presentación" es un botón que abre sus dos formas: 1 a 1 y en el club de esa hora.
+        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $luis->id)
+            ->assertSee(__('agenda.presentation_choose'))->assertSee(__('agenda.presentation_one'))->assertSee(__('agenda.presentation_club', ['code' => 'C12']))
+            ->assertDontSee(__('agenda.option_club_presentation', ['code' => 'C12']));
         $this->receptionBooks($luis, 10, 'club_presentation', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
         $this->assertSame(__('agenda.option_club_presentation', ['code' => 'C12']), Booking::with('clubSession')->where('student_id', $luis->id)->sole()->activityLabel());
         $this->receptionBooks($this->student(), 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));

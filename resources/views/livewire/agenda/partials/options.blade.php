@@ -33,48 +33,53 @@
             <div wire:key="hour-{{ $hour['slot']->id }}" class="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                 <span class="w-14 flex-none pt-2 font-display font-bold tabular-nums text-primary-700">{{ substr((string) $hour['slot']->starts_at, 0, 5) }}</span>
                 @if ($multiple)
-                    {{-- 2) Tipo de reservación de esa hora en la modalidad elegida --}}
-                    <div class="flex flex-1 flex-wrap gap-1.5">
-                        @foreach ($hour['options'] as $item)
+                    {{-- 2) Tipo de reservación de esa hora en la modalidad elegida. "Presentación" es un solo botón que abre
+                         sus dos formas: 1 a 1 o en el club de esa hora (en el grupo). --}}
+                    @php($isPresentation = fn (array $item) => in_array($item['kind'], ['presentation', 'club_presentation'], true))
+                    @php($presentations = collect($hour['options'])->filter($isPresentation))
+                    <div class="flex flex-1 flex-wrap gap-1.5" x-data="{ presentation: @js($presentations->contains(fn ($item) => in_array($valueOf($hour, $item), $chosen, true))) }">
+                        @foreach (collect($hour['options'])->reject($isPresentation) as $item)
                             @php($value = $valueOf($hour, $item))
                             @php($selected = in_array($value, $chosen, true))
-                            @php($blocked = $item['blocked'] ?? null)
-                            @if ($blocked)
-                                <button type="button" wire:key="option-{{ $value }}" disabled title="{{ $blocked }}" @class([$chip, 'cursor-not-allowed border-dashed border-line bg-surface-2 text-ink-400'])>
-                                    <span class="font-semibold">{{ $item['label'] }}</span>
-                                    <span class="text-xs font-semibold text-warning-700">{{ $blocked }}</span>
-                                </button>
-                            @else
-                            <button type="button" wire:key="option-{{ $value }}" wire:click="{{ $clickOf($value, $selected) }}" aria-pressed="{{ $selected ? 'true' : 'false' }}"
-                                    @class([$chip, 'border-primary-500 bg-primary-50 ring-2 ring-primary-500' => $selected, 'border-line hover:border-primary-500' => ! $selected])>
-                                <span class="font-semibold">{{ $item['label'] }}</span>
-                                <span @class(['text-xs', 'text-warning-700' => $item['waitlist'], 'text-ink-500' => ! $item['waitlist']])>
-                                    {{ $item['waitlist'] ? __('agenda.goes_to_waitlist') : ($item['kind'] === 'presentation' ? trans_choice('agenda.free_rooms', $item['free']) : trans_choice('agenda.seats', $item['free'])) }}
-                                </span>
-                            </button>
-                            @endif
+                            @include('livewire.agenda.partials.option-chip', ['click' => $clickOf($value, $selected), 'label' => $item['label']])
                         @endforeach
+                        @if ($presentations->isNotEmpty())
+                            <button type="button" x-on:click="presentation = ! presentation" x-bind:aria-expanded="presentation ? 'true' : 'false'"
+                                    class="{{ $chip }} border-line hover:border-primary-500" x-bind:class="presentation && 'border-primary-500 bg-primary-50'">
+                                <span class="flex items-center gap-1 font-semibold">{{ __('agenda.presentation_group') }}
+                                    <x-ui.icon name="chevron-down" class="size-4 transition" x-bind:class="presentation && 'rotate-180'" /></span>
+                                <span class="text-xs text-ink-500">{{ __('agenda.presentation_choose') }}</span>
+                            </button>
+                            @foreach ($presentations as $item)
+                                @php($value = $valueOf($hour, $item))
+                                @php($selected = in_array($value, $chosen, true))
+                                <div x-show="presentation" x-cloak class="contents">
+                                    @include('livewire.agenda.partials.option-chip', ['click' => $clickOf($value, $selected),
+                                        'label' => $item['kind'] === 'presentation' ? __('agenda.presentation_one') : __('agenda.presentation_club', ['code' => $item['code'] ?? ''])])
+                                </div>
+                            @endforeach
+                        @endif
                     </div>
                 @else
-                    @php($groups = collect($hour['options'])->groupBy('kind'))
+                    @php($groups = collect($hour['options'])->groupBy(fn (array $item) => $item['kind'] === 'club_presentation' ? 'presentation' : $item['kind']))
                     <div class="flex flex-1 flex-col gap-2">
                         @foreach ($groups as $kind => $items)
                             <div class="flex flex-col gap-1.5">
-                                <span class="text-xs font-bold uppercase tracking-wide text-ink-500">{{ \App\Enums\BookingKind::from($kind)->label() }}</span>
+                                <span class="text-xs font-bold uppercase tracking-wide text-ink-500">{{ $kind === 'presentation' ? __('agenda.presentation_group') : \App\Enums\BookingKind::from($kind)->label() }}</span>
                                 <div class="flex flex-wrap gap-1.5">
                                     @foreach ($items as $item)
                                         @php($value = $valueOf($hour, $item))
                                         @php($selected = in_array($value, $chosen, true))
                                         @if ($item['blocked'] ?? null)
                                             <button type="button" wire:key="option-{{ $value }}" disabled title="{{ $item['blocked'] }}" @class([$chip, 'cursor-not-allowed border-dashed border-line bg-surface-2 text-ink-400'])>
-                                                <span class="font-semibold">{{ $item['club_session_id'] ? $item['label'] : ($item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person')) }}</span>
+                                                <span class="font-semibold">{{ $item['club_session_id'] ? $item['label'] : ($item['kind'] === 'presentation' ? __('agenda.presentation_one').' · ' : '').($item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person')) }}</span>
                                                 <span class="text-xs font-semibold text-warning-700">{{ $item['blocked'] }}</span>
                                             </button>
                                             @continue
                                         @endif
                                         <button type="button" wire:key="option-{{ $value }}" wire:click="{{ $clickOf($value, $selected) }}" aria-pressed="{{ $selected ? 'true' : 'false' }}"
                                                 @class([$chip, 'border-primary-500 bg-primary-50 ring-2 ring-primary-500' => $selected, 'border-line hover:border-primary-500' => ! $selected])>
-                                            <span class="font-semibold">{{ $item['club_session_id'] ? $item['label'] : ($item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person')) }}</span>
+                                            <span class="font-semibold">{{ $item['club_session_id'] ? $item['label'] : ($item['kind'] === 'presentation' ? __('agenda.presentation_one').' · ' : '').($item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person')) }}</span>
                                             <span @class(['text-xs', 'text-warning-700' => $item['waitlist'], 'text-ink-500' => ! $item['waitlist']])>
                                                 @if ($item['club_session_id']){{ $item['modality'] === 'online' ? __('agenda.online') : __('agenda.in_person') }} · @endif{{ $item['waitlist'] ? __('agenda.goes_to_waitlist') : trans_choice('agenda.seats', $item['free']) }}
                                             </span>

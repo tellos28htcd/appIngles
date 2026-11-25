@@ -854,7 +854,7 @@ final class AgendaService
 
             if ($seats > 0) {
                 $options[] = ['kind' => BookingKind::ClubPresentation->value, 'modality' => $club->modality->value, 'club_session_id' => $club->id,
-                    'label' => __('agenda.option_club_presentation', ['code' => $club->code]), 'free' => $seats, 'waitlist' => false];
+                    'label' => __('agenda.option_club_presentation', ['code' => $club->code]), 'code' => $club->code, 'free' => $seats, 'waitlist' => false];
             }
         }
 
