@@ -105,7 +105,7 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
 
 - **Práctica** (antes "Asesoría"): al elegir la hora se escoge **Presencial** o **En línea**; las opciones son botones (Tab para recorrer, Enter para elegir).
 - **En línea / híbrida (reemplazado por "Balanceo por pesos": ahora primero híbrida y luego virtual):** primero un aula virtual del catálogo de Aulas (las marcadas "Virtual" sin club en línea ni reserva a esa hora), cada una con su capacidad de lugares. Llenas (o si la escuela tiene 0 aulas virtuales), el alumno entra en línea a la clase de un teacher presencial con lugar ("Aula X (híbrida, en línea)") y ocupa un lugar del cupo por sesión de esa aula. El calendario muestra cuántos van presencial y cuántos en línea.
-- **Tolerancia:** recepción puede agendar una hora hasta 10 minutos después de que empezó (si hay cupo, p. ej. por una cancelación); el alumno solo antes de que empiece.
+- **Tolerancia:** **Recepción y el Administrador** agendan mientras la clase no termine (p. ej. el alumno ya está en la clase de las 10 y a las 10:40 no estaba en la agenda; 25-nov-2026); el resto del personal, hasta 10 minutos después de que empezó; el alumno solo antes de que empiece.
 - **Portal del alumno:** una sola opción "Agendar" (prácticas y clubs). "Agendar club" queda desactivada en el menú (su código se conserva).
 - **Ventanas:** todas las ventanas de captura se mueven arrastrando su título.
 - **Listado del día:** letra más grande; filtros por hora, aula y teacher (se recuerdan en la sesión); cada renglón con el color tenue de su aula (como en el panel).

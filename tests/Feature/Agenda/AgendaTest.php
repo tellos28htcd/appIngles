@@ -600,7 +600,7 @@ class AgendaTest extends TestCase
         $this->assertSame(__('agenda.hybrid_room', ['name' => $booking->classroom->name]), $booking->placeLabel());
     }
 
-    public function test_reception_has_ten_minutes_of_tolerance_and_the_student_none(): void
+    public function test_reception_books_until_the_class_ends_other_staff_ten_minutes_and_the_student_none(): void
     {
         $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 09:05', 'America/Mexico_City'));
         $user = $this->user(Role::STUDENT);
@@ -614,7 +614,16 @@ class AgendaTest extends TestCase
         $this->actingAs($this->user(Role::RECEPTION));
         $this->receptionBooks($student, 9)->assertDispatched('toast', type: 'success');
 
-        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 09:11', 'America/Mexico_City'));
+        // Recepción y el Administrador agendan mientras la clase no termine; el resto del personal, 10 minutos.
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 09:40', 'America/Mexico_City'));
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN));
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'success');
+        $this->actingAs($this->user(Role::ACADEMIC_COORDINATOR));
+        $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.past'));
+
+        $this->actingAs($this->user(Role::RECEPTION));
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 10:00', 'America/Mexico_City'));
         $this->receptionBooks($this->student(), 9)->assertDispatched('toast', type: 'error', message: __('agenda.validation.past'));
     }
 

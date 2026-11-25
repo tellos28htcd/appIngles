@@ -492,7 +492,7 @@ final class AgendaService
      * @param  list<CarbonImmutable>  $days
      * @return array<string, array{past: bool, session: array{free: int, capacity: int, in_person: int, online: int}, online: array{free: int, capacity: int}, waitlist: bool, waiting: int, booked: int, clubs: list<array{id: int, code: string, name: ?string, modality: ClubModality, color: int, free: int, capacity: int}>}>
      */
-    public function weekAvailability(School $school, array $days, bool $byReception = false): array
+    public function weekAvailability(School $school, array $days, bool $byReception = false, bool $duringClass = false): array
     {
         $from = $days[0]->toDateString();
         $to = end($days)->toDateString();
@@ -534,7 +534,7 @@ final class AgendaService
             $onlineTaken = $sessions->filter(fn (Booking $booking) => $booking->modality === ClubModality::Online && $booking->teacher_availability_id === null)->count();
 
             $result[$at] = [
-                'past' => ! isset($slots[$slotId]) || ! $this->isFuture($school, CarbonImmutable::parse($date), $slots[$slotId], $byReception),
+                'past' => ! isset($slots[$slotId]) || ! $this->isFuture($school, CarbonImmutable::parse($date), $slots[$slotId], $byReception, $duringClass),
                 'session' => [
                     'free' => (int) $rooms->sum($cellFree), 'capacity' => (int) $capacity,
                     'in_person' => $sessions->filter(fn (Booking $booking) => $booking->modality === ClubModality::InPerson)->count(),
@@ -591,7 +591,7 @@ final class AgendaService
      *
      * @return list<array{slot: ScheduleSlot, options: list<array{kind: string, modality: string, club_session_id: ?int, label: string, free: int, waitlist: bool}>}>
      */
-    public function options(School $school, Student $student, CarbonImmutable $date, bool $byReception = false): array
+    public function options(School $school, Student $student, CarbonImmutable $date, bool $byReception = false, bool $duringClass = false): array
     {
         if (! $this->planner->isGenerated($school, $date->startOfWeek(CarbonInterface::MONDAY))) {
             return [];
@@ -604,7 +604,7 @@ final class AgendaService
         $result = [];
 
         foreach ($this->planner->slots($school) as $slot) {
-            if (! $this->isFuture($school, $date, $slot, $byReception)) {
+            if (! $this->isFuture($school, $date, $slot, $byReception, $duringClass)) {
                 continue;
             }
 
@@ -671,11 +671,17 @@ final class AgendaService
 
     /**
      * ¿Todavía se puede agendar esa hora? (zona horaria de la escuela). El alumno, antes de que empiece;
-     * recepción, hasta RECEPTION_TOLERANCE_MINUTES después de que empezó.
+     * el personal, hasta RECEPTION_TOLERANCE_MINUTES después de que empezó; Recepción y el Administrador
+     * ($duringClass), mientras la clase no termine (el alumno ya está en clase y no se agendó).
      */
-    private function isFuture(School $school, CarbonInterface $date, ScheduleSlot $slot, bool $byReception = false): bool
+    private function isFuture(School $school, CarbonInterface $date, ScheduleSlot $slot, bool $byReception = false, bool $duringClass = false): bool
     {
         $timezone = $school->timezone ?: config('appingles.timezone');
+
+        if ($duringClass) {
+            return CarbonImmutable::parse($date->toDateString().' '.$slot->ends_at, $timezone)->isAfter(CarbonImmutable::now($timezone));
+        }
+
         $limit = CarbonImmutable::parse($date->toDateString().' '.$slot->starts_at, $timezone)
             ->addMinutes($byReception ? self::RECEPTION_TOLERANCE_MINUTES : 0);
 
@@ -686,7 +692,7 @@ final class AgendaService
 
     /** Reserva una hora para el alumno (lo hace él mismo o recepción). */
     public function book(School $school, Student $student, CarbonImmutable $date, ScheduleSlot $slot, BookingKind $kind, ClubModality $modality,
-        ?int $clubSessionId, ?User $user, bool $byReception): Booking
+        ?int $clubSessionId, ?User $user, bool $byReception, bool $duringClass = false): Booking
     {
         $fail = fn (string $key, array $replace = []) => throw ValidationException::withMessages(['booking' => __("agenda.validation.$key", $replace)]);
         $timezone = $school->timezone ?: config('appingles.timezone');
@@ -696,7 +702,7 @@ final class AgendaService
             $fail('week_not_ready');
         }
 
-        if (! $this->isFuture($school, $date, $slot, $byReception)) {
+        if (! $this->isFuture($school, $date, $slot, $byReception, $duringClass)) {
             $fail('past');
         }
 

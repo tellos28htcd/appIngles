@@ -33,6 +33,12 @@ class BookingPolicy
         return $this->viewAny($actor) && in_array($actor->loadMissing('role')->role?->slug, [Role::SCHOOL_ADMIN, Role::RECEPTION], true);
     }
 
+    /** Agendar con la clase ya empezada (hasta que termine): solo Recepción y el Administrador de la escuela. */
+    public function bookDuringClass(User $actor): bool
+    {
+        return $this->changeActivity($actor);
+    }
+
     /** Pesos newton y carga de cada aula en el listado del día: solo Administrador de escuela y Recepción. */
     public function viewWeights(User $actor): bool
     {

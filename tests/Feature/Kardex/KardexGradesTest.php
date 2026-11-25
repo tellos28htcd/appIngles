@@ -266,10 +266,16 @@ class KardexGradesTest extends TestCase
         $this->assertSame([$this->reasons['Repetir']->id, null], KardexEntry::orderBy('sort_order')->pluck('observation_reason_id')->all());
         Livewire::test(GradesDay::class)->call('open', $booking->id)->assertSee('Repetir');
 
-        // Recepción ve los del personal y los de ambos.
+        // Recepción ve los del teacher y los del personal; Administración y Coordinación académica, solo los del personal.
+        $other = $this->booking(Student::factory()->create(['school_id' => $this->school->id]), $this->melissa, 1)->id;
         $this->actingAs($this->user(Role::RECEPTION));
-        Livewire::test(GradesDay::class)->call('open', $this->booking(Student::factory()->create(['school_id' => $this->school->id]), $this->melissa, 1)->id)
-            ->assertSee('Convivencia')->assertSee('Material extra')->assertDontSee('Pendiente de completar');
+        Livewire::test(GradesDay::class)->call('open', $other)
+            ->assertSee('Convivencia')->assertSee('Material extra')->assertSee('Pendiente de completar');
+        foreach ([Role::SCHOOL_ADMIN, Role::ACADEMIC_COORDINATOR] as $role) {
+            $this->actingAs($this->user($role));
+            Livewire::test(GradesDay::class)->call('open', $other)
+                ->assertSee('Convivencia')->assertSee('Material extra')->assertDontSee('Pendiente de completar');
+        }
     }
 
     public function test_a_presentation_is_signed_once_without_moving_the_path_and_mentoring_is_not_graded(): void

@@ -268,7 +268,7 @@ return [
             ],
             'motivos' => [
                 'name' => 'Observación de cada práctica al calificar; también al dejar una reservación sin calificación o al calificar días después.',
-                'audience' => 'El teacher solo ve los suyos; Recepción, Administración y Coordinación académica, los del personal. "Ambos" lo ven todos.',
+                'audience' => 'El teacher solo ve los suyos; Administración y Coordinación académica, los del personal; Recepción, los del teacher y los del personal. "Ambos" lo ven todos.',
             ],
             'cancelaciones' => [
                 'attendance' => 'Para el límite de horas por día (asistencia de los últimos 7 días). Cuando el alumno cancela él mismo se usa el primer motivo que "No cuenta".',

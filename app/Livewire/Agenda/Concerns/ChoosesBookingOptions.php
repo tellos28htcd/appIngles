@@ -58,7 +58,7 @@ trait ChoosesBookingOptions
      *
      * @return list<Booking>|null null si hubo error (ya se avisó)
      */
-    protected function bookChoices(AgendaService $agenda, School $school, Student $student, CarbonImmutable $date, bool $byReception, bool $clubsOnly = false): ?array
+    protected function bookChoices(AgendaService $agenda, School $school, Student $student, CarbonImmutable $date, bool $byReception, bool $clubsOnly = false, bool $duringClass = false): ?array
     {
         $parsed = [];
         foreach (array_slice($this->choices, 0, self::MAX_CHOICES) as $choice) {
@@ -84,7 +84,7 @@ trait ChoosesBookingOptions
 
         try {
             return DB::transaction(fn () => array_values(array_map(
-                fn (array $item) => $agenda->book($school, $student, $date, $item[0], $item[1], $item[2], $item[3], auth()->user(), byReception: $byReception)
+                fn (array $item) => $agenda->book($school, $student, $date, $item[0], $item[1], $item[2], $item[3], auth()->user(), byReception: $byReception, duringClass: $duringClass)
                     ->setRelation('slot', $item[0]),
                 $parsed,
             )));

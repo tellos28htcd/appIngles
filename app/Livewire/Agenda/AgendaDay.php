@@ -24,6 +24,7 @@ use App\Policies\KardexEntryPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -185,11 +186,17 @@ class AgendaDay extends Component
         unset($this->options);
     }
 
+    /** Recepción y el Administrador agendan mientras la clase no termine (el resto del personal, 10 minutos). */
+    private function duringClass(): bool
+    {
+        return Gate::allows('bookDuringClass', Booking::class);
+    }
+
     public function book(AgendaService $agenda): void
     {
         $this->authorize('manage', Booking::class);
         $student = Student::query()->findOrFail($this->studentId);
-        $booked = $this->bookChoices($agenda, $this->school(), $student, $this->day(), byReception: true);
+        $booked = $this->bookChoices($agenda, $this->school(), $student, $this->day(), byReception: true, duringClass: $this->duringClass());
 
         if ($booked === null) {
             return;
@@ -352,7 +359,7 @@ class AgendaDay extends Component
             'waiting' => $booking->kind === BookingKind::Session && ! $booking->is_waitlist ? app(AgendaService::class)->waitlistAt($booking) : collect(),
             'choices' => $choices,
             // Otras actividades de esa hora con lugar (práctica presencial / en línea y clubs), sin la actual.
-            'activities' => collect(app(AgendaService::class)->options($this->school(), $booking->student, CarbonImmutable::parse($booking->date->toDateString()), byReception: true))
+            'activities' => collect(app(AgendaService::class)->options($this->school(), $booking->student, CarbonImmutable::parse($booking->date->toDateString()), byReception: true, duringClass: $this->duringClass()))
                 ->where('slot.id', $booking->schedule_slot_id)
                 ->map(fn (array $hour) => [...$hour, 'options' => array_values(array_filter($hour['options'], fn (array $item) => ! ($item['kind'] === $booking->kind->value
                     && $item['club_session_id'] === $booking->club_session_id && ($item['kind'] === BookingKind::Club->value || $item['modality'] === $booking->modality->value))))])
@@ -454,7 +461,7 @@ class AgendaDay extends Component
     {
         $student = $this->studentId ? Student::query()->find($this->studentId) : null;
 
-        $options = $student ? app(AgendaService::class)->options($this->school(), $student, $this->day(), byReception: true) : [];
+        $options = $student ? app(AgendaService::class)->options($this->school(), $student, $this->day(), byReception: true, duringClass: $this->duringClass()) : [];
 
         // Clic en una celda del calendario: solo esa hora; con "Nueva reservación", todas las del día.
         return $this->slotId === null ? $options : array_values(array_filter($options, fn (array $hour) => $hour['slot']->id === $this->slotId));
@@ -500,7 +507,7 @@ class AgendaDay extends Component
             'planner' => $planner,
             'scheduleSlots' => $planner->slots($school),
             'holidays' => $planner->holidays($school, $days),
-            'availability' => $isReady ? $agenda->weekAvailability($school, $days, byReception: true) : [],
+            'availability' => $isReady ? $agenda->weekAvailability($school, $days, byReception: true, duringClass: $this->duringClass()) : [],
             'isReady' => $isReady,
             'slotLabel' => $this->slotId ? ScheduleSlot::query()->find($this->slotId)?->range() : null,
             'reasonOptions' => $this->reasons()->pluck('name', 'id')->all(),

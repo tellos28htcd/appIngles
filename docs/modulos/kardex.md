@@ -12,7 +12,8 @@ Decisiones del 18-nov-2026. Primer submódulo: **Calificaciones**.
   Reporte de Alumno, Junta academica, Capacitacion, Contestar libro, Convivencia, Solicitud de permisos para field
   trip, Compra de material para Field trip) o **ambos** (Material extra). Se eligen como **observación de cada
   práctica al calificar** (opcional, `kardex_entries.observation_reason_id`; para el reporte de seguimiento del
-  alumno), al dejar una reservación "Sin calificación" o al calificar días después. Cada quien solo ve los suyos.
+  alumno), al dejar una reservación "Sin calificación" o al calificar días después. El teacher ve los suyos;
+  Administración y Coordinación académica, los del personal; **Recepción, los dos** (25-nov-2026). "Ambos" lo ven todos.
 - **Actividades** (Catálogos académicos) tiene la columna "Calificación en Kardex" (`activities.grade_type`):
   1–3 firma, 4–7 A/B/C; se puede cambiar por actividad.
 
