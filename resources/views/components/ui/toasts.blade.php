@@ -1,4 +1,4 @@
-{{-- Avisos: escritorio abajo a la derecha, móvil arriba a lo ancho. 5 s; los errores persisten.
+{{-- Avisos: escritorio abajo a la derecha, móvil arriba a lo ancho. Todos se quitan solos a los 7 s.
      Desde Livewire: $this->dispatch('toast', type: 'success', message: '...');
      Tras redirigir: session()->flash('toast', ['type' => 'success', 'message' => '...']); --}}
 <div x-data="{
@@ -6,7 +6,7 @@
         add(detail) {
             const id = Date.now() + Math.random();
             this.toasts.push({ id, type: detail.type ?? 'success', message: detail.message });
-            if ((detail.type ?? 'success') !== 'error') setTimeout(() => this.remove(id), 5000);
+            setTimeout(() => this.remove(id), 7000);
         },
         remove(id) { this.toasts = this.toasts.filter(t => t.id !== id) },
      }"

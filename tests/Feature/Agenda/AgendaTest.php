@@ -367,6 +367,57 @@ class AgendaTest extends TestCase
         $this->receptionBooks($student, 10)->assertDispatched('toast', type: 'error', message: __('agenda.validation.daily_limit', ['hours' => 1]));
     }
 
+    private function clubSession(int $hour, int $capacity = 5): ClubSession
+    {
+        $room = Classroom::create(['school_id' => $this->school->id, 'name' => "Club $hour", 'capacity' => $capacity, 'is_club_room' => true, 'is_active' => true]);
+        $club = Club::create(['school_id' => $this->school->id, 'name' => "Conversation $hour", 'sort_order' => 10, 'is_active' => true,
+            'codes' => [['code' => 'C12', 'levels' => [1, 2], 'color' => 1, 'is_active' => true]]]);
+
+        return ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),
+            'classroom_id' => $room->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[$hour]->id, 'modality' => 'in_person']);
+    }
+
+    public function test_clubs_do_not_count_in_the_daily_practice_limit(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $student = $this->student();
+        $session = $this->clubSession(9);
+
+        // 1 asistencia y 2 faltas: solo 1 práctica por día, pero el club no cuenta.
+        foreach (['2026-07-20' => 'attended', '2026-07-21' => 'no_show', '2026-07-22' => 'no_show'] as $date => $result) {
+            Booking::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'date' => $date, 'schedule_slot_id' => $this->slots[9]->id,
+                'kind' => 'session', 'modality' => 'in_person',
+                'status' => $result === 'attended' ? BookingStatus::Attended : BookingStatus::Cancelled,
+                'cancellation_reason_id' => $result === 'attended' ? null : $this->reasons['no_show']->id]);
+        }
+
+        $this->receptionBooks($student, 9, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($student, 10)->assertDispatched('toast', type: 'success');
+        $this->assertSame(2, Booking::where('student_id', $student->id)->whereDate('date', self::MONDAY)->active()->count());
+
+        // Cambiar el club a práctica sí respeta el límite de prácticas.
+        $club = Booking::where('student_id', $student->id)->where('kind', BookingKind::Club)->sole();
+        $this->expectException(ValidationException::class);
+        app(AgendaService::class)->changeActivity($club, BookingKind::Session, ClubModality::InPerson, null, null);
+    }
+
+    public function test_a_club_takes_only_one_presentation(): void
+    {
+        $this->actingAs($this->user(Role::RECEPTION));
+        $session = $this->clubSession(10);
+
+        $this->receptionBooks($this->student(), 10, 'club_presentation', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($this->student(), 10, 'club_presentation', 'in_person', $session->id)
+            ->assertDispatched('toast', type: 'error', message: __('agenda.validation.club_presentation_taken'));
+        // El club sigue con lugar para alumnos normales.
+        $this->receptionBooks($this->student(), 10, 'club', 'in_person', $session->id)->assertDispatched('toast', type: 'success');
+
+        // En la ventana, la presentación en ese club sale deshabilitada con el motivo.
+        $options = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->student()->id)->get('options'))
+            ->firstWhere('slot.id', $this->slots[10]->id)['options'];
+        $this->assertSame([__('agenda.blocked.presentation_taken')], collect($options)->where('kind', 'club_presentation')->pluck('blocked')->all());
+    }
+
     public function test_reception_marks_attendance(): void
     {
         $this->actingAs($this->user(Role::RECEPTION));

@@ -51,8 +51,9 @@ use Illuminate\Validation\ValidationException;
  *   el alumno solo antes de que empiece.
  * - Club: los clubs programados; cupo = capacidad del aula del club (Configuración → Aulas);
  *   nivel de la abreviatura, lección mínima para clubs y máximo de clubs por día.
- * - Por día: máximo de prácticas (Mi Instituto) y de horas según la asistencia de los últimos
- *   7 días (≥ 0.8 o sin historial: 2 horas; menos: 1).
+ * - Por día: máximo de prácticas (Mi Instituto) y de prácticas según la asistencia de los últimos
+ *   7 días (≥ 0.8 o sin historial: 2; menos: 1). Los clubs no cuentan en ese límite.
+ * - Presentación en club: una sola por club.
  * - Cada práctica lleva la actividad que le toca (LLA) según la ruta de avance.
  * - Un teacher con cargo de Coordinador no recibe alumnos a la hora de una Evaluación de Club.
  * - En prácticas, el alumno no se acomoda con los teachers que excluyó en su expediente (hasta 3).
@@ -725,7 +726,7 @@ final class AgendaService
             }
 
             $limit = $this->dailyLimit($student, $today);
-            if ($day->count() >= $limit) {
+            if ($kind->countsAsSession() && $this->practiceCount($day) >= $limit) {
                 $fail('daily_limit', ['hours' => $limit]);
             }
 
@@ -769,6 +770,9 @@ final class AgendaService
             }
             if ($this->clubFreeSeats($school, $club) < 1) {
                 $fail('full');
+            }
+            if ($kind === BookingKind::ClubPresentation && $this->clubPresentationTaken($club, $booking->id)) {
+                $fail('club_presentation_taken');
             }
 
             $booking->fill(['club_session_id' => $club->id, 'modality' => $club->modality, 'teacher_id' => $club->teacher_id, 'classroom_id' => $club->classroom_id]);
@@ -829,6 +833,23 @@ final class AgendaService
         }
     }
 
+    /**
+     * Prácticas del alumno ese día (práctica, mentoría, entrega de material y presentación 1 a 1); los clubs no cuentan.
+     *
+     * @param  Collection<int, Booking>  $day
+     */
+    private function practiceCount(Collection $day): int
+    {
+        return $day->filter(fn (Booking $booking) => $booking->kind->countsAsSession())->count();
+    }
+
+    /** El club ya tiene su presentación (máximo una por club). */
+    private function clubPresentationTaken(ClubSession $club, ?int $exceptBookingId = null): bool
+    {
+        return Booking::withoutGlobalScope('school')->where('club_session_id', $club->id)->where('kind', BookingKind::ClubPresentation)
+            ->where('is_waitlist', false)->active()->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))->exists();
+    }
+
     /** Reservaciones activas (sin lista de espera) de ese tipo a esa hora en la escuela. */
     private function slotKindCount(School $school, CarbonImmutable $date, int $slotId, BookingKind $kind, ?int $exceptBookingId = null): int
     {
@@ -877,10 +898,13 @@ final class AgendaService
 
         foreach ($clubs as $club) {
             $seats = $this->clubFreeSeats($school, $club);
+            // Una sola presentación por club: si ya la tiene, sale deshabilitada con el motivo.
+            $taken = $this->clubPresentationTaken($club);
 
-            if ($seats > 0) {
+            if ($seats > 0 || $taken) {
                 $options[] = ['kind' => BookingKind::ClubPresentation->value, 'modality' => $club->modality->value, 'club_session_id' => $club->id,
-                    'label' => __('agenda.option_club_presentation', ['code' => $club->code]), 'code' => $club->code, 'free' => $seats, 'waitlist' => false];
+                    'label' => __('agenda.option_club_presentation', ['code' => $club->code]), 'code' => $club->code, 'free' => $taken ? 0 : $seats, 'waitlist' => false,
+                    'blocked' => $taken ? __('agenda.blocked.presentation_taken') : null];
             }
         }
 
@@ -913,7 +937,7 @@ final class AgendaService
                 $booking->kind->usesPracticeRoom() && $booking->teacher_id && in_array($booking->teacher_id, $this->excludedTeacherIds($student->id), true)
                     && $fail('excluded_teacher', ['teacher' => Teacher::withoutGlobalScope('school')->find($booking->teacher_id)?->panelName() ?? '—']);
                 $limit = $this->dailyLimit($student, CarbonImmutable::now($timezone)->startOfDay());
-                $day->count() >= $limit && $fail('daily_limit', ['hours' => $limit]);
+                $booking->kind->countsAsSession() && $this->practiceCount($day) >= $limit && $fail('daily_limit', ['hours' => $limit]);
 
                 $path = new ProgressPath($school);
                 if ($booking->kind === BookingKind::Club) {
@@ -968,6 +992,11 @@ final class AgendaService
 
             if ($modality === ClubModality::Online && ! $kind->allowsOnline()) {
                 $fail('in_person_only', ['kind' => $kind->label()]);
+            }
+            // De club a práctica: respeta el límite de prácticas por día.
+            if ($kind->countsAsSession() && ! $booking->kind->countsAsSession()) {
+                $limit = $this->dailyLimit($student, CarbonImmutable::now($school->timezone ?: config('appingles.timezone'))->startOfDay());
+                $this->practiceCount($day) >= $limit && $fail('daily_limit', ['hours' => $limit]);
             }
             $this->checkKindLimits($school, $student, CarbonImmutable::parse($booking->date->toDateString()), $kind, $day, $fail, $booking->id, $booking->schedule_slot_id);
 

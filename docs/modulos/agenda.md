@@ -57,7 +57,7 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
   | Mentoría especial | Recepción | Un lugar en el aula de práctica | 0 (no se muestra) | Sí | Horas por día y **3 por semana** | No se califica |
   | Entrega de material | Recepción | Un lugar en el aula de práctica | 0 | **No** | Horas por día | No se califica |
   | Presentación 1 a 1 | Recepción | Un aula **vacía** que queda solo para el alumno (con su teacher) | 0 | Sí | Horas por día | F, no mueve la ruta |
-  | Presentación en club | Recepción | Un lugar del club de esa hora (sin revisar nivel) | — | Si el club es en línea | Clubs por día | F, no mueve la ruta |
+  | Presentación en club | Recepción | Un lugar del club de esa hora (sin revisar nivel) | — | Si el club es en línea | Clubs por día; **una sola presentación por club** | F, no mueve la ruta |
 - **Quién reserva:** recepción siempre puede. El alumno (si "Reservaciones del alumno" no está en "No permitir"):
   - Solo **Práctica y Club**; los demás tipos los pide en Recepción.
   - Solo **a partir del día siguiente** (fijo para todas las escuelas); el mismo día, mensaje de que lo haga con Recepción.
@@ -76,6 +76,7 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
   - **Horas por día según la asistencia de los últimos 7 días** (asistió ÷ (asistió + faltó)):
     - Índice ≥ 0.8, o alumno sin historial: 2 horas.
     - Índice menor: 1 hora.
+    - Solo cuentan las prácticas (práctica, mentoría, entrega de material y presentación 1 a 1); **los clubs no cuentan** (su único tope es el máximo de clubs por día de Mi Instituto, si se llena).
 - **Actividad (LLA):**
   - Cada práctica lleva la actividad siguiente de la ruta de avance (`App\Support\ProgressPath`): libros por nivel → lecciones en su orden → actividades 1–7 (8 en Check Points).
   - Parte de la última práctica reservada; si no hay, del punto de inicio de la ficha de inscripción.
