@@ -15,6 +15,12 @@ enum BookingKind: string
     case Presentation = 'presentation';
     case ClubPresentation = 'club_presentation';
 
+    /** Grupos de "Nueva reservación": Reservación (práctica y club) y Especial (mentoría, material y presentación). */
+    public const GROUPS = [
+        'regular' => ['session', 'club'],
+        'special' => ['mentoring', 'material', 'presentation', 'club_presentation'],
+    ];
+
     /** Máximo de mentorías especiales por semana (lunes a domingo). */
     public const MENTORING_PER_WEEK = 3;
 

@@ -30,6 +30,14 @@ trait ChoosesBookingOptions
         $this->modality = in_array($this->modality, ['in_person', 'online'], true) ? $this->modality : 'in_person';
     }
 
+    /** Grupo que se muestra después de la modalidad: "Reservación" (práctica y club) o "Especial" (mentoría, material y presentación). */
+    public string $bookingGroup = 'regular';
+
+    public function updatedBookingGroup(): void
+    {
+        $this->bookingGroup = array_key_exists($this->bookingGroup, BookingKind::GROUPS) ? $this->bookingGroup : 'regular';
+    }
+
     public const MAX_CHOICES = 2;
 
     /** Alumno de la reservación (para su caso especial). */

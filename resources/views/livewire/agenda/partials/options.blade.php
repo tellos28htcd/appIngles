@@ -1,7 +1,8 @@
 {{-- Opciones del día por hora. Cada opción es un botón: se recorre con Tab y se elige con Enter o clic.
-     - Con $multiple (Nueva reservación de recepción y del alumno): primero Presencial / En línea ($modality) y luego el
-       tipo: Práctica, Club, Mentoría especial, Entrega de material, Presentación 1 a 1 o Presentación en club; se eligen
-       hasta 2 horas distintas (toggleChoice, en $choices).
+     - Con $multiple (Nueva reservación de recepción y del alumno): 1) Presencial / En línea ($modality); 2) "Reservación"
+       (Práctica y Club) o "Especial" (Mentoría especial, Entrega de material y Presentación: 1 a 1 o en el club)
+       ($bookingGroup); 3) el tipo de cada hora. Se eligen hasta 2 horas distintas (toggleChoice, en $choices), aunque
+       sean de grupos distintos. Con $specialHint (el alumno) "Especial" solo dice que se pide en Recepción.
      - Sin $multiple ("Cambiar reservación"): una sola opción en $model ("option" por omisión; otro clic la quita), con
        la modalidad en cada botón. Variables: $options, $model y $current (valor elegido).
      - Una opción con 'blocked' (club que no le toca, lleno, presentación sin aula libre) sale deshabilitada con el motivo. --}}
@@ -22,9 +23,25 @@
                         'border-primary-600 bg-primary-600 text-on-primary' => $mode === $value, 'border-line-strong bg-white text-ink-700 hover:bg-surface' => $mode !== $value])>{{ $label }}</button>
         @endforeach
     </div>
-    @php($options = collect($options)->map(fn ($hour) => [...$hour, 'options' => array_values(array_filter($hour['options'], fn ($item) => $item['modality'] === $mode))])->filter(fn ($hour) => $hour['options'] !== [])->values()->all())
+    {{-- 2) Reservación (práctica y club) o Especial (mentoría, material y presentación). --}}
+    @php($group = $bookingGroup ?? 'regular')
+    <div class="grid grid-cols-2 gap-2" role="group" aria-label="{{ __('agenda.group.label') }}">
+        @foreach (['regular' => __('agenda.group.regular'), 'special' => __('agenda.group.special')] as $value => $label)
+            <button type="button" wire:click="$set('bookingGroup', '{{ $value }}')" aria-pressed="{{ $group === $value ? 'true' : 'false' }}"
+                    @class(['flex h-11 items-center justify-center gap-2 rounded-lg border-[1.5px] text-[15px] font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200',
+                        'border-primary-500 bg-primary-50 text-primary-700' => $group === $value, 'border-line-strong bg-white text-ink-700 hover:bg-surface' => $group !== $value])>
+                {{ $label }}
+                @php($picked = collect($chosen)->filter(fn ($choice) => in_array(explode('|', $choice)[1] ?? '', \App\Enums\BookingKind::GROUPS[$value], true))->count())
+                @if ($picked > 0)<span class="rounded-full bg-primary-600 px-1.5 text-xs text-on-primary tabular-nums">{{ $picked }}</span>@endif
+            </button>
+        @endforeach
+    </div>
+    @php($kinds = \App\Enums\BookingKind::GROUPS[$group] ?? [])
+    @php($options = collect($options)->map(fn ($hour) => [...$hour, 'options' => array_values(array_filter($hour['options'], fn ($item) => $item['modality'] === $mode && in_array($item['kind'], $kinds, true)))])->filter(fn ($hour) => $hour['options'] !== [])->values()->all())
 @endif
-@if ($options === [])
+@if ($multiple && ($specialHint ?? false) && ($group ?? 'regular') === 'special')
+    <p class="rounded-lg border border-line bg-surface p-4 text-sm text-ink-700">{{ __('agenda.option_reception_only') }}</p>
+@elseif ($options === [])
     <p class="rounded-lg border border-line bg-surface p-4 text-sm text-ink-500">{{ __('agenda.no_options') }}</p>
 @else
     <div class="flex flex-col gap-3" role="group" aria-label="{{ __('agenda.available') }}">
@@ -33,7 +50,7 @@
             <div wire:key="hour-{{ $hour['slot']->id }}" class="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                 <span class="w-14 flex-none pt-2 font-display font-bold tabular-nums text-primary-700">{{ substr((string) $hour['slot']->starts_at, 0, 5) }}</span>
                 @if ($multiple)
-                    {{-- 2) Tipo de reservación de esa hora en la modalidad elegida. "Presentación" es un solo botón que abre
+                    {{-- 3) Tipo de reservación de esa hora en la modalidad y el grupo elegidos. "Presentación" es un solo botón que abre
                          sus dos formas: 1 a 1 o en el club de esa hora (en el grupo). --}}
                     @php($isPresentation = fn (array $item) => in_array($item['kind'], ['presentation', 'club_presentation'], true))
                     @php($presentations = collect($hour['options'])->filter($isPresentation))

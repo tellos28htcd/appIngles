@@ -86,6 +86,7 @@ class MyAgenda extends Component
         $this->date = $day->toDateString();
         $this->slotId = ScheduleSlot::query()->findOrFail($slotId)->id;
         $this->choices = [];
+        $this->bookingGroup = 'regular';
         $this->choosing = true;
         unset($this->options);
     }
@@ -97,6 +98,7 @@ class MyAgenda extends Component
         $this->date = $this->bookableDays()[0] ?? '';
         $this->slotId = null;
         $this->choices = [];
+        $this->bookingGroup = 'regular';
         $this->choosing = true;
         unset($this->options);
     }

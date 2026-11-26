@@ -85,6 +85,11 @@ return [
     'option_session' => 'Práctica',
     'option_club' => 'Club :code · :name',
     'option_club_presentation' => 'Presentación en club :code',
+    'group' => [
+        'label' => 'Tipo de reservación',
+        'regular' => 'Reservación',
+        'special' => 'Especial',
+    ],
     'presentation_group' => 'Presentación',
     'presentation_choose' => 'Elige: 1 a 1 o en el club',
     'presentation_one' => '1 a 1',

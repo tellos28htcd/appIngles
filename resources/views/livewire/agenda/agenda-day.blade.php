@@ -281,7 +281,7 @@
 
                 @include('livewire.agenda.partials.presentation-turn', ['turn' => $presentationTurn, 'canLeavePending' => $canLeavePending])
 
-                @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this->maxChoices()])
+                @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this->maxChoices(), 'bookingGroup' => $bookingGroup])
             @else
                 <x-ui.input name="search" :label="__('agenda.form.search')" :placeholder="__('agenda.form.search_placeholder')" wire:model.live.debounce.300ms="search" autocomplete="off" />
                 @if (mb_strlen(trim($search)) >= 2)

@@ -15,6 +15,7 @@ recepción (Agenda) y el alumno (Mi aprendizaje → Agendar clase / Agendar club
 - **Agenda del día:** las reservaciones se agrupan por hora y se ordenan por aula → teacher → alumno, con su actividad (LLA) o club.
   - Recepción agenda: elige al alumno y una opción; el aula la asigna el sistema.
   - Desde aquí se marca la asistencia, se cancela con motivo y se pasa a un aula al alumno de la lista de espera cuando se libera un lugar ("Lugares liberados").
+  - **Nueva reservación** (26-nov-2026): 1) Presencial o En línea; 2) **Reservación** (Práctica y Club) o **Especial** (Mentoría especial, Entrega de material y Presentación: 1 a 1 o en el club); 3) la opción de cada hora. Se pueden elegir horas de los dos grupos; cada botón muestra cuántas lleva. El alumno en "Especial" solo ve que se pide en Recepción.
   - **Pase automático** (26-nov-2026): al cancelar (o cambiar a club) y liberarse un lugar, los alumnos en lista de espera de esa hora pasan **solos** a un aula, en el orden en que reservaron, mientras la clase no termine. Se les avisa **por correo** y **en el sistema** (ventana "Ya tienes lugar" al entrar; sin cuenta, solo correo). Queda en el historial ("promoted").
   - En el encabezado de cada hora, junto a la carga de cada aula, salen **en amarillo** los teachers disponibles a esa hora que aún no tienen alumnos (26-nov-2026).
 - **Mi agenda:** el alumno elige un día (hoy + 6), ve los lugares disponibles y reserva.

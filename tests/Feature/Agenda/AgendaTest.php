@@ -241,7 +241,9 @@ class AgendaTest extends TestCase
         $user = $this->user(Role::STUDENT);
         $student = $this->student($user);
         $this->actingAs($user);
-        $kinds = collect(Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('create')->assertSee(__('agenda.option_reception_only'))->get('options'))
+        // Primero "Reservación" (práctica y club); en "Especial" solo dice que se pide en Recepción.
+        $kinds = collect(Livewire::test(MyAgenda::class)->call('shiftWeek', 1)->call('create')->assertSee(__('agenda.group.regular'))->assertDontSee(__('agenda.option_reception_only'))
+            ->set('bookingGroup', 'special')->assertSee(__('agenda.option_reception_only'))->get('options'))
             ->flatMap(fn (array $hour) => $hour['options'])->pluck('kind')->unique()->values()->all();
         $this->assertSame([], array_diff($kinds, ['session', 'club']));
         $this->assertThrows(fn () => app(AgendaService::class)->book($this->school, $student, CarbonImmutable::parse(self::MONDAY), $this->slots[9],
@@ -283,8 +285,10 @@ class AgendaTest extends TestCase
         $session = ClubSession::create(['school_id' => $this->school->id, 'club_id' => $club->id, 'code' => 'C12', 'teacher_id' => Teacher::where('short_name', 'MELISSA')->value('id'),
             'classroom_id' => $room->id, 'date' => self::MONDAY, 'schedule_slot_id' => $this->slots[10]->id, 'modality' => 'in_person']);
         $luis = $this->studentUpTo(6);
-        // En la ventana, "Presentación" es un botón que abre sus dos formas: 1 a 1 y en el club de esa hora.
+        // En la ventana, "Reservación" muestra práctica y club; "Especial", la mentoría, el material y la Presentación, que es
+        // un botón que abre sus dos formas: 1 a 1 y en el club de esa hora.
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $luis->id)
+            ->assertSee(__('agenda.group.special'))->assertDontSee(__('agenda.presentation_choose'))->set('bookingGroup', 'special')
             ->assertSee(__('agenda.presentation_choose'))->assertSee(__('agenda.presentation_one'))->assertSee(__('agenda.presentation_club', ['code' => 'C12']))
             ->assertDontSee(__('agenda.option_club_presentation', ['code' => 'C12']));
         $this->receptionBooks($luis, 10, 'club_presentation', 'in_person', $session->id)->assertDispatched('toast', type: 'success');

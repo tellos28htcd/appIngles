@@ -169,7 +169,7 @@ class AgendaDay extends Component
     public function create(): void
     {
         $this->authorize('manage', Booking::class);
-        $this->reset('search', 'studentId', 'choices', 'slotId', 'modality');
+        $this->reset('search', 'studentId', 'choices', 'slotId', 'modality', 'bookingGroup');
         $this->resetValidation();
         $this->creating = true;
     }

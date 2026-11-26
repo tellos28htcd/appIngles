@@ -83,8 +83,7 @@
                     {{ $date ? \Carbon\CarbonImmutable::parse($date)->translatedFormat('l j \d\e F') : '' }}@if ($slotLabel) · {{ $slotLabel }}@endif
                 </p>
             @endif
-            @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this->maxChoices()])
-            <p class="rounded-lg bg-surface px-3 py-2 text-sm text-ink-700">{{ __('agenda.option_reception_only') }}</p>
+            @include('livewire.agenda.partials.options', ['options' => $this->options, 'multiple' => true, 'maxChoices' => $this->maxChoices(), 'bookingGroup' => $bookingGroup, 'specialHint' => true])
             <x-slot:footer>
                 <x-ui.button variant="muted" x-on:click="open = null">{{ __('agenda.actions.close') }}</x-ui.button>
                 <x-ui.button variant="outline" wire:click="book" :disabled="$choices === []" wire:loading.attr="disabled">{{ __('agenda.actions.book') }}</x-ui.button>
