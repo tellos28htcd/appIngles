@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Notifications\BookingMoved;
+use App\Notifications\WaitlistPromoted;
 use Illuminate\Contracts\View\View;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
@@ -10,11 +11,15 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 /**
- * Avisos al alumno de cambios de aula por el balanceo de la agenda: ventana al entrar al sistema
+ * Avisos al alumno de cambios de aula por el balanceo de la agenda y de su paso de la lista de espera a un aula:
+ * ventana al entrar al sistema
  * mientras tenga avisos sin leer de reservaciones de hoy en adelante. Va en el layout de la aplicación.
  */
 class BookingNotices extends Component
 {
+    /** Cambio de aula por el balanceo y paso de la lista de espera a un aula. */
+    public const TYPES = [BookingMoved::class, WaitlistPromoted::class];
+
     /** @return Collection<int, DatabaseNotification> */
     #[Computed]
     public function notices(): Collection
@@ -27,16 +32,16 @@ class BookingNotices extends Component
 
         $today = now(config('appingles.timezone'))->toDateString();
 
-        return $user->unreadNotifications()->where('type', BookingMoved::class)->oldest()->get()
+        return $user->unreadNotifications()->whereIn('type', self::TYPES)->oldest()->get()
             ->filter(fn (DatabaseNotification $notice) => ($notice->data['date'] ?? '') >= $today)
             // Si la misma reservación se movió varias veces, solo el último lugar.
             ->reverse()->unique(fn (DatabaseNotification $notice) => $notice->data['booking_id'] ?? $notice->id)->reverse()->values();
     }
 
-    /** "Entendido": marca como leídos todos los avisos de cambio de aula. */
+    /** "Entendido": marca como leídos todos los avisos de cambio de aula y de lista de espera. */
     public function dismiss(): void
     {
-        auth()->user()?->unreadNotifications()->where('type', BookingMoved::class)->update(['read_at' => now()]);
+        auth()->user()?->unreadNotifications()->whereIn('type', self::TYPES)->update(['read_at' => now()]);
         unset($this->notices);
     }
 

@@ -44,11 +44,13 @@ use App\Models\Teacher;
 use App\Models\TeacherAvailability;
 use App\Models\TeacherScheduleBlock;
 use App\Models\User;
+use App\Notifications\WaitlistPromoted;
 use App\Support\ProgressPath;
 use Carbon\CarbonImmutable;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -332,14 +334,12 @@ class AgendaTest extends TestCase
         $this->assertTrue($waiting->is_waitlist);
         $this->assertSame(__('agenda.waitlist'), $waiting->placeLabel());
 
-        // Se libera un lugar: se propone al de la lista de espera y pasa a esa aula.
+        // Se libera un lugar: el de la lista de espera pasa solo a esa aula (ya no queda nada que proponer).
         $freed = Booking::where('student_id', $students[0]->id)->sole();
         Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
             ->call('confirmCancel', $freed->id)->assertSet('reasonId', $this->reasons['notice']->id)->set('reasonId', $this->reasons['no_show']->id)->call('cancel')
             ->assertSet('cancellingId', null);
-        $this->assertSame([$waiting->id], app(AgendaService::class)->waitlistProposals($this->school, CarbonImmutable::parse(self::MONDAY))->modelKeys());
-
-        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('promote', $waiting->id)->assertDispatched('toast', type: 'success');
+        $this->assertSame([], app(AgendaService::class)->waitlistProposals($this->school, CarbonImmutable::parse(self::MONDAY))->modelKeys());
         $waiting->refresh();
         $this->assertFalse($waiting->is_waitlist);
         $this->assertSame($freed->classroom_id, $waiting->classroom_id);
@@ -903,6 +903,45 @@ class AgendaTest extends TestCase
         $this->assertSame([$seat->classroom_id, $seat->teacher_id], [$waiting->classroom_id, $waiting->teacher_id]);
     }
 
+    public function test_when_a_seat_is_freed_the_waitlist_student_takes_it_alone_and_is_notified(): void
+    {
+        Notification::fake();
+        $this->school->update(['books_without_classroom' => true, 'session_capacity' => 1]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis] = [$this->student(), $this->student()];
+        $sofia = $this->student($this->user(Role::STUDENT));
+        $pedro = Student::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'email' => 'pedro@appingles.com']);
+
+        $this->receptionBooks($ana, 9)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($luis, 9)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($sofia, 9)->assertDispatched('toast', type: 'warning');
+        $this->receptionBooks($pedro, 9)->assertDispatched('toast', type: 'warning');
+
+        // Ana cancela: Sofía (la primera en la lista de espera) pasa sola a su aula; Pedro sigue esperando.
+        app(AgendaService::class)->cancel(Booking::where('student_id', $ana->id)->sole(), $this->reasons['notice'], null);
+        $seat = Booking::where('student_id', $sofia->id)->sole();
+        $this->assertFalse($seat->is_waitlist);
+        $this->assertNotNull($seat->classroom_id);
+        $this->assertTrue(Booking::where('student_id', $pedro->id)->sole()->is_waitlist);
+        $this->assertSame(['waitlisted', 'promoted'], $seat->events()->pluck('event')->all());
+        Notification::assertSentTo($sofia->user, WaitlistPromoted::class, fn ($notification, array $channels) => $channels === ['database', 'mail']);
+
+        // Luis también cancela: Pedro (sin cuenta) pasa y recibe el aviso por correo.
+        app(AgendaService::class)->cancel(Booking::where('student_id', $luis->id)->sole(), $this->reasons['notice'], null);
+        $this->assertFalse(Booking::where('student_id', $pedro->id)->sole()->is_waitlist);
+        Notification::assertSentOnDemand(WaitlistPromoted::class, fn ($notification, array $channels, object $notifiable) => $notifiable->routes['mail'] === 'pedro@appingles.com');
+
+        // Ya terminada la clase, nadie pasa solo.
+        $late = $this->student();
+        $this->receptionBooks($late, 10)->assertDispatched('toast', type: 'success');
+        $waiting = $this->student();
+        $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($waiting, 10)->assertDispatched('toast', type: 'warning');
+        $this->travelTo(CarbonImmutable::parse(self::MONDAY.' 11:05', 'America/Mexico_City'));
+        app(AgendaService::class)->cancel(Booking::where('student_id', $late->id)->sole(), $this->reasons['no_show'], null);
+        $this->assertTrue(Booking::where('student_id', $waiting->id)->sole()->is_waitlist);
+    }
+
     public function test_reception_changes_the_activity_of_a_booking_when_there_is_room(): void
     {
         $this->rooms[0]->update(['capacity' => 1]);
@@ -1333,14 +1372,19 @@ class AgendaTest extends TestCase
         $this->seat($this->student(), $melissa, 3);                       // M = 40, presencial
         $this->seat($this->student(), $melissa, 2)->update(['modality' => 'online']); // 1P = 10, en línea: el aula 1 es híbrida
         $this->seat($this->student(), Teacher::where('short_name', 'DULCE')->sole(), 1); // BA = 5
+        // ROSA está disponible a las 9 en el aula 3 pero aún sin alumnos: sale en amarillo (idle).
+        $room = Classroom::create(['school_id' => $this->school->id, 'name' => '3', 'capacity' => 5, 'is_active' => true]);
+        TeacherAvailability::create(['school_id' => $this->school->id, 'teacher_id' => $this->teacher('ROSA', 3)->id, 'date' => self::MONDAY,
+            'schedule_slot_id' => $this->slots[9]->id, 'classroom_id' => $room->id, 'is_absent' => false]);
 
         foreach ([Role::RECEPTION, Role::SCHOOL_ADMIN] as $role) {
             $this->actingAs($this->user($role));
             $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
                 ->assertSee(__('agenda.weights.weight'))->assertSee(__('agenda.weights.hybrid'));
             $group = $page->instance()->bookings->first();
-            $this->assertSame([['Aula 1', true, 'MELISSA', 50], ['Aula 2', false, 'DULCE', 5]],
-                collect($group['loads'])->map(fn (array $load) => [__('agenda.room', ['name' => $load['room']]), $load['hybrid'], $load['teacher'], $load['total']])->all());
+            $this->assertSame([['Aula 1', true, 'MELISSA', 50, false], ['Aula 2', false, 'DULCE', 5, false], ['Aula 3', false, 'ROSA', 0, true]],
+                collect($group['loads'])->map(fn (array $load) => [__('agenda.room', ['name' => $load['room']]), $load['hybrid'], $load['teacher'], $load['total'], $load['idle']])->all());
+            $page->assertSee(__('agenda.weights.idle'));
             $this->assertEqualsCanonicalizing([40, 10, 5], array_values($group['weights']));
             // Todos los renglones del aula híbrida lo dicen: presencial y en línea.
             $page->assertSee('(híbrida, presencial)')->assertSee('(híbrida, en línea)');
@@ -1402,7 +1446,8 @@ class AgendaTest extends TestCase
 
         $this->actingAs($this->user(Role::RECEPTION));
         $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY);
-        $this->assertSame([40], collect($page->instance()->bookings->first()['loads'])->pluck('total')->all());
+        // DULCE (aula 2, sin alumnos) sale aparte, en amarillo.
+        $this->assertSame([[40, false], [0, true]], collect($page->instance()->bookings->first()['loads'])->map(fn (array $load) => [$load['total'], $load['idle']])->all());
         // En la columna "Peso" la cancelada muestra "—".
         $page->assertSeeHtml('>—</td>');
     }

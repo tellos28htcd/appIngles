@@ -21,6 +21,7 @@ use App\Models\ScheduleSlot;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\TeacherAvailability;
 use App\Policies\KardexEntryPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -403,7 +404,7 @@ class AgendaDay extends Component
     /**
      * Reservaciones del día agrupadas por hora; dentro, ordenadas por aula → teacher → alumno.
      *
-     * @return Collection<int, array{loads: list<array{room: string, virtual: bool, hybrid: bool, teacher: string, total: int}>, weights: array<int, ?int>, hybrid: list<int>, slot: ScheduleSlot, bookings: Collection<int, Booking>}>
+     * @return Collection<int, array{loads: list<array{room: string, virtual: bool, hybrid: bool, teacher: string, total: int, idle: bool}>, weights: array<int, ?int>, hybrid: list<int>, slot: ScheduleSlot, bookings: Collection<int, Booking>}>
      */
     #[Computed]
     public function bookings(): Collection
@@ -428,7 +429,22 @@ class AgendaDay extends Component
                 'hybrid' => in_array($room->first()->teacher_availability_id, $hybrid, true),
                 'teacher' => $room->first()->teacher?->panelName() ?? '—',
                 'total' => (int) $room->sum(fn (Booking $booking) => $weights[$booking->id] ?? 0),
-            ])->sortBy(fn (array $room) => ($room['virtual'] ? '1' : '0').sprintf('%05d', (int) $room['room']).$room['room'])->values()->all());
+                'idle' => false,
+            ])->values());
+
+        // Teachers disponibles a esa hora que aún no tienen alumnos (salen en amarillo).
+        $roomCells = $agenda->dayRoomCells($school, CarbonImmutable::parse($this->date));
+        $loads = $roomCells->keys()->merge($loads->keys())->unique()->mapWithKeys(function (int $slotId) use ($loads, $roomCells, $placed): array {
+            $here = $placed->where('schedule_slot_id', $slotId);
+            $idle = ($roomCells[$slotId] ?? collect())->reject(fn (TeacherAvailability $cell) => $cell->classroom?->is_virtual
+                ? $here->contains(fn (Booking $booking) => $booking->teacher_availability_id === null && $booking->classroom_id === $cell->classroom_id)
+                : $here->contains('teacher_availability_id', $cell->id))
+                ->map(fn (TeacherAvailability $cell) => ['room' => (string) $cell->classroom?->name, 'virtual' => (bool) $cell->classroom?->is_virtual, 'hybrid' => false,
+                    'teacher' => $cell->teacher?->panelName() ?? '—', 'total' => 0, 'idle' => true]);
+
+            return [$slotId => collect($loads->get($slotId, []))->concat($idle)
+                ->sortBy(fn (array $room) => ($room['virtual'] ? '1' : '0').sprintf('%05d', (int) $room['room']).$room['room'])->values()->all()];
+        });
 
         $bookings = $bookings
             ->when($this->filterSlot !== '', fn (Collection $items) => $items->where('schedule_slot_id', (int) $this->filterSlot))

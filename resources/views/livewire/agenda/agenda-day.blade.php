@@ -140,9 +140,12 @@
                                             {{-- Carga (suma de pesos newton) de cada aula a esa hora. --}}
                                             <span class="ml-3 inline-flex flex-wrap gap-1.5 align-middle" aria-label="{{ __('agenda.weights.loads') }}">
                                                 @foreach ($group['loads'] as $load)
-                                                    <span class="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-white px-2.5 py-0.5 text-sm font-semibold text-ink-700">
+                                                    {{-- En amarillo, el teacher disponible a esa hora que aún no tiene alumnos. --}}
+                                                    <span @class(['inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm font-semibold',
+                                                        'border-primary-200 bg-white text-ink-700' => ! $load['idle'], 'border-warning-200 bg-warning-50 text-warning-700' => $load['idle']])
+                                                          @if ($load['idle']) title="{{ __('agenda.weights.idle') }}" @endif>
                                                         {{ $load['virtual'] ? __('agenda.virtual_classroom', ['name' => $load['room']]) : __('agenda.room', ['name' => $load['room']]) }}@if ($load['hybrid']) <span class="text-xs font-normal text-info-700">({{ __('agenda.weights.hybrid') }})</span>@endif
-                                                        · {{ $load['teacher'] }} · <span class="font-bold tabular-nums text-primary-700" title="{{ __('agenda.weights.load') }}">{{ $load['total'] }}</span>
+                                                        · {{ $load['teacher'] }} · <span @class(['font-bold tabular-nums', 'text-primary-700' => ! $load['idle']]) title="{{ __('agenda.weights.load') }}">{{ $load['total'] }}</span>
                                                     </span>
                                                 @endforeach
                                             </span>

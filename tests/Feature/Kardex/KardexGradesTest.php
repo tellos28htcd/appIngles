@@ -359,13 +359,15 @@ class KardexGradesTest extends TestCase
         foreach ([Role::ACADEMIC_COORDINATOR, Role::SCHOOL_ADMIN] as $role) {
             $this->actingAs($this->user($role));
             Livewire::test(GradesDay::class)->call('open', $booking->id)->set("corrections.{$first->id}", (string) $this->grades['C']->id)->call('changeGrade', $first->id)
-                ->assertHasNoErrors()->assertDispatched('toast', type: 'success');
+                ->assertHasNoErrors()->assertDispatched('toast', type: 'success')->assertDispatched('kardex-saved');
         }
         $this->assertSame($this->grades['C']->id, $first->fresh()->grade_id);
 
         // Solo se quita la última calificada, para no romper el orden.
         Livewire::test(GradesDay::class)->call('open', $booking->id)->call('removeEntry', $first->id)->assertHasErrors('correction')
-            ->call('removeEntry', $last->id)->assertHasNoErrors();
+            ->call('removeEntry', $last->id)->assertHasNoErrors()
+            // La Agenda se refresca (su aviso "Ya calificado") sin recargar la página.
+            ->assertDispatched('kardex-saved');
         $this->assertSame(['L1-L1-A4-WS C'], $this->kardex($student));
     }
 

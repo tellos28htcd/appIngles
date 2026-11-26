@@ -173,6 +173,8 @@ class GradesDay extends Component
         $kardex->changeGrade($entry, (int) ($this->corrections[$entryId] ?? 0));
 
         unset($this->bookings);
+        // La Agenda (y su aviso "Ya calificado") se refresca sin recargar la página.
+        $this->dispatch('kardex-saved');
         $this->dispatch('toast', type: 'success', message: __('kardex.messages.corrected'));
     }
 
@@ -185,6 +187,8 @@ class GradesDay extends Component
         $kardex->remove($entry);
 
         unset($this->corrections[$entryId], $this->bookings);
+        // La Agenda (y su aviso "Ya calificado") se refresca sin recargar la página.
+        $this->dispatch('kardex-saved');
         $this->dispatch('toast', type: 'success', message: __('kardex.messages.removed'));
     }
 

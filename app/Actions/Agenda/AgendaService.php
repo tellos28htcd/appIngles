@@ -27,6 +27,7 @@ use App\Models\Teacher;
 use App\Models\TeacherAvailability;
 use App\Models\User;
 use App\Notifications\BookingMoved;
+use App\Notifications\WaitlistPromoted;
 use App\Support\ProgressPath;
 use App\Support\RoomBalancer;
 use Carbon\CarbonImmutable;
@@ -34,7 +35,9 @@ use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Agenda: lugares disponibles, reservación, cancelación, asistencia y lista de espera.
@@ -164,6 +167,23 @@ final class AgendaService
             ->with(['teacher:id,is_waitlist,short_name,first_name', 'classroom:id,name,capacity,is_virtual,is_club_room,allows_practice'])->get();
 
         return $this->withoutEvaluatingCoordinators($school, $cells, $date->toDateString(), $date->toDateString());
+    }
+
+    /**
+     * Aulas con teacher de ese día por hora (físicas de práctica y virtuales, sin la columna "Lista de espera"): en el
+     * listado del día se ven también los teachers disponibles que aún no tienen alumnos.
+     *
+     * @return Collection<int, Collection<int, TeacherAvailability>> schedule_slot_id => celdas
+     */
+    public function dayRoomCells(School $school, CarbonInterface $date): Collection
+    {
+        $cells = TeacherAvailability::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+            ->where('is_absent', false)->whereNotNull('classroom_id')->whereNull('club_session_id')->whereNull('coordinator_session_id')
+            ->with(['teacher:id,is_waitlist,short_name,first_name', 'classroom:id,name,capacity,is_virtual,is_club_room,allows_practice'])->get();
+        $cells = $this->withoutEvaluatingCoordinators($school, $cells, $date->toDateString(), $date->toDateString());
+        $virtual = $cells->filter(fn (TeacherAvailability $cell) => $cell->classroom?->is_virtual && ! $cell->teacher?->is_waitlist);
+
+        return $this->physicalCells($cells)->concat($virtual)->groupBy('schedule_slot_id');
     }
 
     /**
@@ -1078,6 +1098,8 @@ final class AgendaService
             $this->place($school, $student, CarbonImmutable::parse($booking->date->toDateString()), $booking->slot, $kind, $modality, $clubSessionId, $booking, $fail);
             $booking->save();
             $this->rebalance($school, $booking->date, $booking->slot, $user, quiet: [$booking->id]) > 0 && $booking->refresh();
+            // Si dejó un lugar en el aula (p. ej. de práctica a club), pasa el de la lista de espera.
+            $this->fillFromWaitlist($school, $booking->date, $booking->slot, $user);
             $booking->unsetRelation('classroom')->unsetRelation('clubSession')->unsetRelation('book')->unsetRelation('lesson');
             $this->log($booking, 'activity_changed', mb_substr($before.' → '.$booking->kind->label().' '.$booking->activityLabel().' · '.$booking->placeLabel(), 0, 255), $user);
 
@@ -1142,7 +1164,11 @@ final class AgendaService
             ->where('attendance', AttendanceEffect::None)->orderBy('sort_order')->orderBy('id')->first();
     }
 
-    public function cancel(Booking $booking, ?CancellationReason $reason, ?User $user): void
+    /**
+     * Cancela la reservación. Si liberó un lugar en un aula, el alumno de la lista de espera de esa hora pasa solo
+     * (salvo $fillWaitlist = false, cuando Recepción le pasa el lugar a uno en particular).
+     */
+    public function cancel(Booking $booking, ?CancellationReason $reason, ?User $user, bool $fillWaitlist = true): void
     {
         abort_if($booking->status === BookingStatus::Cancelled, 422);
 
@@ -1150,7 +1176,65 @@ final class AgendaService
         $this->log($booking, 'cancelled', $reason?->name, $user);
 
         if ($booking->kind->usesPracticeRoom() && ! $booking->is_waitlist && $booking->slot) {
-            $this->rebalance(School::findOrFail($booking->school_id), $booking->date, $booking->slot, $user);
+            $school = School::findOrFail($booking->school_id);
+            $this->rebalance($school, $booking->date, $booking->slot, $user);
+            $fillWaitlist && $this->fillFromWaitlist($school, $booking->date, $booking->slot, $user);
+        }
+    }
+
+    /**
+     * Se liberó un lugar a esa hora: los alumnos de la lista de espera pasan solos a un aula con lugar, en el orden en
+     * que reservaron, mientras la clase no termine. A cada uno se le avisa por correo y en el sistema.
+     *
+     * @return list<Booking> los que pasaron
+     */
+    public function fillFromWaitlist(School $school, CarbonInterface $date, ScheduleSlot $slot, ?User $user): array
+    {
+        if (! $this->isFuture($school, $date, $slot, duringClass: true)) {
+            return [];
+        }
+
+        $waiting = Booking::withoutGlobalScope('school')->where('school_id', $school->id)->whereDate('date', $date->toDateString())
+            ->where('schedule_slot_id', $slot->id)->where('is_waitlist', true)->active()->with('student')->orderBy('created_at')->orderBy('id')->get();
+        $promoted = [];
+
+        foreach ($waiting as $booking) {
+            if (! $this->placeSession($school, $booking, $date, $slot, allowWaitlist: false)) {
+                continue;
+            }
+            $booking->save();
+            $this->log($booking, 'promoted', $booking->load('classroom')->placeLabel(), $user);
+            $promoted[] = $booking;
+        }
+
+        if ($promoted === []) {
+            return [];
+        }
+
+        $this->rebalance($school, $date, $slot, $user, quiet: array_map(fn (Booking $booking) => $booking->id, $promoted));
+        foreach ($promoted as $booking) {
+            $this->notifyPromoted($booking->refresh()->load('classroom'), $slot);
+        }
+
+        return $promoted;
+    }
+
+    /** Aviso al alumno que pasó de la lista de espera: en el sistema (si tiene cuenta) y por correo. */
+    private function notifyPromoted(Booking $booking, ScheduleSlot $slot): void
+    {
+        $student = Student::withoutGlobalScope('school')->with('user')->find($booking->student_id);
+        $teacher = (string) Teacher::withoutGlobalScope('school')->find($booking->teacher_id)?->panelName();
+        $notification = new WaitlistPromoted($booking->setRelation('student', $student), $slot, $teacher);
+
+        // Un correo que no sale no debe impedir el cambio: se registra y se sigue.
+        try {
+            if ($student?->user) {
+                $student->user->notify($notification);
+            } elseif ($student?->email) {
+                Notification::route('mail', $student->email)->notify($notification);
+            }
+        } catch (Throwable $exception) {
+            report($exception);
         }
     }
 
@@ -1217,7 +1301,7 @@ final class AgendaService
         abort_unless($this->waitlistAt($booking)->contains('id', $waiting->id), 404);
 
         return DB::transaction(function () use ($booking, $waiting, $reason, $user): Booking {
-            $this->cancel($booking, $reason, $user);
+            $this->cancel($booking, $reason, $user, fillWaitlist: false);
 
             $room = $booking->classroom()->first();
             $waiting->fill([

@@ -152,7 +152,7 @@
                             <tr wire:key="legend-{{ $teacher->id }}">
                                 <td class="py-0.5">
                                     <span class="flex items-center gap-2">
-                                        <span class="flex size-6 flex-none items-center justify-center rounded text-xs font-bold {{ \App\Support\RoomColors::for($teacher->panel_number ?? 1) }}">{{ $teacher->panel_number ?? '–' }}</span>
+                                        <span class="flex size-6 flex-none items-center justify-center rounded bg-ink-900 text-xs font-bold text-white">{{ $teacher->panel_number ?? '–' }}</span>
                                         @can('editSchedule', $teacher)
                                             <button type="button" wire:click="editSchedule({{ $teacher->id }})"
                                                     class="rounded font-semibold text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"

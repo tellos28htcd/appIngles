@@ -48,6 +48,17 @@ return [
         'ok' => 'Entendido',
     ],
 
+    'promoted' => [
+        'title' => 'Ya tienes lugar',
+        'body' => 'Estabas en lista de espera y se liberó un lugar: ya tienes aula.',
+        'mail_subject' => 'Ya tienes lugar en tu práctica',
+        'mail_greeting' => '¡Hola, :name!',
+        'mail_body' => 'Estabas en lista de espera y se liberó un lugar: ya tienes aula para tu práctica.',
+        'mail_when' => 'Cuándo: :date, :hour.',
+        'mail_where' => 'Dónde: :place',
+        'mail_salutation' => 'Te esperamos. :school',
+    ],
+
     'waitlist' => 'Lista de espera',
     'waitlist_empty' => 'Nadie en lista de espera este día.',
     'virtual_room' => 'Aula virtual :number',
@@ -65,6 +76,7 @@ return [
         'load' => 'Carga del aula (suma de pesos)',
         'loads' => 'Carga de cada aula',
         'hybrid' => 'híbrida',
+        'idle' => 'Disponible: aún sin alumnos a esa hora',
         'waitlist_hint' => 'En lista de espera: no cuenta en la carga hasta que tenga aula',
     ],
     'virtual_classroom' => 'Aula virtual :name',
