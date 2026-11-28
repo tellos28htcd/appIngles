@@ -75,6 +75,19 @@ class SchoolSettingsTest extends TestCase
         $this->assertSame('ESCUELA B', $this->schoolB->fresh()->name);
     }
 
+    public function test_the_admin_sets_how_many_students_a_mentoring_or_material_room_takes(): void
+    {
+        $this->actingAs($this->user(Role::SCHOOL_ADMIN, $this->schoolA));
+
+        // Normalmente 1 alumno por aula; el administrador lo cambia (mínimo 1).
+        Livewire::test(MySchool::class)->assertSet('form.mentoring_capacity', 1)->assertSet('form.material_capacity', 1)
+            ->set('form.mentoring_capacity', 0)->call('save')->assertHasErrors('form.mentoring_capacity')
+            ->set('form.mentoring_capacity', 2)->set('form.material_capacity', 3)->call('save')->assertHasNoErrors();
+
+        $this->assertSame([2, 3], [$this->schoolA->fresh()->mentoring_capacity, $this->schoolA->fresh()->material_capacity]);
+        $this->assertSame([1, 1], [$this->schoolB->fresh()->mentoring_capacity, $this->schoolB->fresh()->material_capacity]);
+    }
+
     public function test_other_roles_cannot_edit_my_school(): void
     {
         $this->actingAs($this->user(Role::TEACHER, $this->schoolA))

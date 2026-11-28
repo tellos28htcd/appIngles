@@ -230,10 +230,14 @@ class AgendaTest extends TestCase
         $this->receptionBooks($pedro, 10)->assertDispatched('toast', type: 'success');
         $this->assertNotSame($presentation->classroom_id, Booking::where('student_id', $pedro->id)->value('classroom_id'));
         $this->receptionBooks($this->studentUpTo(6), 10, 'presentation')->assertDispatched('toast', type: 'error', message: __('agenda.validation.no_free_room'));
-        // Sin aula vacía, la presentación 1 a 1 sale deshabilitada con el motivo.
-        $presentations = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->studentUpTo(6)->id)->get('options'))
+        // Sin aula vacía, la presentación 1 a 1 sale deshabilitada con el motivo (con un alumno sin presentación pendiente
+        // la hora se ve porque puede tomar práctica).
+        $presentations = collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->studentUpTo(5)->id)->get('options'))
             ->firstWhere('slot.id', $this->slots[10]->id)['options'];
-        $this->assertSame([__('agenda.blocked.no_room')], collect($presentations)->where('kind', 'presentation')->pluck('blocked')->all());
+        $this->assertSame([__('agenda.blocked.no_presentation')], collect($presentations)->where('kind', 'presentation')->pluck('blocked')->all());
+        // A quien le toca su A7 no tiene nada que agendar a esa hora (la mentoría y el material también necesitan un aula sola).
+        $this->assertNull(collect(Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('create')->call('pickStudent', $this->studentUpTo(6)->id)->get('options'))
+            ->firstWhere('slot.id', $this->slots[10]->id));
         $this->receptionBooks($this->student(), 10)->assertDispatched('toast', type: 'success');
         $this->assertSame(1, Booking::where('schedule_slot_id', $this->slots[10]->id)->where('classroom_id', $presentation->classroom_id)->active()->count());
 
@@ -250,6 +254,33 @@ class AgendaTest extends TestCase
             BookingKind::Mentoring, ClubModality::InPerson, null, $user, byReception: false), ValidationException::class, __('agenda.validation.reception_only'));
     }
 
+    public function test_mentoring_and_material_take_a_room_only_for_them_up_to_the_school_capacity(): void
+    {
+        $this->school->update(['session_capacity' => 5]);
+        $this->assertSame([1, 1], [$this->school->refresh()->mentoring_capacity, $this->school->material_capacity]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis, $sofia, $pedro] = [$this->student(), $this->student(), $this->student(), $this->student()];
+
+        // Mentoría especial (cupo 1): toma un aula vacía y ahí ya no entra nadie más (ni prácticas).
+        $this->receptionBooks($ana, 9, 'mentoring')->assertDispatched('toast', type: 'success');
+        $mentoringRoom = Booking::where('student_id', $ana->id)->value('classroom_id');
+        $this->receptionBooks($luis, 9)->assertDispatched('toast', type: 'success');
+        $this->receptionBooks($sofia, 9)->assertDispatched('toast', type: 'success');
+        $this->assertSame(0, Booking::whereIn('student_id', [$luis->id, $sofia->id])->where('classroom_id', $mentoringRoom)->count());
+
+        // La otra aula tiene prácticas: la entrega de material no tiene aula para ella sola.
+        $this->receptionBooks($pedro, 9, 'material')->assertDispatched('toast', type: 'error', message: __('agenda.validation.full'));
+
+        // Al editar la práctica, el aula de la mentoría no se ofrece.
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', Booking::where('student_id', $luis->id)->value('id'));
+        $this->assertArrayNotHasKey($mentoringRoom, $page->viewData('edit')['choices']);
+
+        // Con cupo 2 en Mi Instituto, una segunda mentoría entra en la misma aula.
+        $this->school->update(['mentoring_capacity' => 2]);
+        $this->receptionBooks($pedro, 9, 'mentoring')->assertDispatched('toast', type: 'success');
+        $this->assertSame($mentoringRoom, Booking::where('student_id', $pedro->id)->value('classroom_id'));
+    }
+
     public function test_mentoring_is_limited_per_week_and_a_club_presentation_takes_a_club_seat(): void
     {
         $this->presentationCatalog();
@@ -264,7 +295,9 @@ class AgendaTest extends TestCase
         $this->receptionBooks($ana, 9, 'mentoring')
             ->assertDispatched('toast', type: 'error', message: __('agenda.validation.mentoring_week', ['max' => BookingKind::MENTORING_PER_WEEK]));
 
-        // Mentoría especial y entrega de material: máximo 2 alumnos a la misma hora (presencial y en línea juntos).
+        // Mentoría especial y entrega de material: máximo 2 alumnos a la misma hora (presencial y en línea juntos). Con
+        // cupo 2 por aula en Mi Instituto, cada tipo usa una sola aula (solo para él).
+        $this->school->update(['mentoring_capacity' => 2, 'material_capacity' => 2]);
         foreach (['mentoring' => __('agenda.kinds.mentoring'), 'material' => __('agenda.kinds.material')] as $kind => $label) {
             $this->receptionBooks($this->student(), 9, $kind)->assertDispatched('toast', type: 'success');
             $this->receptionBooks($this->student(), 9, $kind, $kind === 'mentoring' ? 'online' : 'in_person')->assertDispatched('toast', type: 'success');

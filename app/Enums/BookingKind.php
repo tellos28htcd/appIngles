@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Models\School;
+
 /**
  * Qué se reserva: una práctica (con su actividad de la ruta), un club, una mentoría especial, una entrega de
  * material, una presentación 1 a 1 (el aula queda solo para el alumno) o una presentación en un club.
@@ -60,6 +62,25 @@ enum BookingKind: string
     public function isExclusive(): bool
     {
         return $this === self::Presentation;
+    }
+
+    /**
+     * El aula queda solo para este tipo (mentoría especial o entrega de material), hasta su cupo de Mi Instituto:
+     * no entran prácticas ni otras actividades.
+     */
+    public function ownsRoom(): bool
+    {
+        return in_array($this, [self::Mentoring, self::Material], true);
+    }
+
+    /** Alumnos por aula de este tipo (Mi Instituto); null = el cupo normal del aula. */
+    public function roomCapacity(School $school): ?int
+    {
+        return match ($this) {
+            self::Mentoring => max(1, (int) ($school->mentoring_capacity ?? 1)),
+            self::Material => max(1, (int) ($school->material_capacity ?? 1)),
+            default => null,
+        };
     }
 
     /** Se califica en el Kardex (práctica con su letra; club y presentaciones con firma F, una vez). */

@@ -376,7 +376,7 @@ final class AgendaService
      * si se puede mover y si el aula queda solo para ella (presentación 1 a 1).
      *
      * @param  list<int>  $excluded
-     * @return array{room: ?string, weight: int, online: bool, movable: bool, excluded: list<int>, exclusive: bool}
+     * @return array{room: ?string, weight: int, online: bool, movable: bool, excluded: list<int>, exclusive: bool, only: ?string, only_capacity: ?int}
      */
     private function itemFor(School $school, Booking $booking, array $excluded): array
     {
@@ -387,6 +387,9 @@ final class AgendaService
             'room' => null,
             'weight' => ! $booking->kind->isPractice() ? 0 : ($catalog['configured'] ? (int) $weight : 1),
             'exclusive' => $booking->kind->isExclusive(),
+            // Mentoría especial y entrega de material: el aula queda solo para ese tipo, hasta su cupo (Mi Instituto).
+            'only' => $booking->kind->ownsRoom() ? $booking->kind->value : null,
+            'only_capacity' => $booking->kind->roomCapacity($school),
             'online' => $booking->modality === ClubModality::Online,
             'movable' => $booking->status === BookingStatus::Booked,
             'excluded' => $excluded,
@@ -548,8 +551,9 @@ final class AgendaService
         $placed = $bookings->reject(fn (Booking $booking) => $booking->is_waitlist);
         $perCell = $placed->whereNotNull('teacher_availability_id')->countBy('teacher_availability_id');
         $onlinePerCell = $placed->whereNotNull('teacher_availability_id')->where('modality', ClubModality::Online)->countBy('teacher_availability_id');
-        $exclusiveCells = $placed->filter(fn (Booking $booking) => $booking->kind->isExclusive())->pluck('teacher_availability_id')->filter()->all();
-        // Lugares de un aula física: su cupo; si ya es híbrida (con alumnos en línea), hasta 3 en total; con presentación 1 a 1, ninguno.
+        $exclusiveCells = $placed->filter(fn (Booking $booking) => $booking->kind->isExclusive() || $booking->kind->ownsRoom())->pluck('teacher_availability_id')->filter()->all();
+        // Lugares de un aula física: su cupo; si ya es híbrida (con alumnos en línea), hasta 3 en total; con presentación 1 a 1,
+        // mentoría especial o entrega de material, ninguno para práctica.
         $cellFree = fn (TeacherAvailability $cell) => in_array($cell->id, $exclusiveCells, true) ? 0 : max(0, ($onlinePerCell[$cell->id] ?? 0) > 0
             ? min(RoomBalancer::HYBRID_CAPACITY, $this->cellCapacity($school, $cell)) - ($perCell[$cell->id] ?? 0)
             : $this->cellCapacity($school, $cell) - ($perCell[$cell->id] ?? 0));

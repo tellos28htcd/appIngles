@@ -16,6 +16,7 @@ namespace App\Support;
  * - Física solo presencial y aula virtual: su cupo.
  * - Nunca con un teacher que el alumno excluyó en su expediente.
  * - Con un alumno 'exclusive' (presentación 1 a 1), nadie más.
+ * - Con un alumno 'only' (mentoría especial o entrega de material), solo alumnos de ese mismo tipo, hasta 'only_capacity'.
  */
 final class RoomBalancer
 {
@@ -48,6 +49,15 @@ final class RoomBalancer
             if (($item['exclusive'] ?? false) && $count > 1) {
                 return false;
             }
+        }
+
+        // Mentoría especial y entrega de material: el aula queda solo para ese tipo, hasta su cupo.
+        $only = array_values(array_unique(array_map(fn (array $item) => (string) ($item['only'] ?? ''), $items)));
+        if (count($only) > 1) {
+            return false;
+        }
+        if ($only[0] !== '' && $count > min(array_map(fn (array $item) => (int) ($item['only_capacity'] ?? 1), $items))) {
+            return false;
         }
 
         $online = collect($items)->where('online', true)->count();
@@ -99,7 +109,14 @@ final class RoomBalancer
             return null;
         }
 
-        if ($item['online']) {
+        // Mentoría especial y entrega de material: primero el aula que ya es de ese tipo (así no ocupa otra aula completa).
+        $same = ($item['only'] ?? null) !== null
+            ? array_filter($candidates, fn (int $load, string $key) => self::itemsIn($items, $key) !== [], ARRAY_FILTER_USE_BOTH)
+            : [];
+
+        if ($same !== []) {
+            $candidates = $same;
+        } elseif ($item['online']) {
             $candidates = self::hybridCandidates($rooms, $items, $candidates);
         }
 

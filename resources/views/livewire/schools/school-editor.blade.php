@@ -165,6 +165,12 @@
                                  wire:model="form.max_sessions_scope" />
                     <x-ui.input name="form.max_sessions" type="number" :label="__('schools.fields.max_sessions')" wire:model="form.max_sessions" min="1" max="99" inputmode="numeric" class="tabular-nums" />
                     <x-ui.input name="form.max_clubs" type="number" :label="__('schools.fields.max_clubs')" wire:model="form.max_clubs" min="1" max="99" inputmode="numeric" class="tabular-nums" />
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        @foreach (['mentoring_capacity', 'material_capacity'] as $field)
+                            <x-ui.input name="form.{{ $field }}" type="number" :label="__('schools.fields.'.$field)" :hint="__('schools.fields.dedicated_room_hint')"
+                                        wire:model="form.{{ $field }}" min="1" max="{{ \App\Models\School::MAX_SESSION_CAPACITY }}" inputmode="numeric" class="tabular-nums" required />
+                        @endforeach
+                    </div>
                     <x-ui.choice name="form.failed_activity_policy" :label="__('schools.fields.failed_activity_policy')"
                                  :options="collect(\App\Enums\FailedActivityPolicy::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->all()"
                                  wire:model="form.failed_activity_policy" />

@@ -57,8 +57,8 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
   |---|---|---|---|---|---|---|
   | Práctica | Recepción y alumno | Aula de práctica (balanceo) | Sí | Sí | Horas por día | A/B/C o F, mueve la ruta |
   | Club | Recepción y alumno | Club programado | — | Si el club es en línea | Clubs por día | F |
-  | Mentoría especial | Recepción | Un lugar en el aula de práctica | 0 (no se muestra) | Sí | Horas por día y **3 por semana** | No se califica |
-  | Entrega de material | Recepción | Un lugar en el aula de práctica | 0 | **No** | Horas por día | No se califica |
+  | Mentoría especial | Recepción | Un aula **solo para mentoría** (sin prácticas ni otros tipos), hasta "Alumnos por aula en mentoría especial" de Mi Instituto (normalmente 1); con cupo, se junta en la que ya es de mentoría | 0 (no se muestra) | Sí | Horas por día y **3 por semana** | No se califica |
+  | Entrega de material | Recepción | Un aula **solo para entrega de material**, hasta "Alumnos por aula en entrega de material" de Mi Instituto (normalmente 1) | 0 | **No** | Horas por día | No se califica |
   | Presentación 1 a 1 | Recepción, **solo cuando le toca su A7** (lecciones 15 y 17) o tiene una pendiente | Un aula **vacía** que queda solo para el alumno (con su teacher) | 0 | Sí | Horas por día | A/B/C, es su actividad de la ruta |
   | Presentación en club | Recepción, igual que la 1 a 1 | Un lugar del club de esa hora (sin revisar nivel) | — | Si el club es en línea | Clubs por día; **una sola presentación por club** | A/B/C, es su actividad de la ruta |
 - **Quién reserva:** recepción siempre puede. El alumno (si "Reservaciones del alumno" no está en "No permitir"):
