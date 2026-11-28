@@ -819,10 +819,44 @@ class AgendaTest extends TestCase
         $this->receptionBooks($ana, 9);
         $this->receptionBooks($luis, 10);
 
-        Livewire::test(AgendaDay::class)->set('date', self::MONDAY)
-            ->assertSee($ana->fullName())->assertSee($luis->fullName())
-            ->set('filterSlot', (string) $this->slots[10]->id)->assertDontSee($ana->fullName())->assertSee($luis->fullName())
-            ->call('clearFilters')->set('filterTeacher', (string) Booking::where('student_id', $ana->id)->value('teacher_id'))->assertSee($ana->fullName());
+        $listed = fn ($page) => $page->instance()->bookings->flatMap(fn (array $group) => $group['bookings']->pluck('student_id'))->sort()->values()->all();
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY);
+        $this->assertSame([$ana->id, $luis->id], $listed($page));
+        $this->assertSame([$luis->id], $listed($page->set('filterSlot', (string) $this->slots[10]->id)));
+        $this->assertContains($ana->id, $listed($page->call('clearFilters')->set('filterTeacher', (string) Booking::where('student_id', $ana->id)->value('teacher_id'))));
+
+        // Un alumno: solo sus sesiones del día; el selector lista a los alumnos con reservación ese día.
+        $this->receptionBooks($ana, 10);
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('clearFilters')->set('filterStudent', (string) $ana->id);
+        $this->assertSame([$ana->id, $ana->id], $listed($page));
+        $this->assertEqualsCanonicalizing([$ana->id, $luis->id], array_keys($page->viewData('filterStudents')));
+        $this->assertSame([$ana->id, $ana->id, $luis->id], $listed($page->call('clearFilters')));
+    }
+
+    public function test_a_waitlist_student_moves_to_the_first_room_with_space(): void
+    {
+        // Lleno a esa hora: Sofía queda en la lista de espera (aula 9). Luego se abre lugar sin cancelar (sube el cupo).
+        $this->school->update(['books_without_classroom' => false, 'session_capacity' => 1]);
+        $waitRoom = Classroom::create(['school_id' => $this->school->id, 'name' => '9', 'capacity' => 20, 'is_active' => true]);
+        $waitTeacher = Teacher::factory()->create(['school_id' => $this->school->id, 'user_id' => null, 'short_name' => 'LISTA_ESP', 'panel_number' => 99, 'is_waitlist' => true]);
+        TeacherAvailability::create(['school_id' => $this->school->id, 'teacher_id' => $waitTeacher->id, 'date' => self::MONDAY,
+            'schedule_slot_id' => $this->slots[9]->id, 'classroom_id' => $waitRoom->id, 'is_absent' => false]);
+        $this->actingAs($this->user(Role::RECEPTION));
+        [$ana, $luis, $sofia] = [$this->student(), $this->student(), $this->student()];
+        $this->receptionBooks($ana, 9);
+        $this->receptionBooks($luis, 9);
+        $this->receptionBooks($sofia, 9)->assertDispatched('toast', type: 'warning');
+        $waiting = Booking::where('student_id', $sofia->id)->sole();
+        $this->school->update(['session_capacity' => 5]);
+
+        // El selector de aula empieza vacío (antes mostraba la primera aula como elegida y no se podía cambiar a ella).
+        $page = Livewire::test(AgendaDay::class)->set('date', self::MONDAY)->call('editBooking', $waiting->id)->assertSet('editRoomId', null);
+        $first = array_key_first($page->viewData('edit')['choices']);
+        $page->set('editRoomId', $first)->call('saveChange')->assertDispatched('toast', type: 'success');
+
+        $waiting->refresh();
+        $this->assertFalse($waiting->is_waitlist);
+        $this->assertSame($first, $waiting->classroom_id);
     }
 
     public function test_reception_moves_a_booking_to_an_available_room_and_its_teacher_comes_with_it(): void

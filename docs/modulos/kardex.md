@@ -21,7 +21,7 @@ Decisiones del 18-nov-2026. Primer submódulo: **Calificaciones**.
 - Listado del día como en la Agenda: todos los reservados de cada hora (sin cancelados ni lista de espera).
   **Primero se registra la asistencia** ("Asistió") en la Agenda; sin ella no sale el botón **"Calificaciones"** (ni en
   la Agenda ni aquí) y no se puede calificar, solo dejar "Sin calificación" (23-nov-2026).
-  Filtros por hora y teacher (en sesión). El **teacher solo ve a sus alumnos**.
+  Filtros por hora, teacher y alumno (solo sus sesiones del día; en sesión). El **teacher solo ve a sus alumnos**.
 - Clic en el alumno: ventana con su nombre, la práctica reservada y **3 prácticas**: la que indica el Kardex
   (la siguiente sin calificar según el **Orden** del catálogo de Prácticas; sin nada calificado, la de la
   reservación) y las 2 siguientes (si se acaba el libro, siguen las del siguiente). Cada una solo ofrece las letras

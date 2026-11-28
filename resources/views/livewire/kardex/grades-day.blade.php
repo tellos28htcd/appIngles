@@ -21,13 +21,14 @@
             @endif
         </div>
 
-        {{-- Filtros: hora y teacher (el teacher solo ve a sus alumnos). --}}
-        <div class="grid gap-3 border-b border-line p-4 sm:grid-cols-[repeat(2,minmax(0,1fr))_auto] sm:items-end">
+        {{-- Filtros: hora, teacher (el teacher solo ve a sus alumnos) y alumno (solo sus sesiones del día). --}}
+        <div class="grid gap-3 border-b border-line p-4 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto] sm:items-end">
             <x-ui.select name="filterSlot" :label="__('agenda.filters.hour')" :options="$filterSlots" :placeholder="__('agenda.filters.all_hours')" wire:model.live="filterSlot" />
             @if ($filterTeachers !== [])
                 <x-ui.select name="filterTeacher" :label="__('agenda.filters.teacher')" :options="$filterTeachers" :placeholder="__('agenda.filters.all_teachers')" wire:model.live="filterTeacher" />
             @endif
-            @if ($filterSlot !== '' || $filterTeacher !== '')
+            <x-ui.select name="filterStudent" :label="__('agenda.filters.student')" :options="$filterStudents" :placeholder="__('agenda.filters.all_students')" wire:model.live="filterStudent" />
+            @if ($filterSlot !== '' || $filterTeacher !== '' || $filterStudent !== '')
                 <x-ui.button variant="ghost" wire:click="clearFilters">{{ __('agenda.filters.clear') }}</x-ui.button>
             @endif
         </div>

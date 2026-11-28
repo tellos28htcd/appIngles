@@ -113,7 +113,7 @@ Aulas (sin capacidad, el cupo por sesión). Se ofrecen todas las aulas virtuales
 - **Tolerancia:** **Recepción y el Administrador** agendan mientras la clase no termine (p. ej. el alumno ya está en la clase de las 10 y a las 10:40 no estaba en la agenda; 25-nov-2026); el resto del personal, hasta 10 minutos después de que empezó; el alumno solo antes de que empiece.
 - **Portal del alumno:** una sola opción "Agendar" (prácticas y clubs). "Agendar club" queda desactivada en el menú (su código se conserva).
 - **Ventanas:** todas las ventanas de captura se mueven arrastrando su título.
-- **Listado del día:** letra más grande; filtros por hora, aula y teacher (se recuerdan en la sesión); cada renglón con el color tenue de su aula (como en el panel).
+- **Listado del día:** letra más grande; filtros por hora, aula, teacher y alumno (este muestra solo las sesiones del día de ese alumno; se recuerdan en la sesión); cada renglón con el color tenue de su aula (como en el panel).
 - **Cambiar reservación** (solo recepción; botón "Cambiar" o clic en el alumno): otra aula disponible a esa hora (con lugar; el teacher es el que da clase en esa aula según el panel; en aula virtual, el que la atiende) y/o pasar el lugar a otro alumno (no puede tener esa hora; respeta su límite por día; se recalcula su actividad). En clubs solo se cambia el alumno. Queda en el historial ("changed").
   - **Presencial ↔ en línea** (19-nov-2026): la sección "Cambiar presencial / en línea o actividad" muestra la modalidad
     actual ("Ahora: Presencial") y la otra opción de esa hora con lugar, para corregir cuando el alumno o recepción

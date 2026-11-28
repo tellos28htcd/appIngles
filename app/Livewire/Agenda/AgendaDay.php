@@ -66,7 +66,7 @@ class AgendaDay extends Component
 
     public ?int $reasonId = null;
 
-    /** Filtros del listado del día (hora, aula y teacher); se recuerdan en la sesión. */
+    /** Filtros del listado del día (hora, aula, teacher y alumno); se recuerdan en la sesión. */
     #[Session]
     public string $filterSlot = '';
 
@@ -75,6 +75,10 @@ class AgendaDay extends Component
 
     #[Session]
     public string $filterTeacher = '';
+
+    /** Un alumno: solo sus reservaciones del día (resumen de sus sesiones). */
+    #[Session]
+    public string $filterStudent = '';
 
     /** Reservación que se edita (recepción): aula (con su teacher) y alumno. */
     public ?int $editingId = null;
@@ -110,7 +114,7 @@ class AgendaDay extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('filterSlot', 'filterRoom', 'filterTeacher');
+        $this->reset('filterSlot', 'filterRoom', 'filterTeacher', 'filterStudent');
         unset($this->bookings);
     }
 
@@ -292,7 +296,8 @@ class AgendaDay extends Component
         abort_unless($booking->canBeChanged(), 422);
 
         $this->editingId = $booking->id;
-        $this->editRoomId = $booking->classroom_id;
+        // En lista de espera aún no tiene aula: el selector empieza vacío para poder elegir cualquiera (también la primera de la lista).
+        $this->editRoomId = $booking->is_waitlist ? null : $booking->classroom_id;
         $this->editWaitingId = null;
         $this->editActivity = '';
         $this->editStudentId = $booking->student_id;
@@ -449,7 +454,8 @@ class AgendaDay extends Component
         $bookings = $bookings
             ->when($this->filterSlot !== '', fn (Collection $items) => $items->where('schedule_slot_id', (int) $this->filterSlot))
             ->when($this->filterRoom !== '', fn (Collection $items) => $items->where('classroom_id', (int) $this->filterRoom))
-            ->when($this->filterTeacher !== '', fn (Collection $items) => $items->where('teacher_id', (int) $this->filterTeacher));
+            ->when($this->filterTeacher !== '', fn (Collection $items) => $items->where('teacher_id', (int) $this->filterTeacher))
+            ->when($this->filterStudent !== '', fn (Collection $items) => $items->where('student_id', (int) $this->filterStudent));
 
         return $bookings->groupBy('schedule_slot_id')
             ->map(fn (Collection $items) => [
@@ -541,6 +547,8 @@ class AgendaDay extends Component
                 ->mapWithKeys(fn (Classroom $room) => [$room->id => $room->name])->all(),
             'filterTeachers' => $dayBookings->pluck('teacher')->filter()->unique('id')->sortBy(fn (Teacher $teacher) => $teacher->panelName())
                 ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all(),
+            'filterStudents' => $dayBookings->pluck('student')->filter()->unique('id')->sortBy(fn (Student $student) => $student->fullName())
+                ->mapWithKeys(fn (Student $student) => [$student->id => $student->fullName()])->all(),
             'roomNumbers' => $classrooms->values()->mapWithKeys(fn (Classroom $room, int $index) => [$room->id => ctype_digit((string) $room->name) ? (int) $room->name : $index + 1])->all(),
             // Lista de espera del día elegido (etiqueta "Lista de espera" de arriba), por hora y nombre.
             'waitlist' => $dayBookings->filter(fn (Booking $booking) => $booking->is_waitlist && $booking->status->isActive())

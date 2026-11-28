@@ -147,6 +147,11 @@ class KardexGradesTest extends TestCase
         $this->actingAs($this->user(Role::RECEPTION));
         Livewire::test(GradesDay::class)->assertSee($ana->fullName())->assertSee($beto->fullName());
 
+        // Filtro por alumno: solo sus sesiones del día.
+        $page = Livewire::test(GradesDay::class)->set('filterStudent', (string) $beto->id);
+        $this->assertSame([$beto->id], $page->instance()->bookings->flatMap(fn (array $group) => $group['bookings']->pluck('student_id'))->all());
+        $this->assertEqualsCanonicalizing([$ana->id, $beto->id], array_keys($page->viewData('filterStudents')));
+
         // La teacher no abre la ventana de un alumno de otra teacher; el alumno no entra.
         $this->actingAs($this->teacherUser($this->melissa));
         Livewire::test(GradesDay::class)->call('open', Booking::where('student_id', $beto->id)->value('id'))->assertForbidden();

@@ -92,14 +92,15 @@
             </div>
         @endif
 
-        {{-- Filtros del listado: hora, aula y teacher --}}
-        <div class="grid gap-3 border-b border-line p-4 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto] sm:items-end">
+        {{-- Filtros del listado: hora, aula, teacher y alumno (solo sus sesiones del día) --}}
+        <div class="grid gap-3 border-b border-line p-4 sm:grid-cols-2 sm:items-end lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
             <x-ui.select name="filterSlot" :label="__('agenda.filters.hour')" :options="$filterSlots" :placeholder="__('agenda.filters.all_hours')" wire:model.live="filterSlot" />
             <x-ui.select name="filterRoom" :label="__('agenda.filters.room')" :options="$filterRooms" :placeholder="__('agenda.filters.all_rooms')" wire:model.live="filterRoom" />
             @unless ($isTeacherView)
                 <x-ui.select name="filterTeacher" :label="__('agenda.filters.teacher')" :options="$filterTeachers" :placeholder="__('agenda.filters.all_teachers')" wire:model.live="filterTeacher" />
             @endunless
-            @if ($filterSlot !== '' || $filterRoom !== '' || $filterTeacher !== '')
+            <x-ui.select name="filterStudent" :label="__('agenda.filters.student')" :options="$filterStudents" :placeholder="__('agenda.filters.all_students')" wire:model.live="filterStudent" />
+            @if ($filterSlot !== '' || $filterRoom !== '' || $filterTeacher !== '' || $filterStudent !== '')
                 <x-ui.button variant="ghost" wire:click="clearFilters">{{ __('agenda.filters.clear') }}</x-ui.button>
             @endif
         </div>
@@ -335,7 +336,8 @@
                 @endcan
 
                 @if ($editable && $editActivity === '')
-                    <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :hint="__('agenda.edit.room_hint')" wire:model.live="editRoomId" required />
+                    <x-ui.select name="editRoomId" :label="__('agenda.edit.room')" :options="$edit['rooms']" :hint="__('agenda.edit.room_hint')"
+                                 :placeholder="$edit['booking']->is_waitlist ? __('agenda.edit.room_placeholder') : null" wire:model.live="editRoomId" required />
                     @php($chosen = $edit['choices'][$editRoomId] ?? null)
                     @if ($chosen)
                         <p class="-mt-2 rounded-lg bg-primary-50 px-3 py-2 text-[15px] text-primary-700">

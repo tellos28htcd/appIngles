@@ -12,6 +12,7 @@ use App\Models\KardexEntry;
 use App\Models\Role;
 use App\Models\ScheduleSlot;
 use App\Models\School;
+use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\UngradedReason;
 use App\Policies\KardexEntryPolicy;
@@ -43,6 +44,10 @@ class GradesDay extends Component
 
     #[Session]
     public string $filterTeacher = '';
+
+    /** Un alumno: solo sus sesiones del día. */
+    #[Session]
+    public string $filterStudent = '';
 
     /** Dentro de la Agenda: solo la ventana de calificar (se abre con el botón "Calificaciones" de cada reservación). */
     #[Locked]
@@ -105,7 +110,7 @@ class GradesDay extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('filterSlot', 'filterTeacher');
+        $this->reset('filterSlot', 'filterTeacher', 'filterStudent');
         unset($this->bookings);
     }
 
@@ -205,6 +210,7 @@ class GradesDay extends Component
         return $this->dayBookings()
             ->when($this->filterSlot !== '', fn (Collection $items) => $items->where('schedule_slot_id', (int) $this->filterSlot))
             ->when($this->filterTeacher !== '', fn (Collection $items) => $items->where('teacher_id', (int) $this->filterTeacher))
+            ->when($this->filterStudent !== '', fn (Collection $items) => $items->where('student_id', (int) $this->filterStudent))
             ->groupBy('schedule_slot_id')
             ->map(fn (Collection $items) => [
                 'slot' => $items->first()->slot,
@@ -271,6 +277,8 @@ class GradesDay extends Component
             'filterSlots' => $day->pluck('slot')->filter()->unique('id')->sortBy('starts_at')->mapWithKeys(fn (ScheduleSlot $slot) => [$slot->id => $slot->range()])->all(),
             'filterTeachers' => $this->isTeacher() ? [] : $day->pluck('teacher')->filter()->unique('id')->sortBy(fn (Teacher $teacher) => $teacher->panelName())
                 ->mapWithKeys(fn (Teacher $teacher) => [$teacher->id => $teacher->panelName()])->all(),
+            'filterStudents' => $day->pluck('student')->filter()->unique('id')->sortBy(fn (Student $student) => $student->fullName())
+                ->mapWithKeys(fn (Student $student) => [$student->id => $student->fullName()])->all(),
             'canCorrect' => auth()->user()->can('correct', KardexEntry::class),
             'earliest' => $kardex->earliestDate($this->today()),
             'today' => $this->today(),

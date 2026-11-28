@@ -142,6 +142,8 @@ return [
         'all_hours' => 'Todas las horas',
         'all_rooms' => 'Todas las aulas',
         'all_teachers' => 'Todos los teachers',
+        'student' => 'Alumno',
+        'all_students' => 'Todos los alumnos',
         'clear' => 'Quitar filtros',
     ],
     'edit' => [
@@ -149,6 +151,7 @@ return [
         'open' => 'Cambiar aula o alumno',
         'room' => 'Aula',
         'teacher' => 'Teacher',
+        'room_placeholder' => 'Elige el aula',
         'room_hint' => 'Solo aulas con lugar a esa hora; cada una con el teacher que da la clase ahí.',
         'teacher_of_room' => 'Teacher que da la clase:',
         'student' => 'Alumno',
